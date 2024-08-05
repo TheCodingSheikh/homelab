@@ -8,7 +8,7 @@
 
   - name: Set user shell to zsh
     ansible.builtin.user:
-      name: "{{ user }}"
+      name: "{{ ansible_user }}"
       shell: /bin/zsh
     become: true
 
@@ -17,17 +17,34 @@
       repo: https://github.com/ohmyzsh/ohmyzsh.git
       dest: "{{ ansible_env.HOME }}/.oh-my-zsh"
       version: master
-    become: yes
 
+  - name: Copy .zshrc template
+    ansible.builtin.copy:
+      src: "{{ ansible_env.HOME }}/.oh-my-zsh/templates/zshrc.zsh-template"
+      dest: "{{ ansible_env.HOME }}/.zshrc"
+      remote_src: yes
+        
   - name: Clone Powerlevel10k theme
     git:
       repo: https://github.com/romkatv/powerlevel10k.git
       dest: "{{ ansible_env.HOME }}/.oh-my-zsh/custom/themes/powerlevel10k"
       version: master
-    become: yes
 
-  - name: Install NerdFonts
+  - name: Set ZSH_THEME in .zshrc
+    ansible.builtin.lineinfile:
+      path: "{{ ansible_env.HOME }}/.zshrc"
+      regexp: '^ZSH_THEME='
+      line: 'ZSH_THEME="powerlevel10k/powerlevel10k"'
+      create: yes
+
+  - name: Download NerdFonts
+    ansible.builtin.get_url:
+      url: "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/Meslo.zip"
+      dest: "/tmp/Meslo.zip"
+
+  - name: Unarchive NerdFonts
     ansible.builtin.unarchive:
-      src: "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/Meslo.zip"
+      src: "/tmp/Meslo.zip"
       dest: "/usr/share/fonts/Meslo"
+      remote_src: yes
     become: true
