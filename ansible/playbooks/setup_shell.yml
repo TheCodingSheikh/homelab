@@ -1,0 +1,33 @@
+- hosts: lab
+  tasks:
+  - name: Install zsh
+    ansible.builtin.apt:
+      name: zsh
+      state: present
+    become: true
+
+  - name: Set user shell to zsh
+    ansible.builtin.user:
+      name: "{{ user }}"
+      shell: /bin/zsh
+    become: true
+
+  - name: Install Oh My Zsh
+    ansible.builtin.git:
+      repo: https://github.com/ohmyzsh/ohmyzsh.git
+      dest: "{{ ansible_env.HOME }}/.oh-my-zsh"
+      version: master
+    become: yes
+
+  - name: Clone Powerlevel10k theme
+    git:
+      repo: https://github.com/romkatv/powerlevel10k.git
+      dest: "{{ ansible_env.HOME }}/.oh-my-zsh/custom/themes/powerlevel10k"
+      version: master
+    become: yes
+
+  - name: Install NerdFonts
+    ansible.builtin.unarchive:
+      src: "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/Meslo.zip"
+      dest: "/usr/share/fonts/Meslo"
+    become: true
