@@ -1,0 +1,38 @@
+elementweb:
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      external-dns.alpha.kubernetes.io/target: "homelab-tunnel.lab.alsheykh.com"
+      external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+    hosts:
+      - host: &frontend_host chat.lab.alsheykh.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: element-tls-certificate
+        hosts:
+          - *frontend_host
+  config:
+    default:
+      base_url: https://matrix.lab.alsheykh.com
+      server_name: lab.alsheykh.com
+
+dendrite:
+  dendrite_config:
+    global:
+      server_name: matrix.lab.alsheykh.com
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hostName: matrix.lab.alsheykh.com
+    tls:
+      - hosts:
+          - matrix.lab.alsheykh.com
+        secretName: matrix-tls-certificate
+  postgresql:
+    enabled: true
