@@ -6,6 +6,12 @@
       state: present
     become: true
 
+  - name: Install zsh
+    ansible.builtin.apt:
+      name: fonts-powerline
+      state: present
+    become: true
+
   - name: Set user shell to zsh
     ansible.builtin.user:
       name: "{{ ansible_user }}"
@@ -16,7 +22,6 @@
     ansible.builtin.git:
       repo: https://github.com/ohmyzsh/ohmyzsh.git
       dest: "{{ ansible_env.HOME }}/.oh-my-zsh"
-      version: master
 
   - name: Copy .zshrc template
     ansible.builtin.copy:
@@ -28,7 +33,16 @@
     git:
       repo: https://github.com/romkatv/powerlevel10k.git
       dest: "{{ ansible_env.HOME }}/.oh-my-zsh/custom/themes/powerlevel10k"
-      version: master
+
+  - name: Clone zsh-autosuggestions 
+    git:
+      repo: https://github.com/zsh-users/zsh-autosuggestions.git
+      dest: "{{ ansible_env.HOME }}/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
+
+  - name: Clone zsh-syntax-highlighting
+    git:
+      repo: https://github.com/zsh-users/zsh-syntax-highlighting.git
+      dest: "{{ ansible_env.HOME }}/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting"
 
   - name: Set ZSH_THEME in .zshrc
     ansible.builtin.lineinfile:
@@ -37,14 +51,10 @@
       line: 'ZSH_THEME="powerlevel10k/powerlevel10k"'
       create: yes
 
-  - name: Download NerdFonts
-    ansible.builtin.get_url:
-      url: "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/Meslo.zip"
-      dest: "/tmp/Meslo.zip"
+  - name: Set oh-my-zsh plugins in .zshrc
+    ansible.builtin.lineinfile:
+      path: "{{ ansible_env.HOME }}/.zshrc"
+      regexp: '^plugins='
+      line: 'plugins=(git zsh-autosuggestions zsh-syntax-highlighting)'
+      create: yes
 
-  - name: Unarchive NerdFonts
-    ansible.builtin.unarchive:
-      src: "/tmp/Meslo.zip"
-      dest: "/usr/share/fonts/Meslo"
-      remote_src: yes
-    become: true
