@@ -15,7 +15,7 @@ app-template:
   ingress:
     main:
       enabled: true
-      className: nginx
+      className: traefik
       annotations:
         nginx.ingress.kubernetes.io/proxy-body-size: 50m
         cert-manager.io/cluster-issuer: letsencrypt-prod

@@ -19,7 +19,7 @@ woodpecker:
       enabled: true
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt-prod
-      ingressClassName: nginx
+      ingressClassName: traefik
       hosts:
         - host: &host ci.lab.alsheykh.com
           paths:

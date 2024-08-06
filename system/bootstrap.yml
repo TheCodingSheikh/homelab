@@ -1,5 +1,5 @@
 - name: Bootstrapping the cluster
-  hosts: localhost
+  hosts: k3d
   tasks:
     - name: Create ArgoCD namespace
       kubernetes.core.k8s:
@@ -12,7 +12,7 @@
       kubernetes.core.k8s_info:
         kind: Pod
         label_selectors:
-          - app.kubernetes.io/instance=gitea
+          - app.kubernetes.io/instance=argocd
         field_selectors:
           - status.phase=Running
       register: first_install

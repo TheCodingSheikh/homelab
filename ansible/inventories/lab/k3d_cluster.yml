@@ -1,5 +1,5 @@
 
-apiVersion: k3d.io/v1alpha4
+apiVersion: k3d.io/v1alpha5
 kind: Simple 
 metadata:
   name: lab
@@ -12,15 +12,3 @@ ports:
   - port: 443:443
     nodeFilters:
       - loadbalancer
-options:
-  k3s:
-    extraArgs:
-      - arg: --disable=traefik
-        nodeFilters:
-          - server:*
-      - arg: --disable-cloud-controller
-        nodeFilters:
-          - server:*
-      - arg: --disable-helm-controller
-        nodeFilters:
-          - server:*

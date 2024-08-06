@@ -4,7 +4,7 @@ zot:
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-prod
       nginx.ingress.kubernetes.io/proxy-body-size: "0"
-    className: nginx
+    className: traefik
     hosts:
       - host: &host registry.lab.alsheykh.com
         paths:

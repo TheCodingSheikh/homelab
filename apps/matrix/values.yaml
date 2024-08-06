@@ -1,7 +1,7 @@
 elementweb:
   ingress:
     enabled: true
-    className: nginx
+    className: traefik
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-prod
       external-dns.alpha.kubernetes.io/target: "homelab-tunnel.lab.alsheykh.com"
@@ -26,7 +26,7 @@ dendrite:
       server_name: matrix.lab.alsheykh.com
   ingress:
     enabled: true
-    className: nginx
+    className: traefik
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-prod
     hostName: matrix.lab.alsheykh.com
