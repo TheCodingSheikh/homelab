@@ -55,6 +55,6 @@
     ansible.builtin.lineinfile:
       path: "{{ ansible_env.HOME }}/.zshrc"
       regexp: '^plugins='
-      line: 'plugins=(git zsh-autosuggestions zsh-syntax-highlighting)'
+      line: 'plugins=(git docker kubectl zsh-autosuggestions zsh-syntax-highlighting)'
       create: yes
 
