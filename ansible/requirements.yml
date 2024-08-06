@@ -1,3 +1,4 @@
 roles:
   - name: geerlingguy.docker
   - name: andrewrothstein.k3d
+  - name: andrewrothstein.kubectl
