@@ -1,0 +1,66 @@
+argo-cd:
+  global:
+    domain: argocd.lab.alsheykh.com
+  configs:
+    params:
+      server.insecure: true
+      controller.diff.server.side: true
+    cm:
+      exec.enabled: true
+  server:
+    ingress:
+      enabled: true
+      ingressClassName: traefik
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+      extraTls:
+        - hosts:
+          - argocd.lab.alsheykh.com
+          secretName: argocd-tls
+    metrics: &metrics
+      enabled: false
+      serviceMonitor:
+        enabled: false
+  dex:
+    enabled: false
+  controller:
+    metrics: *metrics
+  repoServer:
+    metrics: *metrics
+  redis:
+    metrics: *metrics
+argocd-apps:
+  applications:
+    bootstrap:
+      namespace: argocd
+      additionalLabels: {}
+      additionalAnnotations: {}
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+      project: default
+      source:
+        repoURL: &repoURL https://github.com/TheCodingSheikh/homelab
+        targetRevision: &revision master
+        path: kubernetes/bootstrap
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: argocd
+      ignoreDifferences:
+        - group: argoproj.io
+          jsonPointers:
+          - /status
+          kind: Application
+      syncPolicy:
+        automated:
+          allowEmpty: true
+          prune: true
+          selfHeal: true
+        retry:
+          limit: 10
+          backoff:
+            duration: 1m
+            factor: 2
+            maxDuration: 16m
+        syncOptions:
+        - allowEmpty=true
+        - ApplyOutOfSyncOnly=true

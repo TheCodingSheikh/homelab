@@ -1,0 +1,12 @@
+{
+    "appName": "argocd",
+    "userGivenName": "argocd",
+    "destNamespace": "argocd",
+    "destServer": "https://kubernetes.default.svc",
+    "srcPath": "kubernetes/apps/system/argocd",
+    "srcRepoURL": "https://github.com/TheCodingSheikh/homelab.git",
+    "srcTargetRevision": "",
+    "labels": null,
+    "annotations": null
+  }
+  

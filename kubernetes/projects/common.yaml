@@ -1,0 +1,95 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-options: PruneLast=true
+    argocd.argoproj.io/sync-wave: "-2"
+  name: common
+  namespace: argocd
+spec:
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  description: common project
+  destinations:
+  - namespace: '*'
+    server: '*'
+  namespaceResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  sourceRepos:
+  - '*'
+status: {}
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  name: common
+  namespace: argocd
+spec:
+  generators:
+  - git:
+      files:
+      - path: kubernetes/apps/common/**/config.json
+      repoURL: https://github.com/TheCodingSheikh/homelab.git
+      requeueAfterSeconds: 20
+      revision: ""
+      template:
+        metadata: {}
+        spec:
+          destination: {}
+          project: ""
+  - git:
+      files:
+      - path: kubernetes/apps/common/**/config_dir.json
+      repoURL: https://github.com/TheCodingSheikh/homelab.git
+      requeueAfterSeconds: 20
+      revision: ""
+      template:
+        metadata: {}
+        spec:
+          destination: {}
+          project: ""
+          source:
+            directory:
+              exclude: '{{ exclude }}'
+              include: '{{ include }}'
+              jsonnet: {}
+              recurse: true
+            repoURL: ""
+  syncPolicy: {}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: '{{ appName }}'
+      name: '{{ userGivenName }}'
+      namespace: argocd
+    spec:
+      destination:
+        namespace: '{{ destNamespace }}'
+        server: '{{ destServer }}'
+      ignoreDifferences:
+      - group: argoproj.io
+        jsonPointers:
+        - /status
+        kind: Application
+      project: common
+      source:
+        path: '{{ srcPath }}'
+        repoURL: '{{ srcRepoURL }}'
+        targetRevision: '{{ srcTargetRevision }}'
+      syncPolicy:
+        retry:
+          limit: 10
+          backoff:
+            duration: 1m
+            factor: 2
+            maxDuration: 16m
+        syncOptions:
+        - CreateNamespace=true
+        - ApplyOutOfSyncOnly=true
+        - ServerSideApply=true
+status: {}

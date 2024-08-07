@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: kubectl
+  name: kubectl
+spec:
+  serviceAccountName: kubectl
+  containers:
+  - command:
+    - sleep
+    args:
+    - infinity
+    image: alpine/k8s:1.30.3
+    name: kubectl
