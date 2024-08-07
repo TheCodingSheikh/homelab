@@ -3,3 +3,4 @@ roles:
   - name: geerlingguy.helm
   - name: andrewrothstein.k3d
   - name: andrewrothstein.kubectl
+  - name: andrewrothstein.gh
