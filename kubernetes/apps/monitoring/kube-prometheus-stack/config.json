@@ -1,0 +1,12 @@
+{
+    "appName": "kube-prometheus-stack",
+    "userGivenName": "kube-prometheus-stack",
+    "destNamespace": "kube-prometheus-stack",
+    "destServer": "https://kubernetes.default.svc",
+    "srcPath": "kubernetes/apps/monitoring/kube-prometheus-stack",
+    "srcRepoURL": "https://github.com/TheCodingSheikh/homelab.git",
+    "srcTargetRevision": "",
+    "labels": null,
+    "annotations": null
+  }
+  
