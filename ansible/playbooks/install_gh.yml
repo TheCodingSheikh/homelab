@@ -1,4 +1,4 @@
-- hosts: servers
+- hosts: lab
   become: true
 
   roles:
