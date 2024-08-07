@@ -1,0 +1,16 @@
+vault:
+  server:
+    affinity: ""
+    ingress:
+      enabled: true
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+        traefik.ingress.kubernetes.io/router.tls: "true"
+      hosts:
+        - host: vault.lab.alsheykh.com
+          paths: []
+
+      tls:
+       - secretName: vault-tls
+         hosts:
+           - vault.lab.alsheykh.com

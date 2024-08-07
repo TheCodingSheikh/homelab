@@ -1,0 +1,12 @@
+{
+    "appName": "vault",
+    "userGivenName": "vault",
+    "destNamespace": "vault",
+    "destServer": "https://kubernetes.default.svc",
+    "srcPath": "kubernetes/apps/system/vault",
+    "srcRepoURL": "https://github.com/TheCodingSheikh/homelab.git",
+    "srcTargetRevision": "",
+    "labels": null,
+    "annotations": null
+  }
+  
