@@ -6,7 +6,7 @@ app-template:
         main:
           image:
             repository: docker.io/kanidm/server
-            tag: 1.1.0-rc.16
+            tag: 1.3.0
       statefulset:
         volumeClaimTemplates:
           - name: data
@@ -45,7 +45,7 @@ app-template:
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt-prod
         traefik.ingress.kubernetes.io/router.entrypoints: websecure
-        traefik.ingress.kubernetes.io/router.tls: true
+        traefik.ingress.kubernetes.io/router.tls: "true"
       hosts:
         - host: &host auth.lab.alsheykh.com
           paths:
