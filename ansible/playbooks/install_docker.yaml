@@ -1,4 +1,6 @@
 - hosts: lab
+  become: true
+  
   vars:
     docker_users:
       - ansible

@@ -1,3 +1,5 @@
 - hosts: lab
+  become: true
+  
   roles:
     - andrewrothstein.kubectl

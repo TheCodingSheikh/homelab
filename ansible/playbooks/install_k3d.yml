@@ -1,3 +1,5 @@
 - hosts: k3d
+  become: true
+  
   roles:
     - andrewrothstein.k3d
