@@ -29,11 +29,11 @@ dex:
         redirectURIs:
           - 'https://grafana.lab.alsheykh.com/login/generic_oauth'
         secretEnv: GRAFANA_SSO_CLIENT_SECRET
-      - id: gitea
-        name: Gitea
-        redirectURIs:
-          - 'https://git.lab.alsheykh.com/user/oauth2/Dex/callback'
-        secretEnv: GITEA_CLIENT_SECRET
+      # - id: gitea
+      #   name: Gitea
+      #   redirectURIs:
+      #     - 'https://git.lab.alsheykh.com/user/oauth2/Dex/callback'
+      #   secretEnv: GITEA_CLIENT_SECRET
   envFrom:
     - secretRef:
         name: dex-secrets
@@ -42,6 +42,7 @@ dex:
     className: traefik
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-prod
+      traefik.ingress.kubernetes.io/router.tls: true
     hosts:
       - host: &host dex.lab.alsheykh.com
         paths:

@@ -44,7 +44,8 @@ app-template:
       className: traefik
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt-prod
-        nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        traefik.ingress.kubernetes.io/router.tls: true
       hosts:
         - host: &host auth.lab.alsheykh.com
           paths:

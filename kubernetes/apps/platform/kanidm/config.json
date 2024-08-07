@@ -1,0 +1,12 @@
+{
+    "appName": "kanidm",
+    "userGivenName": "kanidm",
+    "destNamespace": "kanidm",
+    "destServer": "https://kubernetes.default.svc",
+    "srcPath": "kubernetes/apps/platform/kanidm",
+    "srcRepoURL": "https://github.com/TheCodingSheikh/homelab.git",
+    "srcTargetRevision": "",
+    "labels": null,
+    "annotations": null
+  }
+  
