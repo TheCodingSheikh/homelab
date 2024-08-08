@@ -1,0 +1,12 @@
+{
+    "appName": "external-secrets",
+    "userGivenName": "external-secrets",
+    "destNamespace": "external-secrets",
+    "destServer": "https://kubernetes.default.svc",
+    "srcPath": "kubernetes/apps/system/external-secrets",
+    "srcRepoURL": "https://github.com/TheCodingSheikh/homelab.git",
+    "srcTargetRevision": "",
+    "labels": null,
+    "annotations": null
+  }
+  

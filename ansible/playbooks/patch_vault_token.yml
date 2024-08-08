@@ -1,0 +1,11 @@
+- hosts: k3d
+  tasks:
+    - name: Add token to vault secret
+      kubernetes.core.k8s:
+        state: patched
+        kind: Secret
+        name: vault-token
+        namespace: vault
+        definition:
+          stringData:
+            token: {{ vault.root_token }}
