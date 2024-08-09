@@ -96,4 +96,5 @@ spec:
         syncOptions:
         - CreateNamespace=true
         - ApplyOutOfSyncOnly=true
+        - ServerSideApply=true
 status: {}
