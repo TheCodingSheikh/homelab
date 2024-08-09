@@ -8,4 +8,4 @@
         namespace: vault
         definition:
           stringData:
-            token: {{ vault.root_token }}
+            token: "{{ vault.root_token }}"
