@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: ssh
+  name: ssh
+spec:
+  containers:
+  - image: lscr.io/linuxserver/openssh-server
+    name: ssh
