@@ -76,6 +76,11 @@ spec:
         jsonPointers:
         - /status
         kind: Application
+      - kind: Secret
+        name: vault-token
+        namespace: vault
+        jsonPointers:
+        - /data/token
       project: system
       source:
         path: '{{ srcPath }}'
