@@ -1,0 +1,12 @@
+{
+    "appName": "pg-lab",
+    "userGivenName": "pg-lab",
+    "destNamespace": "postgres",
+    "destServer": "https://kubernetes.default.svc",
+    "srcPath": "kubernetes/apps/database/pg-lab",
+    "srcRepoURL": "https://github.com/TheCodingSheikh/homelab.git",
+    "srcTargetRevision": "",
+    "labels": null,
+    "annotations": null
+  }
+  

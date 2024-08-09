@@ -1,0 +1,12 @@
+{
+    "appName": "pgo",
+    "userGivenName": "pgo",
+    "destNamespace": "postgres",
+    "destServer": "https://kubernetes.default.svc",
+    "srcPath": "kubernetes/apps/database/pgo",
+    "srcRepoURL": "https://github.com/TheCodingSheikh/homelab.git",
+    "srcTargetRevision": "",
+    "labels": null,
+    "annotations": null
+  }
+  
