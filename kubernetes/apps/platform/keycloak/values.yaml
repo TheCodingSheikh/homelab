@@ -1,25 +1,26 @@
-production: true
-proxy: "edge"
-ingress:
-  enabled: true
-  ingressClassName: "traefik"
-  hostname: auth.lab.alsheykh.com
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    traefik.ingress.kubernetes.io/router.tls: "true"
-  tls: true
-adminIngress:
-  enabled: true
-  ingressClassName: "traefik"
-  hostname: admin.auth.lab.alsheykh.com
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    traefik.ingress.kubernetes.io/router.tls: "true"
-  tls: true
-keycloakConfigCli:
-  enabled: true
-  annotations:
-    argocd.argoproj.io/hook: "PostSync"
-    argocd.argoproj.io/hook-delete-policy: "HookSucceeded,BeforeHookCreation"
+keycloak:
+  production: true
+  proxy: "edge"
+  ingress:
+    enabled: true
+    ingressClassName: "traefik"
+    hostname: auth.lab.alsheykh.com
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    tls: true
+  adminIngress:
+    enabled: true
+    ingressClassName: "traefik"
+    hostname: admin.auth.lab.alsheykh.com
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      traefik.ingress.kubernetes.io/router.tls: "true"
+    tls: true
+  keycloakConfigCli:
+    enabled: true
+    annotations:
+      argocd.argoproj.io/hook: "PostSync"
+      argocd.argoproj.io/hook-delete-policy: "HookSucceeded,BeforeHookCreation"
 
 
