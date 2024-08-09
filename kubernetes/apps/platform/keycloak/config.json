@@ -1,0 +1,12 @@
+{
+    "appName": "keycloak",
+    "userGivenName": "keycloak",
+    "destNamespace": "keycloak",
+    "destServer": "https://kubernetes.default.svc",
+    "srcPath": "kubernetes/apps/platform/keycloak",
+    "srcRepoURL": "https://github.com/TheCodingSheikh/homelab.git",
+    "srcTargetRevision": "",
+    "labels": null,
+    "annotations": null
+  }
+  
