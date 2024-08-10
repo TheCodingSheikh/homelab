@@ -4,7 +4,7 @@ metadata:
   name: lab
 spec:
   users:
-  - username: admin
+  - username: pgadmin@alsheykh.com
     role: Administrator
     passwordRef:
       name: pgadmin-secret
