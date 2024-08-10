@@ -1,0 +1,20 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PGAdmin
+metadata:
+  name: lab
+spec:
+  users:
+  - username: admin
+    role: Administrator
+    passwordRef:
+      name: pgadmin-secret
+      key: admin
+  dataVolumeClaimSpec:
+    accessModes:
+    - "ReadWriteOnce"
+    resources:
+      requests:
+        storage: 1Gi
+  serverGroups:
+  - name: supply
+    postgresClusterSelector: {}
