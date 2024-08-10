@@ -3,6 +3,12 @@ kind: PGAdmin
 metadata:
   name: lab
 spec:
+  users:
+  - username: admin@alsheykh.com
+    role: Administrator
+    passwordRef:
+      name: pgadmin-secret
+      key: admin-password
   dataVolumeClaimSpec:
     accessModes:
     - "ReadWriteOnce"
