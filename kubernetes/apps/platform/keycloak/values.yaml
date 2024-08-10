@@ -11,8 +11,8 @@ keycloak:
     tls: true
   auth:
     adminUser: admin
-    existingSecret: "keycloak-vault"
-    passwordSecretKey: ""
+    existingSecret: "keycloak-secret"
+    passwordSecretKey: "admin"
   adminIngress:
     enabled: true
     ingressClassName: "traefik"
@@ -27,11 +27,14 @@ keycloak:
       argocd.argoproj.io/hook: "PostSync"
       argocd.argoproj.io/hook-delete-policy: "HookSucceeded,BeforeHookCreation"
   postgresql:
-    auth:
-      postgresPassword: ""
-      username: bn_keycloak
-      password: ""
-      database: bitnami_keycloak
-      existingSecret: "keycloak-vault"
+    enabled: false
+  externalDatabase:
+    existingSecret: "keycloak-secret"
+    existingSecretHostKey: "host"
+    existingSecretPortKey: "port"
+    existingSecretUserKey: "user"
+    existingSecretDatabaseKey: "dbname"
+    existingSecretPasswordKey: "password"
+
 
 
