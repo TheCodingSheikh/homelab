@@ -9,6 +9,10 @@ keycloak:
       cert-manager.io/cluster-issuer: letsencrypt-prod
       traefik.ingress.kubernetes.io/router.tls: "true"
     tls: true
+  auth:
+    adminUser: admin
+    existingSecret: "keycloak-vault"
+    passwordSecretKey: ""
   adminIngress:
     enabled: true
     ingressClassName: "traefik"
@@ -22,5 +26,12 @@ keycloak:
     annotations:
       argocd.argoproj.io/hook: "PostSync"
       argocd.argoproj.io/hook-delete-policy: "HookSucceeded,BeforeHookCreation"
+  postgresql:
+    auth:
+      postgresPassword: ""
+      username: bn_keycloak
+      password: ""
+      database: bitnami_keycloak
+      existingSecret: "keycloak-vault"
 
 

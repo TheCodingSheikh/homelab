@@ -1,0 +1,19 @@
+name: lab
+postgresVersion: 16
+pgBouncerReplicas: 1
+users:
+  - name: postgres
+    databases:
+      - postgres
+    options: "SUPERUSER"
+    password:
+      type: AlphaNumeric
+  - name: keycloak
+    databases:
+      - keycloak
+    password:
+      type: AlphaNumeric
+metadata:
+  labels:
+      crunchy-userinit.ramblurr.github.com/enabled: "true"
+      crunchy-userinit.ramblurr.github.com/superuser: "postgres"
