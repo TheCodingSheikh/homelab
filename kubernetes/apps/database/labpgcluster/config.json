@@ -1,9 +1,9 @@
 {
-    "appName": "pg-lab",
-    "userGivenName": "pg-lab",
+    "appName": "lab-pgcluster",
+    "userGivenName": "lab-pgcluster",
     "destNamespace": "postgres",
     "destServer": "https://kubernetes.default.svc",
-    "srcPath": "kubernetes/apps/database/pg-lab",
+    "srcPath": "kubernetes/apps/database/lab-pgcluster",
     "srcRepoURL": "https://github.com/TheCodingSheikh/homelab.git",
     "srcTargetRevision": "",
     "labels": null,
