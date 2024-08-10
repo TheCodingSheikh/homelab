@@ -3,3 +3,9 @@
   
   roles:
     - andrewrothstein.kubectl
+
+  tasks:
+    - name: Ensure kubectx is installed
+      apt:
+        name: kubectx
+        state: present
