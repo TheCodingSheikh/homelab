@@ -1,4 +1,8 @@
 grafana:
+  admin:
+    existingSecret: grafana-secrets
+    userKey: admin-user
+    passwordKey: admin-password
   ingress:
     enabled: true
     ingressClassName: traefik
@@ -84,6 +88,11 @@ grafana:
           orgId: 1
   imageRenderer:
       enabled: true
+  envValueFrom:
+    GRAFANA_SSO_CLIENT_SECRET:
+      secretKeyRef:
+        name: grafana-secrets
+        key: GRAFANA_SSO_CLIENT_SECRET
   envFromSecret: grafana-secrets
   grafana.ini:
     server:
