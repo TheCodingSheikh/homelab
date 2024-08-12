@@ -26,6 +26,11 @@ keycloak:
     annotations:
       argocd.argoproj.io/hook: "PostSync"
       argocd.argoproj.io/hook-delete-policy: "HookSucceeded,BeforeHookCreation"
+    configuration:
+      lab.json: |
+        {
+          "realm": "lab",
+        }
   postgresql:
     enabled: false
   externalDatabase:
