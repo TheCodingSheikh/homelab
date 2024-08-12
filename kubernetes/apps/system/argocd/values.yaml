@@ -5,8 +5,18 @@ argo-cd:
     params:
       server.insecure: true
       controller.diff.server.side: true
+    rbac:
+      scopes: "[clients.argocd]"
+      policy.csv: |
+        g, ArgoCDAdmins, role:admin
     cm:
       exec.enabled: true
+      oidc.config: |
+        name: SSO
+        issuer: https://auth.lab.alsheykh.com/realms/lab
+        clientID: argocd
+        clientSecret: $argocd-vault-secret:oidc.keycloak.clientSecret
+        requestedScopes: ["openid", "profile", "email", "clients.argocd"]
   server:
     ingress:
       enabled: true
