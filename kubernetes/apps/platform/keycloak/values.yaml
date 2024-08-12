@@ -37,6 +37,15 @@ keycloak:
               "publicClient": "false",
               "rootUrl": "https://argocd.lab.alsheykh.com",
               "baseUrl": "/applications",
+              "directAccessGrantsEnabled": "true",
+              "frontchannelLogout": "true",
+              "adminUrl": "https://argocd.lab.alsheykh.com",
+              "redirectUris": [
+                "https://argocd.lab.alsheykh.com/auth/callback"
+              ],
+              "webOrigins": [
+                "https://argocd.lab.alsheykh.com"
+              ],
             },
           ],
         }
