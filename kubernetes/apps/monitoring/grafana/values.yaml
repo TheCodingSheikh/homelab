@@ -72,20 +72,6 @@ grafana:
       crunchy-query-statistics:
         url: https://raw.githubusercontent.com/CrunchyData/postgres-operator-examples/main/kustomize/monitoring/grafana/dashboards/query_statistics.json
         datasource: Prometheus
-  datasources:
-    datasources.yaml:
-      apiVersion: 1
-      datasources:
-        - access: proxy
-          name: Prometheus
-          type: prometheus
-          url: http://kube-prometheus-stack-prometheus.kube-prometheus-stack.svc:9090
-          isDefault: true
-          jsonData:
-            prometheusType: Prometheus
-      deleteDatasources:
-        - name: Prometheus
-          orgId: 1
   imageRenderer:
       enabled: true
   envValueFrom:
