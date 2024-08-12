@@ -34,7 +34,7 @@ keycloak:
             {
               "clientId": "argocd",
               "name": "Argo CD",
-              "publicClient":	"false",
+              "publicClient": "false",
               "rootUrl": "https://argocd.lab.alsheykh.com",
               "baseUrl": "/applications",
             },
