@@ -35,9 +35,9 @@ keycloak:
               "clientId": "argocd",
               "name": "Argo CD",
               "publicClient":	"false",
-              "rootUrl": "https://argocd.lab.alsheykh.com"
-              "baseUrl": "/applications"
-            }
+              "rootUrl": "https://argocd.lab.alsheykh.com",
+              "baseUrl": "/applications",
+            },
           ],
         }
   postgresql:
