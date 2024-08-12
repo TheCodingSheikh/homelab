@@ -6,7 +6,7 @@ argo-cd:
       server.insecure: true
       controller.diff.server.side: true
     rbac:
-      scopes: "[clients.argocd]"
+      scopes: "[argocd]"
       policy.csv: |
         g, ArgoCDAdmins, role:admin
     cm:
@@ -16,7 +16,7 @@ argo-cd:
         issuer: https://auth.lab.alsheykh.com/realms/lab
         clientID: argocd
         clientSecret: $argocd-vault-secret:oidc.keycloak.clientSecret
-        requestedScopes: ["openid", "profile", "email", "clients.argocd"]
+        requestedScopes: ["openid", "profile", "email", "argocd"]
   server:
     ingress:
       enabled: true
