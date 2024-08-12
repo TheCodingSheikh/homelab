@@ -30,6 +30,15 @@ keycloak:
       lab.json: |
         {
           "realm": "lab",
+          "clients": [
+            {
+              "clientId": "argocd",
+              "name": "Argo CD",
+              "publicClient":	"false",
+              "rootUrl": "https://argocd.lab.alsheykh.com"
+              "baseUrl": "/applications"
+            }
+          ],
         }
   postgresql:
     enabled: false
