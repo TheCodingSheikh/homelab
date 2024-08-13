@@ -1,14 +1,14 @@
 kube-prometheus-stack:
   crds:
-    enabled: false
-  cleanPrometheusOperatorObjectNames: true
+    enabled: "false"
+  cleanPrometheusOperatorObjectNames: "true"
   alertmanager:
-    enabled: false
+    enabled: "false"
     ingress:
-      enabled: true
+      enabled: "true"
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt-prod
-        traefik.ingress.kubernetes.io/router.tls: true
+        traefik.ingress.kubernetes.io/router.tls: "true"
       ingressClassName: traefik
       hosts:
         - alertmanager.lab.alsheykh.com
@@ -18,7 +18,7 @@ kube-prometheus-stack:
           hosts:
             - alertmanager.lab.alsheykh.com
   kubeApiServer:
-    enabled: true
+    enabled: "true"
     serviceMonitor:
       metricRelabelings:
         - action: drop
@@ -28,7 +28,7 @@ kube-prometheus-stack:
           sourceLabels: ["__name__"]
           regex: (apiserver_response_sizes_bucket|apiserver_watch_events_sizes_bucket)
   kubelet:
-    enabled: true
+    enabled: "true"
     serviceMonitor:
       metricRelabelings:
         - action: labeldrop
@@ -39,15 +39,15 @@ kube-prometheus-stack:
           sourceLabels: ["__name__"]
           regex: (rest_client_request_duration_seconds_bucket|rest_client_request_duration_seconds_sum|rest_client_request_duration_seconds_count)
   grafana:
-    enabled: false
-    forceDeployDashboards: true
+    enabled: "false"
+    forceDeployDashboards: "true"
   prometheus:
     ingress:
-      enabled: true
+      enabled: "true"
       ingressClassName: traefik
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt-prod
-        traefik.ingress.kubernetes.io/router.tls: true
+        traefik.ingress.kubernetes.io/router.tls: "true"
       hosts:
         - prometheus.lab.alsheykh.com
       pathType: Prefix
@@ -59,9 +59,9 @@ kube-prometheus-stack:
         - auto-gomaxprocs
         - memory-snapshot-on-shutdown
         - new-service-discovery-manager
-      podMonitorSelectorNilUsesHelmValues: false
-      probeSelectorNilUsesHelmValues: false
+      podMonitorSelectorNilUsesHelmValues: "false"
+      probeSelectorNilUsesHelmValues: "false"
       replicaExternalLabelName: "__replica__"
-      ruleSelectorNilUsesHelmValues: false
-      scrapeConfigSelectorNilUsesHelmValues: false
-      serviceMonitorSelectorNilUsesHelmValues: false
+      ruleSelectorNilUsesHelmValues: "false"
+      scrapeConfigSelectorNilUsesHelmValues: "false"
+      serviceMonitorSelectorNilUsesHelmValues: "false"

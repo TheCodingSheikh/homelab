@@ -4,7 +4,7 @@ grafana:
     userKey: admin-user
     passwordKey: admin-password
   ingress:
-    enabled: true
+    enabled: "true"
     ingressClassName: traefik
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-prod
@@ -16,18 +16,18 @@ grafana:
         hosts:
           - *host
   serviceMonitor:
-    enabled: true
+    enabled: "true"
   sidecar:
     dashboards:
-      enabled: true
+      enabled: "true"
       searchNamespace: ALL
       label: grafana_dashboard
       folderAnnotation: grafana_folder
       provider:
-        disableDelete: true
-        foldersFromFilesStructure: true
+        disableDelete: "true"
+        foldersFromFilesStructure: "true"
     datasources:
-      enabled: true
+      enabled: "true"
       searchNamespace: ALL
       labelValue: ""
   dashboardProviders:
@@ -36,7 +36,7 @@ grafana:
       providers:
         - name: default
           disableDeletion: false
-          editable: true
+          editable: "true"
           folder: ""
           options:
             path: /var/lib/grafana/dashboards/default
@@ -47,7 +47,7 @@ grafana:
           folder: Postgres
           type: file
           disableDeletion: false
-          editable: true
+          editable: "true"
           options:
             path: /var/lib/grafana/dashboards/postgres
   dashboards:
@@ -113,11 +113,11 @@ grafana:
         jsonData: 
           implementation: prometheus
   env:
-    GF_DATE_FORMATS_USE_BROWSER_LOCALE: true
-    GF_EXPLORE_ENABLED: true
-    GF_SECURITY_ANGULAR_SUPPORT_ENABLED: true
+    GF_DATE_FORMATS_USE_BROWSER_LOCALE: "true"
+    GF_EXPLORE_ENABLED: "true"
+    GF_SECURITY_ANGULAR_SUPPORT_ENABLED: "true"
   imageRenderer:
-      enabled: true
+      enabled: "true"
   envValueFrom:
     GRAFANA_SSO_CLIENT_SECRET:
       secretKeyRef:
@@ -128,8 +128,8 @@ grafana:
     server:
       root_url: https://grafana.lab.alsheykh.com
     auth.generic_oauth:
-      enabled: true
-      allow_sign_up: true
+      enabled: "true"
+      allow_sign_up: "true"
       name: SSO
       client_id: grafana
       client_secret: $__env{GRAFANA_SSO_CLIENT_SECRET}
