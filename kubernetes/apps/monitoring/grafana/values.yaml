@@ -90,29 +90,6 @@ grafana:
           orgId: 1
         - name: Loki
           orgId: 1
-      datasources:
-        - name: Prometheus
-          type: prometheus
-          uid: prometheus
-          access: proxy
-          url: http://prometheus-operated.kube-prometheus-stack.svc:9090
-          jsonData:
-            timeInterval: 1m
-          isDefault: true
-        - name: Loki
-          type: loki
-          uid: loki
-          access: proxy
-          url: http://loki-headless.loki.svc:3100
-          jsonData:
-            maxLines: 250
-        - name: Alertmanager
-          type: alertmanager
-          uid: alertmanager
-          access: proxy
-          url: http://alertmanager-operated.kube-prometheus-stack.svc:9093
-          jsonData:
-            implementation: prometheus
   env:
     GF_DATE_FORMATS_USE_BROWSER_LOCALE: true
     GF_EXPLORE_ENABLED: true
