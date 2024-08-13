@@ -15,13 +15,21 @@ grafana:
       - secretName: grafana-general-tls
         hosts:
           - *host
+  serviceMonitor:
+    enabled: true
   sidecar:
     dashboards:
       enabled: true
       searchNamespace: ALL
+      label: grafana_dashboard
+      folderAnnotation: grafana_folder
+      provider:
+        disableDelete: true
+        foldersFromFilesStructure: true
     datasources:
       enabled: true
       searchNamespace: ALL
+      labelValue: ""
   dashboardProviders:
     dashboardproviders.yaml:
       apiVersion: 1
@@ -72,6 +80,43 @@ grafana:
       crunchy-query-statistics:
         url: https://raw.githubusercontent.com/CrunchyData/postgres-operator-examples/main/kustomize/monitoring/grafana/dashboards/query_statistics.json
         datasource: Prometheus
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      deleteDatasources:
+        - name: Alertmanager
+          orgId: 1
+        - name: Prometheus
+          orgId: 1
+        - name: Loki
+          orgId: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          uid: prometheus
+          access: proxy
+          url: http://prometheus-operated.kube-prometheus-stack.svc:9090
+          jsonData:
+            timeInterval: 1m
+          isDefault: true
+        - name: Loki
+          type: loki
+          uid: loki
+          access: proxy
+          url: http://loki-headless.loki.svc:3100
+          jsonData:
+            maxLines: 250
+        - name: Alertmanager
+          type: alertmanager
+          uid: alertmanager
+          access: proxy
+          url: http://alertmanager-operated.kube-prometheus-stack.svc:9093
+          jsonData:
+            implementation: prometheus
+  env:
+    GF_DATE_FORMATS_USE_BROWSER_LOCALE: true
+    GF_EXPLORE_ENABLED: true
+    GF_SECURITY_ANGULAR_SUPPORT_ENABLED: true
   imageRenderer:
       enabled: true
   envValueFrom:
