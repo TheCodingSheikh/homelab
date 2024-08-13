@@ -3,5 +3,8 @@ name: kube-prometheus-stack
 version: 0.0.0
 dependencies:
   - name: kube-prometheus-stack
-    version: 56.19.0
+    version: 61.8.0
+    repository: https://prometheus-community.github.io/helm-charts
+  - name: prometheus-operator-crds
+    version: 13.0.2
     repository: https://prometheus-community.github.io/helm-charts

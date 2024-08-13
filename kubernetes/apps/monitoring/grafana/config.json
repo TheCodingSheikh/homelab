@@ -1,7 +1,7 @@
 {
     "appName": "grafana",
     "userGivenName": "grafana",
-    "destNamespace": "grafana",
+    "destNamespace": "monitoring",
     "destServer": "https://kubernetes.default.svc",
     "srcPath": "kubernetes/apps/monitoring/grafana",
     "srcRepoURL": "https://github.com/TheCodingSheikh/homelab.git",
