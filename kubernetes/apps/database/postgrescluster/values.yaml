@@ -1,6 +1,7 @@
 name: lab
 postgresVersion: 16
 pgBouncerReplicas: 1
+monitoring: true
 users:
   - name: postgres
     databases:
