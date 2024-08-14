@@ -5,3 +5,6 @@ dependencies:
   - name: vault
     version: 0.28.1
     repository: https://helm.releases.hashicorp.com
+  - name: vault-unseal
+    version: 0.7.0
+    repository: https://babykart.github.io/vault-unseal
