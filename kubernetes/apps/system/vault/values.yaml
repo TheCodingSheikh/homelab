@@ -15,3 +15,7 @@ vault:
        - secretName: vault-tls
          hosts:
            - vault.lab.alsheykh.com
+vault-unseal:
+  fullnameOverride: vault-unseal
+  configSecret:
+    enabled: false
