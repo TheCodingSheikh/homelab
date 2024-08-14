@@ -1,0 +1,9 @@
+allow_single_node: true
+check_interval: 15s
+max_check_interval: 30m
+vault_nodes:
+  - "http://vault:8200"
+unseal_tokens:
+  "{{range .keys}}"
+  - "{{.}}"
+  "{{end}}"
