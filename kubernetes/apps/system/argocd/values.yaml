@@ -29,9 +29,9 @@ argo-cd:
           - argocd.lab.alsheykh.com
           secretName: argocd-tls
     metrics: &metrics
-      enabled: false
+      enabled: true
       serviceMonitor:
-        enabled: false
+        enabled: true
   dex:
     enabled: false
   controller:
@@ -51,7 +51,6 @@ argocd-apps:
       project: default
       source:
         repoURL: &repoURL https://github.com/TheCodingSheikh/homelab
-        targetRevision: ""
         path: kubernetes/bootstrap
       destination:
         server: https://kubernetes.default.svc
