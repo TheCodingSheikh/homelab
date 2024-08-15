@@ -53,10 +53,13 @@ grafana:
   dashboards:
     default:
       cert-manager:
-        url: https://raw.githubusercontent.com/monitoring-mixins/website/master/assets/cert-manager/dashboards/cert-manager.json
+        url: https://gitlab.com/uneeq-oss/cert-manager-mixin/-/raw/master/dashboards/cert-manager.json?ref_type=heads
         datasource: Prometheus
       external-secrets:
         url: https://raw.githubusercontent.com/external-secrets/external-secrets/main/docs/snippets/dashboard.json
+        datasource: Prometheus
+      argo-cd:
+        url: https://raw.githubusercontent.com/argoproj/argo-cd/master/examples/dashboard.json
         datasource: Prometheus
     postgres:
       crunchy-pgbackrest:
