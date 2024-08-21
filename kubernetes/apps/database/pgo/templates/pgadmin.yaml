@@ -4,17 +4,18 @@ metadata:
   name: lab
 spec:
   users:
-  - username: admin@alsheykh.com
-    role: Administrator
-    passwordRef:
-      name: pgadmin-secret
-      key: admin-password
+    - username: admin@alsheykh.com
+      role: Administrator
+      passwordRef:
+        name: pgadmin-secret
+        key: admin-user
   dataVolumeClaimSpec:
     accessModes:
-    - "ReadWriteOnce"
+      - "ReadWriteOnce"
     resources:
       requests:
         storage: 1Gi
   serverGroups:
-  - name: supply
-    postgresClusterSelector: {}
+    - name: supply
+      postgresClusterSelector: {}
+  ServiceName: pgadmin-lab
