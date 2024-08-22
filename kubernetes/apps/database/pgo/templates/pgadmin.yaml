@@ -18,4 +18,4 @@ spec:
   serverGroups:
     - name: supply
       postgresClusterSelector: {}
-  ServiceName: pgadmin-lab
+  serviceName: pgadmin
