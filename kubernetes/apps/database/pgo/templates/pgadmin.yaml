@@ -8,7 +8,7 @@ spec:
       role: Administrator
       passwordRef:
         name: pgadmin-secret
-        key: admin-user
+        key: admin-password
   dataVolumeClaimSpec:
     accessModes:
       - "ReadWriteOnce"
