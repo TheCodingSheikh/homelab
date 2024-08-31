@@ -14,6 +14,11 @@ users:
       - keycloak
     password:
       type: AlphaNumeric
+  - name: waseelah
+    databases:
+      - waseelah
+    password:
+      type: AlphaNumeric
 metadata:
   labels:
       crunchy-userinit.ramblurr.github.com/enabled: "true"
