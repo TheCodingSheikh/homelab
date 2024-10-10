@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: asd
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: asdasd
+    path: /
+    targetRevision: HEAD
+  destination: 
+    name: ${{ parameters.cluster_id | parseEntityRef | pick('name') }}
+    namespace: default
