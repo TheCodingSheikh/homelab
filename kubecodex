@@ -1,0 +1,194 @@
+#!/bin/bash
+
+set -e
+
+# Function: Show usage help
+usage() {
+  echo "Usage:"
+  echo "  $0 setup"
+  echo "  $0 bootstrap"
+  echo "  $0 project <name>"
+  exit 1
+}
+
+# Function: Handle setup command
+setup() {
+  echo "Setting up kubecodex configuration..."
+  echo ""
+  
+  # Prompt for Repo URL
+  read -p "Enter your Git repository URL: " repo_url
+  if [[ -z "$repo_url" ]]; then
+    echo "Error: Repository URL is required."
+    exit 1
+  fi
+  
+  # Prompt for Argo Namespace
+  read -p "Enter your ArgoCD namespace (default: argocd): " argo_namespace
+  if [[ -z "$argo_namespace" ]]; then
+    argo_namespace="argocd"
+  fi
+  
+  echo ""
+  echo "Updating configuration files..."
+  echo "Repository URL: $repo_url"
+  echo "ArgoCD Namespace: $argo_namespace"
+  echo ""
+  
+  # Find all files and replace repo URL
+  echo "Replacing repository URLs..."
+  find . -type f \( -name "*.yaml" -o -name "*.yml" -o -name "kubecodex" \) -exec sed -i.bak "s|https://github.com/TheCodingSheikh/kubecodex.git|$repo_url|g" {} \;
+  
+  # Find all files and replace namespace
+  echo "Replacing ArgoCD namespaces..."
+  find . -type f \( -name "*.yaml" -o -name "*.yml" -o -name "kubecodex" \) -exec sed -i.bak "s|namespace: argocd|namespace: $argo_namespace|g" {} \;
+  
+  # Clean up backup files
+  echo "Cleaning up backup files..."
+  find . -name "*.bak" -delete
+  
+  echo ""
+  echo "Setup completed successfully!"
+  echo "You can now run: $0 bootstrap"
+}
+
+# Function: Handle bootstrap command
+bootstrap() {
+  echo "Applying bootstrap.yaml..."
+  kubectl apply -f bootstrap.yaml
+}
+
+# Function: Handle project command
+project() {
+  local name="$1"
+  if [[ -z "$name" ]]; then
+    echo "Error: Project name is required."
+    usage
+  fi
+
+  mkdir -p projects
+  cat > "projects/${name}.yaml" <<EOF
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-options: PruneLast=true
+    argocd.argoproj.io/sync-wave: "-2"
+  name: ${name}
+  namespace: argocd
+spec:
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  destinations:
+  - namespace: '*'
+    server: '*'
+  namespaceResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  sourceRepos:
+  - '*'
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  name: ${name}
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=default"]
+  generators:
+    - git:
+        repoURL: https://github.com/TheCodingSheikh/kubecodex.git
+        revision: "HEAD"
+        requeueAfterSeconds: 20
+        files:
+          - path: "apps/*/${name}/**/config.yaml"
+        values:
+          cluster: "{{index .path.segments 1}}"
+          project: "{{index .path.segments 2}}"
+          app_path: "{{.path.path}}"
+          name: "{{.path.basename}}"
+  template:
+    metadata:
+      name: '{{ default ( printf "%s-%s" .values.cluster ( .values.app_path | replace "/" "-" | trimPrefix ( printf "apps-%s-%s-" .values.cluster .values.project ) ) ) .appName }}'
+      namespace: argocd
+    spec:
+      destination:
+        namespace: '{{ default ( .values.app_path | replace "/" "-" | trimPrefix ( printf "apps-%s-%s-" .values.cluster .values.project ) ) .destNamespace }}'
+        name: '{{ default .values.cluster .destServer }}'
+      project: '{{.values.project}}'
+      source:
+        repoURL: '{{ default "https://github.com/TheCodingSheikh/kubecodex.git" .repoURL }}'
+        targetRevision: '{{ default "HEAD" .srcTargetRevision }}'
+        path: '{{ default .values.app_path .srcPath }}'
+      syncPolicy:
+        automated:
+          allowEmpty: true
+          prune: true
+          selfHeal: true
+        retry:
+          limit: 30
+          backoff:
+            duration: 20s
+            factor: 1
+            maxDuration: 20s
+        syncOptions:
+        - CreateNamespace=true
+  templatePatch: |
+    metadata:
+      labels:
+        app.kubernetes.io/name: '{{.values.app_path | replace "/" "-" | trimPrefix (printf "apps-%s-%s-" .values.cluster .values.project)}}'
+        {{- range $key, $value := .labels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      annotations:
+        {{- range $key, $value := .annotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+    spec:
+      syncPolicy:
+        automated:
+        {{- if ne .autoSync false }}
+          allowEmpty: true
+          prune: false
+          selfHeal: false
+        {{- end }}
+        syncOptions:
+        {{- if ne .createNamespace false }}
+          - CreateNamespace=true
+        {{- end }}
+        {{- range .additionalSyncOptions }}
+          - {{ . }}
+        {{- end }}
+  syncPolicy: {}
+
+EOF
+
+  echo "Project configuration created at projects/${name}.yaml"
+}
+
+# Main CLI entrypoint
+if [[ $# -lt 1 ]]; then
+  usage
+fi
+
+case "$1" in
+  setup)
+    setup
+    ;;
+  bootstrap)
+    bootstrap
+    ;;
+  project)
+    shift
+    project "$1"
+    ;;
+  *)
+    echo "Unknown command: $1"
+    usage
+    ;;
+esac

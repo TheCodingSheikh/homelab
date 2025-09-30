@@ -1,0 +1,5 @@
+repoURL: https://github.com/TheCodingSheikh/kubecodex.git
+namespace: argocd
+projects:
+  - name: project-1
+    preserveResourcesOnDeletion: false
