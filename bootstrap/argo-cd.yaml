@@ -13,7 +13,7 @@ spec:
   project: default
   source:
     path: bootstrap/argo-cd
-    repoURL: http://gitea-http.gitea.svc.cluster.local:3000/gitea_admin/gitops.git
+    repoURL: https://github.com/TheCodingSheikh/homelab.git
   syncPolicy:
     automated:
       allowEmpty: true
