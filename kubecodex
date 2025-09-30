@@ -37,7 +37,7 @@ setup() {
   
   # Find all files and replace repo URL
   echo "Replacing repository URLs..."
-  find . -type f \( -name "*.yaml" -o -name "*.yml" -o -name "kubecodex" \) -exec sed -i.bak "s|https://github.com/TheCodingSheikh/kubecodex.git|$repo_url|g" {} \;
+  find . -type f \( -name "*.yaml" -o -name "*.yml" -o -name "kubecodex" \) -exec sed -i.bak "s|https://github.com/TheCodingSheikh/homelab.git|$repo_url|g" {} \;
   
   # Find all files and replace namespace
   echo "Replacing ArgoCD namespaces..."
@@ -102,7 +102,7 @@ spec:
   goTemplateOptions: ["missingkey=default"]
   generators:
     - git:
-        repoURL: https://github.com/TheCodingSheikh/kubecodex.git
+        repoURL: https://github.com/TheCodingSheikh/homelab.git
         revision: "HEAD"
         requeueAfterSeconds: 20
         files:
@@ -122,7 +122,7 @@ spec:
         name: '{{ default .values.cluster .destServer }}'
       project: '{{.values.project}}'
       source:
-        repoURL: '{{ default "https://github.com/TheCodingSheikh/kubecodex.git" .repoURL }}'
+        repoURL: '{{ default "https://github.com/TheCodingSheikh/homelab.git" .repoURL }}'
         targetRevision: '{{ default "HEAD" .srcTargetRevision }}'
         path: '{{ default .values.app_path .srcPath }}'
       syncPolicy:

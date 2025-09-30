@@ -1,0 +1,17 @@
+server:
+  affinity: ""
+  ingress:
+    enabled: true
+    annotations:
+      cert-manager.io/cluster-issuer: lab-issuer
+      kubernetes.io/ingress.class: nginx
+      gethomepage.dev/enabled: "true"
+      gethomepage.dev/name: "Vault"
+      gethomepage.dev/icon: "vault.png"
+    hosts:
+      - host: vault.lab.com
+        paths: []
+    tls:
+      - secretName: vault-tls
+        hosts:
+          - vault.lab.com

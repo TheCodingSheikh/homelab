@@ -12,7 +12,7 @@ spec:
     - matrix:
         generators:
           - git:
-              repoURL: https://github.com/TheCodingSheikh/kubecodex.git
+              repoURL: http://gitea-http.gitea.svc.cluster.local:3000/gitea_admin/gitops.git
               revision: "HEAD"
               requeueAfterSeconds: 20
               files:
@@ -34,7 +34,7 @@ spec:
         name: '{{ default .name .destServer }}'
       project: '{{.values.project}}'
       source:
-        repoURL: '{{ default "https://github.com/TheCodingSheikh/kubecodex.git" .repoURL }}'
+        repoURL: '{{ default "http://gitea-http.gitea.svc.cluster.local:3000/gitea_admin/gitops.git" .repoURL }}'
         targetRevision: '{{ default "HEAD" .srcTargetRevision }}'
         path: '{{ default .values.app_path .srcPath }}'
       syncPolicy:

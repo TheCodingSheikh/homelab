@@ -22,7 +22,7 @@ spec:
       project: default
       source:
         path: cluster-resources/{{name}}
-        repoURL: https://github.com/TheCodingSheikh/kubecodex.git
+        repoURL: http://gitea-http.gitea.svc.cluster.local:3000/gitea_admin/gitops.git
       syncPolicy:
         automated:
           allowEmpty: true

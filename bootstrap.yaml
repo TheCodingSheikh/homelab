@@ -14,7 +14,7 @@ spec:
   project: default
   source:
     path: bootstrap
-    repoURL: https://github.com/TheCodingSheikh/kubecodex.git
+    repoURL: https://github.com/TheCodingSheikh/homelab.git
   syncPolicy:
     automated:
       allowEmpty: true

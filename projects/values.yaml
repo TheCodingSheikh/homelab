@@ -1,5 +1,9 @@
-repoURL: https://github.com/TheCodingSheikh/kubecodex.git
+repoURL: http://gitea-http.gitea.svc.cluster.local:3000/gitea_admin/gitops.git
 namespace: argocd
 projects:
-  - name: project-1
-    preserveResourcesOnDeletion: false
+  - name: platform
+  - name: network
+  - name: security
+  - name: monitoring
+  - name: system
+  - name: datastore

@@ -1,0 +1,4 @@
+secretTargets:
+  enabled: true
+  authorizedSecrets:
+    - lab.com

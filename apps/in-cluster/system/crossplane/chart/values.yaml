@@ -1,0 +1,6 @@
+provider:
+  packages:
+    - xpkg.upbound.io/upbound/provider-vault:v2
+    - xpkg.upbound.io/upbound/provider-terraform:v0
+    - xpkg.upbound.io/crossplane-contrib/provider-keycloak:v1.11.0
+    - xpkg.upbound.io/crossplane-contrib/provider-http:v1.0.10
