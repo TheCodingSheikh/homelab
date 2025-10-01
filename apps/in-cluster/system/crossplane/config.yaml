@@ -1,1 +1,2 @@
-# No Overrides Needed
+additionalSyncOptions:
+  - SkipDryRunOnMissingResource=true
