@@ -8,3 +8,4 @@ helmCharts:
   includeCRDs: true
   namespace: vault
   releaseName: vault-unseal
+  valuesFile: values.yaml

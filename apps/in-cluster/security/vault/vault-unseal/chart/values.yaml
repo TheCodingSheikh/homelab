@@ -1,0 +1,11 @@
+config:
+  # Root Token hvs.cXFeoOE4zmZXOg6tPk1MP0x3
+  stringData: |
+    environment: dev
+    check_interval: 15s
+    max_check_interval: 30m
+    vault_nodes:
+      - http://vault:8200
+    unseal_tokens:
+      - h+zZvZFoHwAq5+TF6FOo0NCr/ZL+S0stwIqspaLOmCA=
+    tls_skip_verify: true
