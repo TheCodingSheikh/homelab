@@ -6,6 +6,8 @@ config:
     max_check_interval: 30m
     vault_nodes:
       - http://vault:8200
+      - http://vault:8200
+      - http://vault:8200
     unseal_tokens:
       - h+zZvZFoHwAq5+TF6FOo0NCr/ZL+S0stwIqspaLOmCA=
     tls_skip_verify: true
