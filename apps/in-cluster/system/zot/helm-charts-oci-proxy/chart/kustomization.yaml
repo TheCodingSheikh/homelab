@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+helmCharts:
+- name: helm-charts-oci-proxy
+  repo: oci://8gears.container-registry.com/library
+  version: 1.2.3
+  includeCRDs: true
+  namespace: zot
+  releaseName: helm-charts-oci-proxy

@@ -1,0 +1,53 @@
+experimental:
+  deploy:
+    host:
+      manifestsTemplate: |
+        apiVersion: external-secrets.io/v1alpha1
+        kind: PushSecret
+        metadata:
+          name: argocd-{{ .Release.Name }}-credentials
+          namespace: {{ .Release.Name }}
+        spec:
+          refreshInterval: 5m
+          secretStoreRefs:
+            - name: cluster-registration
+              kind: ClusterSecretStore
+          selector:
+            secret:
+              name: vc-{{ .Release.Name }}
+          data:
+            - match:
+                secretKey: name
+                remoteRef:
+                  remoteKey: argocd-{{ .Release.Name }}-credentials
+                  property: name
+            - match:
+                secretKey: server
+                remoteRef:
+                  remoteKey: argocd-{{ .Release.Name }}-credentials
+                  property: server
+            - match:
+                secretKey: config
+                remoteRef:
+                  remoteKey: argocd-{{ .Release.Name }}-credentials
+                  property: config
+          template:
+            engineVersion: v2
+            metadata:
+              namespace: argo-cd
+              annotations:
+                managed-by: external-secrets
+              labels:
+                argocd.argoproj.io/secret-type: cluster
+            data:
+              name: {{ .Release.Name }}
+              server: https://{{ .Release.Name }}.{{ .Release.Namespace }}:443
+              config: |
+                {
+                  "tlsClientConfig": {
+                    "insecure": true,
+                    "caData": "{{ printf `{{ index . "certificate-authority" | b64enc }}` }}",
+                    "certData": "{{ printf `{{ index . "client-certificate" | b64enc }}` }}",
+                    "keyData": "{{ printf `{{ index . "client-key" | b64enc }}` }}"
+                  }
+                }
