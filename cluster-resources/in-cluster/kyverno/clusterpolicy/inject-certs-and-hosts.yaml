@@ -32,26 +32,29 @@ spec:
           - CREATE
           - UPDATE
     mutate:
-      foreach:
-      - list: "request.object.spec.containers"
-        patchStrategicMerge:
-          spec:
-            hostAliases:
-            - hostnames:
-              - argo.lab.com
-              - home.lab.com
-              - sso.lab.com
-              - sso.admin.lab.com
-              - vault.lab.com
-              - registry.lab.com
-              - portal.lab.com
-              ip: 10.43.41.204
-            containers:
-            - name: "{{ element.name }}"
+      patchStrategicMerge:
+        spec:
+          hostAliases:
+          - hostnames:
+            - argo.lab.com
+            - home.lab.com
+            - sso.lab.com
+            - sso.admin.lab.com
+            - vault.lab.com
+            - registry.lab.com
+            - portal.lab.com
+            ip: 10.43.41.204
+          volumes:
+          - name: etc-ssl-certs
+            secret:
+              secretName: lab.com
+          initContainers:
+            - (name): "*"
               volumeMounts:
-              - name: etc-ssl-certs
-                mountPath: /etc/ssl/certs
-            volumes:
-            - name: etc-ssl-certs
-              secret:
-                secretName: lab.com
+                - name: etc-ssl-certs
+                  mountPath: /etc/ssl/certs
+          containers:
+            - (name): "*"
+              volumeMounts:
+                - name: etc-ssl-certs
+                  mountPath: /etc/ssl/certs
