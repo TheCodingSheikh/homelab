@@ -44,6 +44,7 @@ spec:
               - sso.admin.lab.com
               - vault.lab.com
               - registry.lab.com
+              - portal.lab.com
               ip: 10.43.41.204
             containers:
             - name: "{{ element.name }}"
