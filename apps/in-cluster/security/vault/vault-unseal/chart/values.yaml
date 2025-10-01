@@ -1,5 +1,5 @@
+# Root Token hvs.cXFeoOE4zmZXOg6tPk1MP0x3
 config:
-  # Root Token hvs.cXFeoOE4zmZXOg6tPk1MP0x3
   stringData: |
     environment: dev
     check_interval: 15s
