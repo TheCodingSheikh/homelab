@@ -4,7 +4,7 @@ kind: Kustomization
 helmCharts:
 - name: crossplane-hrd
   repo: https://thecodingsheikh.github.io/helm-charts
-  version: 0.2.1
+  version: 0.4.1
   includeCRDs: true
   namespace: vault
   releaseName: vault-iac
