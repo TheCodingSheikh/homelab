@@ -52,9 +52,13 @@ spec:
             - (name): "*"
               volumeMounts:
                 - name: etc-ssl-certs
-                  mountPath: /etc/ssl/certs
+                  mountPath: /etc/ssl/certs/ca.crt
+                  subPath: ca.crt
+                  readOnly: true
           containers:
             - (name): "*"
               volumeMounts:
                 - name: etc-ssl-certs
-                  mountPath: /etc/ssl/certs
+                  mountPath: /etc/ssl/certs/ca.crt
+                  subPath: ca.crt
+                  readOnly: true
