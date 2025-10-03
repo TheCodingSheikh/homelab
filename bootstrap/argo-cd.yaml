@@ -5,10 +5,10 @@ metadata:
   labels:
     app.kubernetes.io/name: argo-cd
   name: argo-cd
-  namespace: argocd
+  namespace: argo-cd
 spec:
   destination:
-    namespace: argocd
+    namespace: argo-cd
     server: https://kubernetes.default.svc
   project: default
   source:

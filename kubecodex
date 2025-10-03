@@ -41,7 +41,7 @@ setup() {
   
   # Find all files and replace namespace
   echo "Replacing ArgoCD namespaces..."
-  find . -type f \( -name "*.yaml" -o -name "*.yml" -o -name "kubecodex" \) -exec sed -i.bak "s|namespace: argocd|namespace: $argo_namespace|g" {} \;
+  find . -type f \( -name "*.yaml" -o -name "*.yml" -o -name "kubecodex" \) -exec sed -i.bak "s|namespace: argo-cd|namespace: $argo_namespace|g" {} \;
   
   # Clean up backup files
   echo "Cleaning up backup files..."
@@ -75,7 +75,7 @@ metadata:
     argocd.argoproj.io/sync-options: PruneLast=true
     argocd.argoproj.io/sync-wave: "-2"
   name: ${name}
-  namespace: argocd
+  namespace: argo-cd
 spec:
   clusterResourceWhitelist:
   - group: '*'
@@ -96,7 +96,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "0"
   name: ${name}
-  namespace: argocd
+  namespace: argo-cd
 spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=default"]
@@ -115,7 +115,7 @@ spec:
   template:
     metadata:
       name: '{{ default ( printf "%s-%s" .values.cluster ( .values.app_path | replace "/" "-" | trimPrefix ( printf "apps-%s-%s-" .values.cluster .values.project ) ) ) .appName }}'
-      namespace: argocd
+      namespace: argo-cd
     spec:
       destination:
         namespace: '{{ default ( .values.app_path | replace "/" "-" | trimPrefix ( printf "apps-%s-%s-" .values.cluster .values.project ) ) .destNamespace }}'

@@ -6,10 +6,10 @@ metadata:
   labels:
     app.kubernetes.io/name: autopilot-bootstrap
   name: autopilot-bootstrap
-  namespace: argocd
+  namespace: argo-cd
 spec:
   destination:
-    namespace: argocd
+    namespace: argo-cd
     name: in-cluster
   project: default
   source:

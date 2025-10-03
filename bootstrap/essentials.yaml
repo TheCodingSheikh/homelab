@@ -4,7 +4,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "0"
   name: essentials
-  namespace: argocd
+  namespace: argo-cd
 spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=default"]
@@ -27,7 +27,7 @@ spec:
   template:
     metadata:
       name: 'essential-{{ default ( printf "%s-%s" .name ( .values.app_path | replace "/" "-" | trimPrefix ( printf "essentials-%s-" .values.project ) ) ) .appName }}'
-      namespace: argocd
+      namespace: argo-cd
     spec:
       destination:
         namespace: '{{ default ( .values.app_path | replace "/" "-" | trimPrefix ( printf "essentials-%s-" .values.project ) ) .destNamespace }}'

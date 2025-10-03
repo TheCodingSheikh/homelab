@@ -1,5 +1,5 @@
 repoURL: https://github.com/TheCodingSheikh/homelab.git
-namespace: argocd
+namespace: argo-cd
 projects:
   - name: platform
   - name: network
