@@ -16,7 +16,7 @@ spec:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: vault-token
+  name: vault-creds
   namespace: crossplane
 stringData:
   credentials: |
