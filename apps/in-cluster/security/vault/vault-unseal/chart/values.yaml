@@ -1,4 +1,4 @@
-# Root Token hvs.cXFeoOE4zmZXOg6tPk1MP0x3
+# Root Token hvs.GalR6fWZmFMCVoLuU3b8JPcK
 config:
   stringData: |
     environment: dev
@@ -9,5 +9,5 @@ config:
       - http://vault:8200
       - http://vault:8200
     unseal_tokens:
-      - h+zZvZFoHwAq5+TF6FOo0NCr/ZL+S0stwIqspaLOmCA=
+      - lK1T3Ak7qbiVzgiceijSlQvZ9B4RYLRAW5RLOQj8P94=
     tls_skip_verify: true

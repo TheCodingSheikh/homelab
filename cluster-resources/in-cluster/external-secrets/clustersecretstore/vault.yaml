@@ -20,4 +20,4 @@ metadata:
   name: vault-token
   namespace: external-secrets
 stringData:
-  token: hvs.cXFeoOE4zmZXOg6tPk1MP0x3
+  token: hvs.GalR6fWZmFMCVoLuU3b8JPcK
