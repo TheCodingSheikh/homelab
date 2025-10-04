@@ -64,7 +64,8 @@ components:
               admin:
                 forProvider:
                   name: admin
-                  mountAccessor: auth_oidc_ba9da123
+                  mountAccessorRef:
+                    name: oidc-authbackend
   Policy:
     apiVersion: vault.vault.upbound.io/v1alpha1
     list:
