@@ -1,0 +1,818 @@
+    providerConfig: "keycloak-provider-config"
+    components:
+      Realm:
+        apiVersion: realm.keycloak.crossplane.io/v1alpha1
+        list:
+          internal:
+            forProvider:
+              realm: internal
+              accessTokenLifespan: "30m0s"
+            dependants:
+              Client:
+                apiVersion: openidclient.keycloak.crossplane.io/v1alpha1
+                list:
+                  argo-cd:
+                    forProvider:
+                      name: Argo CD
+                      clientId: argo-cd
+                      clientSecretSecretRef:
+                        key: secret-key
+                        name: argo-cd-client
+                        namespace: keycloak
+                      accessType: CONFIDENTIAL
+                      standardFlowEnabled: true
+                      directAccessGrantsEnabled: true
+                      validRedirectUris:
+                        - https://argo.lab.com/auth/callback
+                    dependants:
+                      Role:
+                        apiVersion: role.keycloak.crossplane.io/v1alpha1
+                        appendName: true
+                        list:
+                          - ArgoCDAdmins
+                      ClientDefaultScopes:
+                        list:
+                          argo-cd:
+                            forProvider:
+                              defaultScopes:
+                                - argo-cd
+                                # Mandatory
+                                - acr
+                                - basic
+                                - email
+                                - profile
+                                - roles
+                                - web-origins	
+                  minio:
+                    forProvider:
+                      name: Minio
+                      clientId: minio
+                      clientSecretSecretRef:
+                        key: secret-key
+                        name: minio-client
+                        namespace: keycloak
+                      accessType: CONFIDENTIAL
+                      standardFlowEnabled: true
+                      directAccessGrantsEnabled: true
+                      rootUrl: https://minio.lab.com/console
+                      baseUrl: "/realms/internal/account"
+                      validRedirectUris:
+                        - "*"
+                    dependants:
+                      Role:
+                        apiVersion: role.keycloak.crossplane.io/v1alpha1
+                        appendName: true
+                        list:
+                          - consoleAdmin
+                      ClientDefaultScopes:
+                        list:
+                          minio:
+                            forProvider:
+                              defaultScopes:
+                                - minio
+                                # Mandatory
+                                - acr
+                                - basic
+                                - email
+                                - profile
+                                - roles
+                                - web-origins	
+                  vault:
+                    forProvider:
+                      name: vault
+                      clientId: vault
+                      clientSecretSecretRef:
+                        key: secret-key
+                        name: vault-client
+                        namespace: keycloak
+                      accessType: CONFIDENTIAL
+                      standardFlowEnabled: true
+                      directAccessGrantsEnabled: true
+                      rootUrl: https://vault.lab.com
+                      validRedirectUris:
+                        - https://vault.lab.com/ui/vault/auth/oidc/oidc/callback
+                        - https://vault.lab.com/oidc/oidc/callback
+                    dependants:
+                      Role:
+                        apiVersion: role.keycloak.crossplane.io/v1alpha1
+                        appendName: true
+                        list:
+                          - admin
+                      ClientDefaultScopes:
+                        list:
+                          minio:
+                            forProvider:
+                              defaultScopes:
+                                - minio
+                                # Mandatory
+                                - acr
+                                - basic
+                                - email
+                                - profile
+                                - roles
+                                - web-origins	
+                  grafana:
+                    forProvider:
+                      name: grafana
+                      clientId: grafana
+                      clientSecretSecretRef:
+                        key: secret-key
+                        name: grafana-client
+                        namespace: keycloak
+                      accessType: CONFIDENTIAL
+                      standardFlowEnabled: true
+                      directAccessGrantsEnabled: true
+                      rootUrl: https://grafana.lab.com
+                      validRedirectUris:
+                        - https://grafana.lab.com/login/generic_oauth
+                    dependants:
+                      Role:
+                        apiVersion: role.keycloak.crossplane.io/v1alpha1
+                        appendName: true
+                        list:
+                          - Admin
+                      ClientDefaultScopes:
+                        list:
+                          grafana:
+                            forProvider:
+                              defaultScopes:
+                                - grafana
+                                # Mandatory
+                                - acr
+                                - basic
+                                - email
+                                - profile
+                                - roles
+                                - web-origins	
+              ClientScope:
+                apiVersion: openidclient.keycloak.crossplane.io/v1alpha1
+                refKey: "clientScopeIdRef"
+                list:
+                  argo-cd:
+                    forProvider:
+                      name: argo-cd
+                    dependants:
+                      ProtocolMapper:
+                        apiVersion: client.keycloak.crossplane.io/v1alpha1
+                        list:
+                          argo-cd:
+                            forProvider:
+                              config:
+                                usermodel.clientRoleMapping.clientId: argo-cd
+                                claim.name: argo-cd
+                                access.token.claim: "true"
+                                id.token.claim: "true"
+                                multivalued: "true"
+                              name: argo-cd
+                              protocol: openid-connect
+                              protocolMapper: oidc-usermodel-client-role-mapper
+                  minio:
+                    forProvider:
+                      name: minio
+                    dependants:
+                      ProtocolMapper:
+                        apiVersion: client.keycloak.crossplane.io/v1alpha1
+                        list:
+                          minio:
+                            forProvider:
+                              config:
+                                usermodel.clientRoleMapping.clientId: minio
+                                claim.name: minio
+                                access.token.claim: "true"
+                                id.token.claim: "true"
+                                multivalued: "true"
+                              name: minio
+                              protocol: openid-connect
+                              protocolMapper: oidc-usermodel-client-role-mapper
+                  vault:
+                    forProvider:
+                      name: vault
+                    dependants:
+                      ProtocolMapper:
+                        apiVersion: client.keycloak.crossplane.io/v1alpha1
+                        list:
+                          vault:
+                            forProvider:
+                              config:
+                                usermodel.clientRoleMapping.clientId: vault
+                                claim.name: vault
+                                access.token.claim: "true"
+                                id.token.claim: "true"
+                                multivalued: "true"
+                              name: vault
+                              protocol: openid-connect
+                              protocolMapper: oidc-usermodel-client-role-mapper
+                  grafana:
+                    forProvider:
+                      name: grafana
+                    dependants:
+                      ProtocolMapper:
+                        apiVersion: client.keycloak.crossplane.io/v1alpha1
+                        list:
+                          grafana:
+                            forProvider:
+                              config:
+                                usermodel.clientRoleMapping.clientId: grafana
+                                claim.name: grafana
+                                access.token.claim: "true"
+                                id.token.claim: "true"
+                                multivalued: "true"
+                              name: grafana
+                              protocol: openid-connect
+                              protocolMapper: oidc-usermodel-client-role-mapper
+
+              User:
+                apiVersion: user.keycloak.crossplane.io/v1alpha1
+                list:
+                  abdo:
+                    forProvider:
+                      username: abdo
+                      email: abdo@lab.com
+                      firstName: Abdulrahman
+                      lastName: Alsheykh
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-argo-admins-role
+                                - name: internal-minio-console-admin-role
+                                - name: internal-vault-admin-role
+                                - name: internal-grafana-admin-role
+                  mhomaid:
+                    forProvider:
+                      username: mhomaid
+                      email: mhomaid@nic.gov.sa
+                      firstName: Majed
+                      lastName: Ibn Homaid
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-argo-admins-role
+                  mhanazi:
+                    forProvider:
+                      username: mhanazi
+                      email: mhanazi@nic.gov.sa
+                      firstName: Mohammed
+                      lastName: Alanazi
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-grafana-admin-role
+                  malghamdi:
+                    forProvider:
+                      username: malghamdi
+                      email: malghamdi@nic.gov.sa
+                      firstName: Muhannad
+                      lastName: Alghamdi
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-argo-admins-role
+                  hnamazi:
+                    forProvider:
+                      username: hnamazi
+                      email: hnamazi@nic.gov.sa
+                      firstName: Hamad
+                      lastName: Alnamazi
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-grafana-editor-role
+                  nalmohammed:
+                    forProvider:
+                      username: nalmohammed
+                      email: nalmohammed@nic.gov.sa
+                      firstName: Naif
+                      lastName: Almohammed
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-argo-admins-role
+                                - name: internal-minio-console-admin-role
+                                - name: internal-vault-admin-role
+                                - name: internal-grafana-admin-role
+                  fabualnaja:
+                    forProvider:
+                      username: fabualnaja
+                      email: fabualnaja@nic.gov.sa
+                      firstName: Faisal
+                      lastName: Abualnaja
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-argo-admins-role
+                                - name: internal-minio-console-admin-role
+                                - name: internal-vault-admin-role
+                                - name: internal-grafana-admin-role
+                  aamatar:
+                    forProvider:
+                      username: aamatar
+                      email: aamatar@nic.gov.sa
+                      firstName: Abdelrahman
+                      lastName: Matar
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-basier-get-role
+                                - name: internal-argo-cd-basier-logs-role
+                  asalhamed:
+                    forProvider:
+                      username: asalhamed
+                      email: asalhamed@nic.gov.sa
+                      firstName: Ahmed
+                      lastName: Alhamed
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-basier-get-role
+                                - name: internal-argo-cd-basier-logs-role
+                                - name: internal-argo-cd-basier-exec-role
+                                - name: internal-argo-cd-datastore-get-role
+                                - name: internal-argo-cd-datastore-logs-role
+                                - name: internal-argo-cd-datastore-exec-role
+                                - name: internal-minio-readwrite-role
+
+                  aaltamrah:
+                    forProvider:
+                      username: aaltamrah
+                      email: aaltamrah@nic.gov.sa
+                      firstName: Abdulmalik
+                      lastName: Altamrah
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-basier-get-role
+                                - name: internal-argo-cd-basier-logs-role
+                                - name: internal-argo-cd-basier-exec-role
+                                - name: internal-argo-cd-basier-update-role
+                                - name: internal-argo-cd-basier-sync-role
+                                - name: internal-argo-cd-basier-action-role
+                                - name: internal-argo-cd-datastore-get-role
+                                - name: internal-argo-cd-datastore-logs-role
+                                - name: internal-argo-cd-datastore-exec-role
+                                - name: internal-minio-readwrite-role
+                                - name: internal-argo-cd-argo-admins-role
+                  awmubark:
+                    forProvider:
+                      username: awmubark
+                      email: awmubark@nic.gov.sa
+                      firstName: Abdullah
+                      lastName: Almubarak
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-basier-get-role
+                                - name: internal-argo-cd-basier-logs-role
+                                - name: internal-argo-cd-basier-exec-role
+                                - name: internal-argo-cd-basier-update-role
+                                - name: internal-argo-cd-basier-sync-role
+                                - name: internal-argo-cd-basier-action-role
+                                - name: internal-argo-cd-datastore-get-role
+                                - name: internal-argo-cd-datastore-logs-role
+                                - name: internal-argo-cd-datastore-exec-role
+                                - name: internal-minio-readwrite-role
+                                - name: internal-argo-cd-argo-admins-role
+                  oabuhassan:
+                    forProvider:
+                      username: oabuhassan
+                      email: oabuhassan@nic.gov.sa
+                      firstName: Omar
+                      lastName: Abu Hassan
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-basier-get-role
+                                - name: internal-argo-cd-basier-logs-role
+                                - name: internal-argo-cd-dev-admins-role
+                                - name: internal-argo-cd-dev-exec-role
+                                - name: internal-minio-readwrite-role
+                  mkhrashi:
+                    forProvider:
+                      username: mkhrashi
+                      email: mkhrashi@sdaia.gov.sa
+                      firstName: Mohammed 
+                      lastName: Alkhrashi
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-basier-get-role
+                                - name: internal-argo-cd-basier-logs-role
+                                - name: internal-argo-cd-basier-action-role
+                                - name: internal-argo-cd-basier-sync-role
+                                - name: internal-argo-cd-basier-update-role
+                                - name: internal-argo-cd-basier-exec-role
+                                - name: internal-argo-cd-dev-admins-role
+                                - name: internal-argo-cd-dev-exec-role
+                                - name: internal-minio-readwrite-role
+                  tjaber:
+                    forProvider:
+                      username: tjaber
+                      email: tjaber@nic.gov.sa
+                      firstName: Tariq
+                      lastName: Aljaber
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-basier-get-role
+                                - name: internal-argo-cd-basier-logs-role
+                                - name: internal-argo-cd-basier-action-role
+                                - name: internal-argo-cd-basier-sync-role
+                                - name: internal-argo-cd-basier-update-role
+                                - name: internal-argo-cd-basier-exec-role
+                                - name: internal-argo-cd-dev-admins-role
+                                - name: internal-argo-cd-dev-exec-role
+                                - name: internal-minio-readwrite-role
+                  mtawhari:
+                    forProvider:
+                      username: mtawhari
+                      email: mtawhari@nic.gov.sa
+                      firstName: Mazen
+                      lastName: Tawhari
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-basier-get-role
+                                - name: internal-argo-cd-basier-logs-role
+                                - name: internal-argo-cd-dev-admins-role
+                                - name: internal-argo-cd-dev-exec-role
+                                - name: internal-minio-readwrite-role
+                  malzubaidy:
+                    forProvider:
+                      username: malzubaidy
+                      email: malzubaidy@nic.gov.sa
+                      firstName: Marwan
+                      lastName: Alzubaidy
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-basier-get-role
+                                - name: internal-argo-cd-basier-logs-role
+                                - name: internal-argo-cd-dev-admins-role
+                                - name: internal-argo-cd-dev-exec-role
+                                - name: internal-minio-readwrite-role
+                  rahindi:
+                    forProvider:
+                      username: rahindi
+                      email: rahindi@nic.gov.sa
+                      firstName: Rayan
+                      lastName: Alhindi
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-basier-get-role
+                                - name: internal-argo-cd-basier-logs-role
+                                - name: internal-argo-cd-dev-admins-role
+                                - name: internal-argo-cd-dev-exec-role
+                  oalsahafi:
+                    forProvider:
+                      username: oalsahafi
+                      email: oalsahafi@nic.gov.sa
+                      firstName: Osama
+                      lastName: Alsahafi
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-basier-get-role
+                                - name: internal-argo-cd-basier-logs-role
+                                - name: internal-argo-cd-dev-admins-role
+                                - name: internal-argo-cd-dev-exec-role
+                                - name: internal-minio-readwrite-role
+                  aoalzahrani:
+                    forProvider:
+                      username: aoalzahrani
+                      email: aoalzahrani@nic.gov.sa
+                      firstName: Abdulmajeed
+                      lastName: Alzahrani
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-basier-get-role
+                                - name: internal-argo-cd-basier-logs-role
+                                - name: internal-argo-cd-dev-admins-role
+                                - name: internal-argo-cd-dev-exec-role
+                                - name: internal-minio-readwrite-role
+                  noharbi:
+                    forProvider:
+                      username: noharbi
+                      email: noharbi@nic.gov.sa
+                      firstName: Naif
+                      lastName: Alharbu
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-basier-get-role
+                                - name: internal-argo-cd-basier-logs-role
+                                - name: internal-argo-cd-dev-admins-role
+                                - name: internal-argo-cd-dev-exec-role
+                                - name: internal-minio-readwrite-role
+                  aahalqarni:
+                    forProvider:
+                      username: aahalqarni
+                      email: aahalqarni@nic.gov.sa
+                      firstName: Abdullah
+                      lastName: Alqarni
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-argo-admins-role
+                                - name: internal-minio-console-admin-role
+                                - name: internal-vault-admin-role
+                                - name: internal-grafana-admin-role
+                  yaalotaibi:
+                    forProvider:
+                      username: yaalotaibi
+                      email: yaalotaibi@nic.gov.sa
+                      firstName: Yazeed
+                      lastName: Alotaibi
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-argo-admins-role
+                                - name: internal-minio-console-admin-role
+                                - name: internal-vault-admin-role
+                                - name: internal-grafana-admin-role
+                  falshabibi:
+                    forProvider:
+                      username: falshabibi
+                      email: falshabibi@nic.gov.sa
+                      firstName: Fahad
+                      lastName: Alshabibi
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-argo-admins-role
+                                - name: internal-minio-console-admin-role
+                                - name: internal-vault-admin-role
+                                - name: internal-grafana-admin-role
+                  salmashaf:
+                    forProvider:
+                      username: salmashaf
+                      email: salmashaf@nic.gov.sa
+                      firstName: Sarah
+                      lastName: Almashaf
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-argo-admins-role
+                                - name: internal-minio-console-admin-role
+                                - name: internal-vault-admin-role
+                                - name: internal-grafana-admin-role
+                  shualqahtani:
+                    forProvider:
+                      username: shualqahtani
+                      email: shualqahtani@nic.gov.sa
+                      firstName: Shumukh
+                      lastName: Alqahtani
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-argo-admins-role
+                                - name: internal-minio-console-admin-role
+                                - name: internal-vault-admin-role
+                                - name: internal-grafana-admin-role
+                  hnalmutairi:
+                    forProvider:
+                      username: hnalmutairi
+                      email: hnalmutairi@nic.gov.sa
+                      firstName: Hanan
+                      lastName: Almutairi
+                      initialPassword:
+                        - valueSecretRef:
+                            key: password
+                            name: user-initial-password
+                            namespace: keycloak
+                          temporary: true
+                    dependants:
+                      Roles:
+                        list:
+                          roles:
+                            forProvider:
+                              roleIdsRefs:
+                                - name: internal-argo-cd-argo-admins-role
+                                - name: internal-minio-console-admin-role
+                                - name: internal-vault-admin-role
+                                - name: internal-grafana-admin-role

@@ -16,14 +16,16 @@ components:
             list:
               secret:
                 forProvider: {}
-  AuthBackend:
-    apiVersion: jwt.vault.upbound.io/v1alpha1
+  Backend:
+    apiVersion: auth.vault.upbound.io/v1alpha1
     refKey: "backendRef"
     list:
       oidc:
         forProvider:
           path: "oidc"
           type: "oidc"
+          tune:
+            listingVisibility: "unauth"
           defaultRole: "default"
           oidcDiscoveryUrl: https://sso.lab.com/realms/lab
           oidcClientId: vault
