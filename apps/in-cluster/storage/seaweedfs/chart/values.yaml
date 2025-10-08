@@ -1,0 +1,3 @@
+filer:
+  s3:
+    enabled: true

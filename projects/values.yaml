@@ -7,3 +7,4 @@ projects:
   - name: monitoring
   - name: system
   - name: datastore
+  - name: storage
