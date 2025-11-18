@@ -15,4 +15,4 @@ helmCharts:
   valuesFile: values.yaml
   namespace: postgres-cluster
   additionalValuesFiles:
-  - raw.yml
+  - raw.yaml
