@@ -1,4 +1,6 @@
 # replicaCount: 3
+image:
+  repository: bitnamilegacy/keycloak
 production: true
 proxyHeaders: "xforwarded"
 extraEnvVars:
