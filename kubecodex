@@ -118,6 +118,7 @@ spec:
       namespace: argo-cd
     spec:
       destination:
+        namespace: '{{ default ( .values.app_path | replace "/" "-" | trimPrefix ( printf "apps-%s-%s-" .values.cluster .values.project ) ) .destNamespace }}'
         name: '{{ default .values.cluster .destServer }}'
       project: '{{.values.project}}'
       source:
@@ -150,9 +151,11 @@ spec:
         {{- end }}
     spec:
       destination:
-        name: '{{ default .name .destServer }}'
+        name: '{{ default .values.cluster .destServer }}'
         {{- if ne .createNamespace false }}
         namespace: '{{ default ( .values.app_path | replace "/" "-" | trimPrefix ( printf "apps-%s-%s-" .values.cluster .values.project ) ) .destNamespace }}'
+        {{- else }}
+        namespace: null
         {{- end }}
       syncPolicy:
         automated:
@@ -168,6 +171,10 @@ spec:
         {{- range .additionalSyncOptions }}
           - {{ . }}
         {{- end }}
+      {{- if .ignoreDifferences }}
+      ignoreDifferences:
+    {{ toYaml .ignoreDifferences | indent 4 }}
+      {{- end }}
   syncPolicy: {}
 
 EOF
