@@ -46,7 +46,7 @@ spec:
             - vault.lab.com
             - registry.lab.com
             - portal.lab.com
-            ip: 10.43.118.15
+            ip: 10.43.74.217
           volumes:
           - name: etc-ssl-certs
             secret:
