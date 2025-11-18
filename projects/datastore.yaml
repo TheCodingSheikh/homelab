@@ -49,6 +49,7 @@ spec:
     spec:
       destination:
         name: '{{ default .values.cluster .destServer }}'
+        namespace: '{{ default ( .values.app_path | replace "/" "-" | trimPrefix ( printf "apps-%s-%s-" .values.cluster .values.project ) ) .destNamespace }}'
       project: '{{.values.project}}'
       source:
         repoURL: '{{ default "https://github.com/TheCodingSheikh/homelab.git" .repoURL }}'
@@ -80,9 +81,11 @@ spec:
         {{- end }}
     spec:
       destination:
-        name: '{{ default .name .destServer }}'
+        name: '{{ default .values.cluster .destServer }}'
         {{- if ne .createNamespace false }}
         namespace: '{{ default ( .values.app_path | replace "/" "-" | trimPrefix ( printf "apps-%s-%s-" .values.cluster .values.project ) ) .destNamespace }}'
+        {{- else }}
+        namespace: null
         {{- end }}
       syncPolicy:
         automated:
