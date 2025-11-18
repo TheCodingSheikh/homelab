@@ -9,3 +9,10 @@ helmCharts:
   version: 5.7.4
   valuesFile: values.yaml
   namespace: postgres-cluster
+- name: raw
+  repo: https://thecodingsheikh.github.io/helm-charts
+  version: 1.0.1
+  valuesFile: values.yaml
+  namespace: postgres-cluster
+  additionalValuesFiles:
+  - raw.yml
