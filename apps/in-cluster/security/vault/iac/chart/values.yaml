@@ -1,0 +1,113 @@
+providerConfig: "vault-provider-config"
+components:
+  Mount:
+    apiVersion: vault.vault.upbound.io/v1alpha1
+    refKey: "mountRef"
+    list:
+      secret:
+        forProvider:
+          path: "secret"
+          type: "kv"
+          options:
+            version: "2"
+        dependants:
+          SecretBackendV2:
+            apiVersion: kv.vault.upbound.io/v1alpha1
+            list:
+              secret:
+                forProvider: {}
+  Backend:
+    apiVersion: auth.vault.upbound.io/v1alpha1
+    refKey: "backendRef"
+    list:
+      oidc:
+        forProvider:
+          path: "oidc"
+          type: "oidc"
+          tune:
+            listingVisibility: "unauth"
+          defaultRole: "default"
+          oidcDiscoveryUrl: https://sso.lab.com/realms/lab
+          oidcClientId: vault
+          oidcClientSecretSecretRef:
+            key: secret-key
+            name: vault-client-secret
+            namespace: vault
+        dependants:
+          AuthBackendRole:
+            list:
+              default:
+                forProvider:
+                  roleName: "default"
+                  userClaim: "sub"
+                  oidcScopes: 
+                    - profile
+                  claimMappings:
+                    preferred_username: "preferred_username"
+                    email: "email"
+                  roleType: "oidc"
+                  allowedRedirectUris:
+                    - https://vault.lab.com/ui/vault/auth/oidc/oidc/callback
+                    - https://vault.lab.com/oidc/oidc/callback
+                  groupsClaim: "vault"
+  Group:
+    apiVersion: identity.vault.upbound.io/v1alpha1
+    refKey: "canonicalIdRef"
+    list:
+      admin:
+        forProvider:
+          name: admin
+          policies:
+          - admin
+          type: external
+        dependants:
+          GroupAlias:
+            list:
+              admin:
+                forProvider:
+                  name: admin
+                  mountAccessorRef:
+                    name: oidc-authbackend
+  Policy:
+    apiVersion: vault.vault.upbound.io/v1alpha1
+    list:
+      admin:
+        forProvider:
+          name: admin
+          policy: |
+            path "sys/health"
+            {
+              capabilities = ["read", "sudo"]
+            }
+            path "sys/policies/acl"
+            {
+              capabilities = ["list"]
+            }
+            path "sys/policies/acl/*"
+            {
+              capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+            }
+            path "auth/*"
+            {
+              capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+            }
+            path "sys/auth/*"
+            {
+              capabilities = ["create", "update", "delete", "sudo"]
+            }
+            path "sys/auth"
+            {
+              capabilities = ["read"]
+            }
+            path "kv/*"
+            {
+              capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+            }
+            path "sys/mounts/*"
+            {
+              capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+            }
+            path "sys/mounts"
+            {
+              capabilities = ["read"]
+            }

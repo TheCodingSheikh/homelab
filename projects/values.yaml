@@ -1,0 +1,10 @@
+repoURL: https://github.com/TheCodingSheikh/homelab.git
+namespace: argo-cd
+projects:
+  - name: platform
+  - name: network
+  - name: security
+  - name: monitoring
+  - name: system
+  - name: datastore
+  - name: storage

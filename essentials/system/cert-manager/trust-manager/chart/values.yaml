@@ -1,0 +1,6 @@
+secretTargets:
+  enabled: true
+  authorizedSecrets:
+    - lab.com
+image:
+  tag: v0.19.0

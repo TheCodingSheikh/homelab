@@ -1,0 +1,38 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: lab
+# image: rancher/k3s:v1.30.6-k3s1-amd64
+servers: 1
+agents: 3
+options:
+  k3s:
+    extraArgs:
+      - arg: --kube-apiserver-arg=anonymous-auth=true
+        nodeFilters:
+          - server:*
+      - arg: --disable=traefik
+        nodeFilters:
+          - server:*
+      - arg: --disable-cloud-controller
+        nodeFilters:
+          - server:*
+kubeAPI:
+  host: "0.0.0.0"
+  hostIP: "127.0.0.1"
+  hostPort: "6445"
+
+ports:
+  - port: 80:80
+    nodeFilters:
+      - loadbalancer
+  - port: 443:443
+    nodeFilters:
+      - loadbalancer
+
+files:
+  - description: Bootstrap
+    source: bootstrap-manifests.yaml
+    destination: k3s-manifests/lab.yaml
+    nodeFilters:
+      - "server:*"

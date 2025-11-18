@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cozystack
+  namespace: cozy-system
+data:
+  bundle-name: "paas-hosted"
+  root-host: "console.lab.com"
+  api-server-endpoint: "https://api.console.lab.com:443"
+  expose-services: "dashboard,api"
+  expose-ingress: nginx

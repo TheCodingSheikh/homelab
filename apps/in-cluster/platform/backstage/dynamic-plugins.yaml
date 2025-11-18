@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backstage-dynamic-plugins
+  namespace: backstage
+data:
+  dynamic-plugins.yaml: |
+    includes:
+      - "dynamic-plugins.default.yaml"
+    plugins:
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-catalog-backend-module-keycloak-dynamic
+        disabled: false
+      - package: ./dynamic-plugins/dist/backstage-plugin-kubernetes-backend-dynamic
+        disabled: false
+      - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-global-header
+        disabled: false
+      - package: ./dynamic-plugins/dist/backstage-plugin-kubernetes
+        disabled: false
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-topology
+        disabled: false
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-scaffolder-backend-module-kubernetes-dynamic
+        disabled: false
+      - package: ./dynamic-plugins/dist/backstage-plugin-scaffolder-backend-module-gitlab-dynamic
+        disabled: false
+      - package: ./dynamic-plugins/dist/immobiliarelabs-backstage-plugin-gitlab-backend-dynamic
+        disabled: false
+      - package: ./dynamic-plugins/dist/immobiliarelabs-backstage-plugin-gitlab
+        disabled: false
+      - package: ./dynamic-plugins/dist/backstage-plugin-notifications
+        disabled: false
+      - package: ./dynamic-plugins/dist/backstage-plugin-notifications-backend-dynamic
+        disabled: false
+      - package: ./dynamic-plugins/dist/backstage-plugin-notifications
+        disabled: false
+      - package: ./dynamic-plugins/dist/backstage-plugin-notifications-backend-dynamic
+        disabled: false
+      - package: ./dynamic-plugins/dist/backstage-plugin-signals-backend-dynamic
+        disabled: false
+      - package: ./dynamic-plugins/dist/backstage-plugin-signals
+        disabled: false
+        
+      - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-quickstart
+        disabled: true    
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-analytics-provider-segment
+        disabled: true
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-scaffolder-backend-module-kubernetes-dynamic
+        disabled: true
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-scaffolder-backend-module-quay-dynamic
+        disabled: true
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-scaffolder-backend-module-regex-dynamic
+        disabled: true
+      - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-analytics-module-adoption-insights-dynamic
+        disabled: true
+      - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-quickstart
+        disabled: true
+
+      - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-catalog-backend-module-marketplace-dynamic
+        disabled: false
+      - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-marketplace-backend-dynamic
+        disabled: false
+      - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-marketplace
+        disabled: false
+
+      - disabled: false
+        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/17973327717-1/terasky-backstage-plugin-kubernetes-ingestor-dynamic-2.1.0.tgz"
+        integrity: sha512-Q1FhXNP4EJVaRpuOjp/rdLOgR2ymjdxXqjkSvgN1IuF+S6Mg3pALgxvIlvmkyc1M/gm7H80PvzXLQKjoHRBJ5Q==
+        pluginConfig:
+          kubernetesIngestor:
+            mappings:
+              namespaceModel: 'default'
+              nameModel: 'name-kind'
+              titleModel: 'name'
+              systemModel: 'namespace'
+              referencesNamespaceModel: 'default'
+            components:
+              enabled: true
+              taskRunner:
+                frequency: 60
+                timeout: 600
+              onlyIngestAnnotatedResources: true
+            crossplane:
+              enabled: false
+      - disabled: false
+        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/17972617348-1/roadiehq-plugin-scaffolder-frontend-module-http-request-field-dynamic-2.2.0.tgz"
+        integrity: sha512-ucwLRD1GH2d10msd0NZXZCy3vCyw4Vmq8sDliAIOCmJ2//tyHYf04Od1xrcF2yiojbfRkI6Zy4MOe8GRAUyEhA==
+        pluginConfig:
+          dynamicPlugins:
+            frontend:
+              roadiehq.plugin-scaffolder-frontend-module-http-request-field:
+                scaffolderFieldExtensions:
+                  - importName: SelectFieldFromApiExtension

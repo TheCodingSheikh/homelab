@@ -1,0 +1,18 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: argocd
+  namespace: default
+spec:
+  repo: https://argoproj.github.io/argo-helm
+  chart: argo-cd
+  version: 8.2.5
+  targetNamespace: argo-cd
+  createNamespace: true
+  valuesContent: |
+    configs:
+      cm:
+        kustomize.buildOptions: --enable-helm
+      params:
+        server.disable.auth: true
+        server.insecure: true

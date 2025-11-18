@@ -1,0 +1,12 @@
+apiVersion: trust.cert-manager.io/v1alpha1
+kind: Bundle
+metadata:
+  name: lab.com
+spec:
+  sources:
+    - secret:
+        name: "selfsigned-ca"
+        key: ca.crt
+  target:
+    secret:
+      key: ca.crt

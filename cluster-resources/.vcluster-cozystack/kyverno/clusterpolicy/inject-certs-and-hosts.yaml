@@ -1,0 +1,34 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disable-host-network
+  annotations:
+    policies.kyverno.io/title: Disable Host Network
+    policies.kyverno.io/category: Sample
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/minversion: 1.6.0
+    policies.kyverno.io/description: >-
+      This policy ensures that all Pods have hostNetwork set to false.
+      This is important for security and network isolation, as using hostNetwork can expose
+      the host's network stack to the Pod, potentially leading to security vulnerabilities
+      and conflicts with other network configurations.
+spec:
+  rules:
+  - name: disable-host-network
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+    preconditions:
+      all:
+      - key: "{{request.operation || 'BACKGROUND'}}"
+        operator: AnyIn
+        value:
+          - CREATE
+          - UPDATE
+    mutate:
+      patchStrategicMerge:
+        spec:
+          hostNetwork: false

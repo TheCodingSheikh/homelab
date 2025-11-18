@@ -1,0 +1,10 @@
+config:
+  stringData: |
+    environment: dev
+    check_interval: 15s
+    max_check_interval: 30m
+    vault_nodes:
+      - http://vault:8200
+      - http://vault:8200
+      - http://vault:8200
+    tls_skip_verify: true

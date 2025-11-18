@@ -1,0 +1,17 @@
+configs:
+  cm:
+    kustomize.buildOptions: --enable-helm
+  params:
+    server.disable.auth: true
+    server.insecure: true
+server:
+  ingress:
+    enabled: true
+    annotations:
+      cert-manager.io/cluster-issuer: lab-issuer
+      gethomepage.dev/enabled: "true"
+      gethomepage.dev/name: "Argo CD"
+      gethomepage.dev/icon: "argocd.png"
+    ingressClassName: "nginx"
+    hostname: "argo.lab.com"
+    tls: true

@@ -1,0 +1,45 @@
+# replicaCount: 3
+production: true
+proxyHeaders: "xforwarded"
+extraEnvVars:
+  - name: KC_LOG_LEVEL
+    value: "DEBUG"
+auth:
+  adminUser: admin
+ingress:
+  enabled: true
+  ingressClassName: "nginx"
+  hostname: sso.lab.com
+  annotations:
+    cert-manager.io/cluster-issuer: lab-issuer
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Keycloak"
+    gethomepage.dev/icon: "keycloak.png"
+  tls: true
+  extraTls:
+    - hosts:
+        - sso.lab.com
+      secretName: keycloak-tls
+adminIngress:
+  enabled: false
+  ingressClassName: "nginx"
+  hostname: admin.sso.lab.com
+  tls: true
+  extraTls:
+    - hosts:
+        - admin.sso.lab.com
+      secretName: admin-keycloak-tls
+metrics:
+  enabled: false
+  serviceMonitor:
+    enabled: false
+
+postgresql:
+  enabled: false
+externalDatabase:
+  existingSecret: "keycloak-secret"
+  existingSecretHostKey: "host"
+  existingSecretPortKey: "port"
+  existingSecretUserKey: "user"
+  existingSecretDatabaseKey: "dbname"
+  existingSecretPasswordKey: "password"

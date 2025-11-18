@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: lab-issuer
+  name: pgadmin
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: pgadmin.lab.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: pgadmin
+            port:
+              number: 5050
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - pgadmin.lab.com
+    secretName: pgadmin-tls

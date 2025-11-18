@@ -1,0 +1,34 @@
+name: lab
+metadata:
+  labels:
+    crunchy-userinit.drummyfloyd.github.com/enabled: "true"
+    crunchy-userinit.drummyfloyd.github.com/superuser: "postgres"
+monitoring: true
+patroni:
+  dynamicConfiguration:
+    postgresql:
+      pg_hba:
+        - "host all all all scram-sha-256"
+# ALTER DATABASE "{database_name}" OWNER TO "{user_name}";
+users: 
+  - name: postgres
+    databases:
+      - postgres
+    options: "SUPERUSER"
+    password:
+      type: AlphaNumeric
+  - name: keycloak
+    databases:
+      - keycloak
+    password:
+      type: AlphaNumeric
+  - name: gitea
+    databases:
+      - gitea
+    password:
+      type: AlphaNumeric
+  # - name: authentik
+  #   databases:
+  #     - authentik
+  #   password:
+  #     type: AlphaNumeric
