@@ -19,4 +19,4 @@ resources:
           - match:
               remoteRef:
                 # Need to append /data/ after the mount
-                remoteKey: data/datastore/postgres/{{ .Values.name }}/{{ .name }}
+                remoteKey: datastore/postgres/{{ .Values.name }}/{{ .name }}
