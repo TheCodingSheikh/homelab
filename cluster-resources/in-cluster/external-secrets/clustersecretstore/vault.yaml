@@ -11,5 +11,5 @@ spec:
       auth:
         tokenSecretRef:
           name: "vault-token"
-          key: "json"
+          key: "token"
           namespace: vault
