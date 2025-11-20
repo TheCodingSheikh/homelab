@@ -11,6 +11,8 @@ extraEnvVars:
     value: "DEBUG"
 auth:
   adminUser: admin
+  existingSecret: "keycloak-admin"
+  passwordSecretKey: "password"
 ingress:
   enabled: true
   ingressClassName: "nginx"
