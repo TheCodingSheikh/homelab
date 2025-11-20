@@ -3,9 +3,9 @@
       Realm:
         apiVersion: realm.keycloak.crossplane.io/v1alpha1
         list:
-          internal:
+          lab:
             forProvider:
-              realm: internal
+              realm: lab
               accessTokenLifespan: "30m0s"
             dependants:
               Client:
@@ -55,7 +55,7 @@
                       standardFlowEnabled: true
                       directAccessGrantsEnabled: true
                       rootUrl: https://minio.lab.com/console
-                      baseUrl: "/realms/internal/account"
+                      baseUrl: "/realms/lab/account"
                       validRedirectUris:
                         - "*"
                     dependants:
@@ -242,7 +242,7 @@
                           roles:
                             forProvider:
                               roleIdsRefs:
-                                - name: internal-argo-cd-argo-admins-role
-                                - name: internal-minio-console-admin-role
-                                - name: internal-vault-admin-role
-                                - name: internal-grafana-admin-role
+                                - name: lab-argo-cd-argo-admins-role
+                                - name: lab-minio-console-admin-role
+                                - name: lab-vault-admin-role
+                                - name: lab-grafana-admin-role

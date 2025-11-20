@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - http.yaml
   - vault.yaml
+  - keycloak
