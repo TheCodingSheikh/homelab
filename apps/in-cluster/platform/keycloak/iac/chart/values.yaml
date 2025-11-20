@@ -1,248 +1,248 @@
-    providerConfig: "keycloak-provider-config"
-    components:
-      Realm:
-        apiVersion: realm.keycloak.crossplane.io/v1alpha1
-        list:
-          lab:
-            forProvider:
-              realm: lab
-              accessTokenLifespan: "30m0s"
-            dependants:
-              Client:
-                apiVersion: openidclient.keycloak.crossplane.io/v1alpha1
-                list:
-                  argo-cd:
-                    forProvider:
-                      name: Argo CD
-                      clientId: argo-cd
-                      clientSecretSecretRef:
-                        key: secret-key
-                        name: argo-cd-client
-                        namespace: keycloak
-                      accessType: CONFIDENTIAL
-                      standardFlowEnabled: true
-                      directAccessGrantsEnabled: true
-                      validRedirectUris:
-                        - https://argo.lab.com/auth/callback
-                    dependants:
-                      Role:
-                        apiVersion: role.keycloak.crossplane.io/v1alpha1
-                        appendName: true
-                        list:
-                          - ArgoCDAdmins
-                      ClientDefaultScopes:
-                        list:
-                          argo-cd:
-                            forProvider:
-                              defaultScopes:
-                                - argo-cd
-                                # Mandatory
-                                - acr
-                                - basic
-                                - email
-                                - profile
-                                - roles
-                                - web-origins	
-                  minio:
-                    forProvider:
-                      name: Minio
-                      clientId: minio
-                      clientSecretSecretRef:
-                        key: secret-key
-                        name: minio-client
-                        namespace: keycloak
-                      accessType: CONFIDENTIAL
-                      standardFlowEnabled: true
-                      directAccessGrantsEnabled: true
-                      rootUrl: https://minio.lab.com/console
-                      baseUrl: "/realms/lab/account"
-                      validRedirectUris:
-                        - "*"
-                    dependants:
-                      Role:
-                        apiVersion: role.keycloak.crossplane.io/v1alpha1
-                        appendName: true
-                        list:
-                          - consoleAdmin
-                      ClientDefaultScopes:
-                        list:
-                          minio:
-                            forProvider:
-                              defaultScopes:
-                                - minio
-                                # Mandatory
-                                - acr
-                                - basic
-                                - email
-                                - profile
-                                - roles
-                                - web-origins	
-                  vault:
-                    forProvider:
-                      name: vault
-                      clientId: vault
-                      clientSecretSecretRef:
-                        key: secret-key
-                        name: vault-client
-                        namespace: keycloak
-                      accessType: CONFIDENTIAL
-                      standardFlowEnabled: true
-                      directAccessGrantsEnabled: true
-                      rootUrl: https://vault.lab.com
-                      validRedirectUris:
-                        - https://vault.lab.com/ui/vault/auth/oidc/oidc/callback
-                        - https://vault.lab.com/oidc/oidc/callback
-                    dependants:
-                      Role:
-                        apiVersion: role.keycloak.crossplane.io/v1alpha1
-                        appendName: true
-                        list:
-                          - admin
-                      ClientDefaultScopes:
-                        list:
-                          minio:
-                            forProvider:
-                              defaultScopes:
-                                - minio
-                                # Mandatory
-                                - acr
-                                - basic
-                                - email
-                                - profile
-                                - roles
-                                - web-origins	
-                  grafana:
-                    forProvider:
-                      name: grafana
-                      clientId: grafana
-                      clientSecretSecretRef:
-                        key: secret-key
-                        name: grafana-client
-                        namespace: keycloak
-                      accessType: CONFIDENTIAL
-                      standardFlowEnabled: true
-                      directAccessGrantsEnabled: true
-                      rootUrl: https://grafana.lab.com
-                      validRedirectUris:
-                        - https://grafana.lab.com/login/generic_oauth
-                    dependants:
-                      Role:
-                        apiVersion: role.keycloak.crossplane.io/v1alpha1
-                        appendName: true
-                        list:
-                          - Admin
-                      ClientDefaultScopes:
-                        list:
-                          grafana:
-                            forProvider:
-                              defaultScopes:
-                                - grafana
-                                # Mandatory
-                                - acr
-                                - basic
-                                - email
-                                - profile
-                                - roles
-                                - web-origins	
-              ClientScope:
-                apiVersion: openidclient.keycloak.crossplane.io/v1alpha1
-                refKey: "clientScopeIdRef"
-                list:
-                  argo-cd:
-                    forProvider:
-                      name: argo-cd
-                    dependants:
-                      ProtocolMapper:
-                        apiVersion: client.keycloak.crossplane.io/v1alpha1
-                        list:
-                          argo-cd:
-                            forProvider:
-                              config:
-                                usermodel.clientRoleMapping.clientId: argo-cd
-                                claim.name: argo-cd
-                                access.token.claim: "true"
-                                id.token.claim: "true"
-                                multivalued: "true"
-                              name: argo-cd
-                              protocol: openid-connect
-                              protocolMapper: oidc-usermodel-client-role-mapper
-                  minio:
-                    forProvider:
-                      name: minio
-                    dependants:
-                      ProtocolMapper:
-                        apiVersion: client.keycloak.crossplane.io/v1alpha1
-                        list:
-                          minio:
-                            forProvider:
-                              config:
-                                usermodel.clientRoleMapping.clientId: minio
-                                claim.name: minio
-                                access.token.claim: "true"
-                                id.token.claim: "true"
-                                multivalued: "true"
-                              name: minio
-                              protocol: openid-connect
-                              protocolMapper: oidc-usermodel-client-role-mapper
-                  vault:
-                    forProvider:
-                      name: vault
-                    dependants:
-                      ProtocolMapper:
-                        apiVersion: client.keycloak.crossplane.io/v1alpha1
-                        list:
-                          vault:
-                            forProvider:
-                              config:
-                                usermodel.clientRoleMapping.clientId: vault
-                                claim.name: vault
-                                access.token.claim: "true"
-                                id.token.claim: "true"
-                                multivalued: "true"
-                              name: vault
-                              protocol: openid-connect
-                              protocolMapper: oidc-usermodel-client-role-mapper
-                  grafana:
-                    forProvider:
-                      name: grafana
-                    dependants:
-                      ProtocolMapper:
-                        apiVersion: client.keycloak.crossplane.io/v1alpha1
-                        list:
-                          grafana:
-                            forProvider:
-                              config:
-                                usermodel.clientRoleMapping.clientId: grafana
-                                claim.name: grafana
-                                access.token.claim: "true"
-                                id.token.claim: "true"
-                                multivalued: "true"
-                              name: grafana
-                              protocol: openid-connect
-                              protocolMapper: oidc-usermodel-client-role-mapper
+providerConfig: "keycloak-provider-config"
+components:
+  Realm:
+    apiVersion: realm.keycloak.crossplane.io/v1alpha1
+    list:
+      lab:
+        forProvider:
+          realm: lab
+          accessTokenLifespan: "30m0s"
+        dependants:
+          Client:
+            apiVersion: openidclient.keycloak.crossplane.io/v1alpha1
+            list:
+              argo-cd:
+                forProvider:
+                  name: Argo CD
+                  clientId: argo-cd
+                  clientSecretSecretRef:
+                    key: secret-key
+                    name: argo-cd-client
+                    namespace: keycloak
+                  accessType: CONFIDENTIAL
+                  standardFlowEnabled: true
+                  directAccessGrantsEnabled: true
+                  validRedirectUris:
+                    - https://argo.lab.com/auth/callback
+                dependants:
+                  Role:
+                    apiVersion: role.keycloak.crossplane.io/v1alpha1
+                    appendName: true
+                    list:
+                      - ArgoCDAdmins
+                  ClientDefaultScopes:
+                    list:
+                      argo-cd:
+                        forProvider:
+                          defaultScopes:
+                            - argo-cd
+                            # Mandatory
+                            - acr
+                            - basic
+                            - email
+                            - profile
+                            - roles
+                            - web-origins	
+              minio:
+                forProvider:
+                  name: Minio
+                  clientId: minio
+                  clientSecretSecretRef:
+                    key: secret-key
+                    name: minio-client
+                    namespace: keycloak
+                  accessType: CONFIDENTIAL
+                  standardFlowEnabled: true
+                  directAccessGrantsEnabled: true
+                  rootUrl: https://minio.lab.com/console
+                  baseUrl: "/realms/lab/account"
+                  validRedirectUris:
+                    - "*"
+                dependants:
+                  Role:
+                    apiVersion: role.keycloak.crossplane.io/v1alpha1
+                    appendName: true
+                    list:
+                      - consoleAdmin
+                  ClientDefaultScopes:
+                    list:
+                      minio:
+                        forProvider:
+                          defaultScopes:
+                            - minio
+                            # Mandatory
+                            - acr
+                            - basic
+                            - email
+                            - profile
+                            - roles
+                            - web-origins	
+              vault:
+                forProvider:
+                  name: vault
+                  clientId: vault
+                  clientSecretSecretRef:
+                    key: secret-key
+                    name: vault-client
+                    namespace: keycloak
+                  accessType: CONFIDENTIAL
+                  standardFlowEnabled: true
+                  directAccessGrantsEnabled: true
+                  rootUrl: https://vault.lab.com
+                  validRedirectUris:
+                    - https://vault.lab.com/ui/vault/auth/oidc/oidc/callback
+                    - https://vault.lab.com/oidc/oidc/callback
+                dependants:
+                  Role:
+                    apiVersion: role.keycloak.crossplane.io/v1alpha1
+                    appendName: true
+                    list:
+                      - admin
+                  ClientDefaultScopes:
+                    list:
+                      minio:
+                        forProvider:
+                          defaultScopes:
+                            - minio
+                            # Mandatory
+                            - acr
+                            - basic
+                            - email
+                            - profile
+                            - roles
+                            - web-origins	
+              grafana:
+                forProvider:
+                  name: grafana
+                  clientId: grafana
+                  clientSecretSecretRef:
+                    key: secret-key
+                    name: grafana-client
+                    namespace: keycloak
+                  accessType: CONFIDENTIAL
+                  standardFlowEnabled: true
+                  directAccessGrantsEnabled: true
+                  rootUrl: https://grafana.lab.com
+                  validRedirectUris:
+                    - https://grafana.lab.com/login/generic_oauth
+                dependants:
+                  Role:
+                    apiVersion: role.keycloak.crossplane.io/v1alpha1
+                    appendName: true
+                    list:
+                      - Admin
+                  ClientDefaultScopes:
+                    list:
+                      grafana:
+                        forProvider:
+                          defaultScopes:
+                            - grafana
+                            # Mandatory
+                            - acr
+                            - basic
+                            - email
+                            - profile
+                            - roles
+                            - web-origins	
+          ClientScope:
+            apiVersion: openidclient.keycloak.crossplane.io/v1alpha1
+            refKey: "clientScopeIdRef"
+            list:
+              argo-cd:
+                forProvider:
+                  name: argo-cd
+                dependants:
+                  ProtocolMapper:
+                    apiVersion: client.keycloak.crossplane.io/v1alpha1
+                    list:
+                      argo-cd:
+                        forProvider:
+                          config:
+                            usermodel.clientRoleMapping.clientId: argo-cd
+                            claim.name: argo-cd
+                            access.token.claim: "true"
+                            id.token.claim: "true"
+                            multivalued: "true"
+                          name: argo-cd
+                          protocol: openid-connect
+                          protocolMapper: oidc-usermodel-client-role-mapper
+              minio:
+                forProvider:
+                  name: minio
+                dependants:
+                  ProtocolMapper:
+                    apiVersion: client.keycloak.crossplane.io/v1alpha1
+                    list:
+                      minio:
+                        forProvider:
+                          config:
+                            usermodel.clientRoleMapping.clientId: minio
+                            claim.name: minio
+                            access.token.claim: "true"
+                            id.token.claim: "true"
+                            multivalued: "true"
+                          name: minio
+                          protocol: openid-connect
+                          protocolMapper: oidc-usermodel-client-role-mapper
+              vault:
+                forProvider:
+                  name: vault
+                dependants:
+                  ProtocolMapper:
+                    apiVersion: client.keycloak.crossplane.io/v1alpha1
+                    list:
+                      vault:
+                        forProvider:
+                          config:
+                            usermodel.clientRoleMapping.clientId: vault
+                            claim.name: vault
+                            access.token.claim: "true"
+                            id.token.claim: "true"
+                            multivalued: "true"
+                          name: vault
+                          protocol: openid-connect
+                          protocolMapper: oidc-usermodel-client-role-mapper
+              grafana:
+                forProvider:
+                  name: grafana
+                dependants:
+                  ProtocolMapper:
+                    apiVersion: client.keycloak.crossplane.io/v1alpha1
+                    list:
+                      grafana:
+                        forProvider:
+                          config:
+                            usermodel.clientRoleMapping.clientId: grafana
+                            claim.name: grafana
+                            access.token.claim: "true"
+                            id.token.claim: "true"
+                            multivalued: "true"
+                          name: grafana
+                          protocol: openid-connect
+                          protocolMapper: oidc-usermodel-client-role-mapper
 
-              User:
-                apiVersion: user.keycloak.crossplane.io/v1alpha1
-                list:
-                  abdo:
-                    forProvider:
-                      username: abdo
-                      email: abdo@lab.com
-                      firstName: A
-                      lastName: A
-                      initialPassword:
-                        - valueSecretRef:
-                            key: password
-                            name: user-initial-password
-                            namespace: keycloak
-                          temporary: true
-                    dependants:
-                      Roles:
-                        list:
-                          roles:
-                            forProvider:
-                              roleIdsRefs:
-                                - name: lab-argo-cd-argo-admins-role
-                                - name: lab-minio-console-admin-role
-                                - name: lab-vault-admin-role
-                                - name: lab-grafana-admin-role
+          User:
+            apiVersion: user.keycloak.crossplane.io/v1alpha1
+            list:
+              abdo:
+                forProvider:
+                  username: abdo
+                  email: abdo@lab.com
+                  firstName: A
+                  lastName: A
+                  initialPassword:
+                    - valueSecretRef:
+                        key: password
+                        name: user-initial-password
+                        namespace: keycloak
+                      temporary: true
+                dependants:
+                  Roles:
+                    list:
+                      roles:
+                        forProvider:
+                          roleIdsRefs:
+                            - name: lab-argo-cd-argo-admins-role
+                            - name: lab-minio-console-admin-role
+                            - name: lab-vault-admin-role
+                            - name: lab-grafana-admin-role
