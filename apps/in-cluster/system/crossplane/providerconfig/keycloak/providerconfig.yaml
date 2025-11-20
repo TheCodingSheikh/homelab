@@ -10,4 +10,4 @@ spec:
     secretRef:
       name: keycloak-credentials
       key: credentials
-      namespace: crossplane-system
+      namespace: crossplane
