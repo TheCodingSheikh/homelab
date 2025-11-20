@@ -8,7 +8,7 @@ spec:
   address: http://vault.vault.svc:8200
   credentials:
     secretRef:
-      key: credentials
-      name: vault-creds
-      namespace: crossplane
+      key: token
+      name: vault-token
+      namespace: vault
     source: Secret
