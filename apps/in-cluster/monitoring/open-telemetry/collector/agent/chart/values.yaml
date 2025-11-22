@@ -1,0 +1,79 @@
+
+mode: daemonset
+
+clusterRole:
+  create: true
+  rules:
+    - apiGroups:
+        - ''
+      resources:
+        - nodes/proxy
+      verbs:
+        - get
+
+presets:
+  logsCollection:
+    enabled: true
+  hostMetrics:
+    enabled: true
+  kubernetesAttributes:
+    enabled: true
+    extractAllPodLabels: true
+    extractAllPodAnnotations: true
+  kubeletMetrics:
+    enabled: true
+
+extraEnvs:
+  - name: HYPERDX_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: hyperdx-secret
+        key: HYPERDX_API_KEY
+        optional: true
+
+config:
+  receivers:
+    kubeletstats:
+      collection_interval: 20s
+      auth_type: 'serviceAccount'
+      endpoint: '${env:K8S_NODE_NAME}:10250'
+      insecure_skip_verify: true
+      metrics:
+        k8s.pod.cpu_limit_utilization:
+          enabled: true
+        k8s.pod.cpu_request_utilization:
+          enabled: true
+        k8s.pod.memory_limit_utilization:
+          enabled: true
+        k8s.pod.memory_request_utilization:
+          enabled: true
+        k8s.pod.uptime:
+          enabled: true
+        k8s.node.uptime:
+          enabled: true
+        k8s.container.cpu_limit_utilization:
+          enabled: true
+        k8s.container.cpu_request_utilization:
+          enabled: true
+        k8s.container.memory_limit_utilization:
+          enabled: true
+        k8s.container.memory_request_utilization:
+          enabled: true
+        container.uptime:
+          enabled: true
+ 
+  exporters:
+    otlphttp:
+      endpoint: "http://clickstack-otel-collector:4318"
+      compression: gzip
+      headers:
+        authorization: "${env:HYPERDX_API_KEY}"
+ 
+  service:
+    pipelines:
+      logs:
+        exporters:
+          - otlphttp
+      metrics:
+        exporters:
+          - otlphttp

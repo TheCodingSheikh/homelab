@@ -1,0 +1,38 @@
+
+mode: deployment
+
+replicaCount: 1
+
+presets:
+  kubernetesAttributes:
+    enabled: true
+    extractAllPodLabels: true
+    extractAllPodAnnotations: true
+  kubernetesEvents:
+    enabled: true
+  clusterMetrics:
+    enabled: true
+
+extraEnvs:
+  - name: HYPERDX_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: hyperdx-secret
+        key: HYPERDX_API_KEY
+        optional: true
+ 
+config:
+  exporters:
+    otlphttp:
+      endpoint: "http://clickstack-otel-collector:4318"
+      compression: gzip
+      headers:
+        authorization: "${env:HYPERDX_API_KEY}"
+  service:
+    pipelines:
+      logs:
+        exporters:
+          - otlphttp
+      metrics:
+        exporters:
+          - otlphttp

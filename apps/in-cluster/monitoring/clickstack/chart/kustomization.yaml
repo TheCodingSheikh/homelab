@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+helmCharts:
+- name: clickstack
+  repo: https://hyperdxio.github.io/helm-charts
+  version: 1.0.0
+  includeCRDs: true
+  namespace: clickstack
+  releaseName: clickstack
+  # valuesFile: values.yaml
