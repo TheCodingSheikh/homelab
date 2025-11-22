@@ -21,18 +21,43 @@ kubectl exec -n $namespace $pod_name -- vault operator unseal $unseal_key_2
 # Authenticate with Vault using root token
 kubectl exec -n $namespace $pod_name -- vault login $root_token
 
-# Create a secret in the crossplane namespace with Vault credentials
-kubectl create secret generic vault-creds -n crossplane \
-  --from-literal=credentials="{ \"token\": \"$root_token\" }" --dry-run=client -o yaml | kubectl apply -f -
+# # Create a secret in the crossplane namespace with Vault credentials
+# kubectl create secret generic vault-creds -n crossplane \
+#   --from-literal=credentials="{ \"token\": \"$root_token\" }" --dry-run=client -o yaml | kubectl apply -f -
 
 # Create a secret in the vault namespace with the root token
-kubectl create secret generic vault-token -n external-secrets \
-  --from-literal=token=$root_token --dry-run=client -o yaml | kubectl apply -f -
+kubectl create secret generic vault-token -n vault \
+  --from-literal=token=$root_token \
+  --from-literal=json="{ \"token\": \"$root_token\" }" \
+  --dry-run=client -o yaml | kubectl apply -f -
 
-# TODO: fix this
-# Keep trying to write init_output to Vault until success
+# Create Kubernetes secret containing all fields
+secret_manifest=$(cat <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vault-init-data
+  namespace: vault
+type: Opaque
+stringData:
+  unseal_keys_b64: |
+    $(echo "$init_output" | jq -c '.unseal_keys_b64')
+  unseal_keys_hex: |
+    $(echo "$init_output" | jq -c '.unseal_keys_hex')
+  unseal_shares: "$(echo "$init_output" | jq -r '.unseal_shares')"
+  unseal_threshold: "$(echo "$init_output" | jq -r '.unseal_threshold')"
+  root_token: "$(echo "$init_output" | jq -r '.root_token')"
+EOF
+)
+
+echo "$secret_manifest" | kubectl apply -f -
+
 while true; do
-  kubectl exec -n $namespace $pod_name -- vault kv put kv/security/vault data="$init_output" && break
+  kubectl exec -n $namespace $pod_name -- vault kv put secret/security/vault unseal_keys_b64=$(echo "$init_output" | jq -c '.unseal_keys_b64') && break
+  kubectl exec -n $namespace $pod_name -- vault kv put secret/security/vault unseal_keys_hex=$(echo "$init_output" | jq -c '.unseal_keys_hex') && break
+  kubectl exec -n $namespace $pod_name -- vault kv put secret/security/vault unseal_shares="$(echo "$init_output" | jq -r '.unseal_shares')" && break
+  kubectl exec -n $namespace $pod_name -- vault kv put secret/security/vault unseal_threshold="$(echo "$init_output" | jq -r '.unseal_threshold')" && break
+  kubectl exec -n $namespace $pod_name -- vault kv put secret/security/vault root_token="$(echo "$init_output" | jq -r '.root_token')" && break
   echo "Retrying to write Vault initialization data..."
   sleep 5
 done

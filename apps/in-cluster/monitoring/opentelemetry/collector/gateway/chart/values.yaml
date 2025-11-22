@@ -1,6 +1,9 @@
 
 mode: deployment
 
+image:
+  repository: otel/opentelemetry-collector-contrib
+  
 replicaCount: 1
 
 presets:

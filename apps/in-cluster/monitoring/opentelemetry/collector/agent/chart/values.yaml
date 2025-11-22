@@ -1,6 +1,9 @@
 
 mode: daemonset
 
+image:
+  repository: otel/opentelemetry-collector-contrib
+  
 clusterRole:
   create: true
   rules:
