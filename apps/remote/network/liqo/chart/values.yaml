@@ -64,10 +64,10 @@ crdReplicator:
             requests: {}
 discovery:
     config:
-        clusterID: lab
+        clusterID: remote
         clusterLabels:
             liqo.io/provider: k3s
-            topology.liqo.io/type: origin
+            topology.liqo.io/type: destination
 fullnameOverride: ""
 imagePullSecrets: []
 ipam:
