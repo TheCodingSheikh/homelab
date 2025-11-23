@@ -9,3 +9,6 @@ helmCharts:
   namespace: liqo
   releaseName: liqo
   valuesFile: values.yaml
+
+patchesStrategicMerge:
+  - patch-crd.yaml
