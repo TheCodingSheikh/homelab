@@ -12,3 +12,7 @@ helmCharts:
 
 patchesStrategicMerge:
   - patch-crd.yaml
+
+commonAnnotations:
+  meta.helm.sh/release-name": "liqo"
+  meta.helm.sh/release-namespace: "liqo"
