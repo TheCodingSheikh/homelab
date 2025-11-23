@@ -2,9 +2,6 @@ apiServer:
     address: ""
     ca: ""
     trustedCA: false
-auth:
-    service:
-        type: NodePort
 authentication:
     awsConfig:
         accessKeyId: ""
@@ -26,7 +23,6 @@ controllerManager:
         defaultLimitsEnforcement: None
         enableNodeFailureController: false
         enableResourceEnforcement: true
-        resourceSharingPercentage: 90
     image:
         name: ghcr.io/liqotech/liqo-controller-manager
         version: ""
@@ -68,19 +64,10 @@ crdReplicator:
             requests: {}
 discovery:
     config:
-        clusterID: ""
+        clusterID: 3c3ff938-9dd9-4497-80aa-75aec84b78fa
         clusterLabels:
             liqo.io/provider: k3s
-        clusterName: hidden-dream
 fullnameOverride: ""
-gateway:
-    metrics:
-        enabled: false
-        serviceMonitor:
-            enabled: false
-    replicas: 1
-    service:
-        type: NodePort
 imagePullSecrets: []
 ipam:
     external:
@@ -104,13 +91,13 @@ ipam:
         syncGracePeriod: 30s
         syncInterval: 2m
     internalCIDR: 10.80.0.0/16
-    podCIDR: "10.42.0.0/16"
+    podCIDR: 10.42.0.0/16
     pools:
         - 10.0.0.0/8
         - 192.168.0.0/16
         - 172.16.0.0/12
     reservedSubnets: []
-    serviceCIDR: "10.43.0.0/16"
+    serviceCIDR: 10.43.0.0/16
 metricAgent:
     config:
         timeout:
@@ -137,11 +124,6 @@ metrics:
     prometheusOperator:
         enabled: false
 nameOverride: ""
-networkManager:
-    config:
-        podCIDR: 10.42.0.0/16
-        reservedSubnets: []
-        serviceCIDR: 10.43.0.0/16
 networking:
     clientResources:
         - apiVersion: networking.liqo.io/v1beta1
@@ -287,6 +269,7 @@ proxy:
 pullPolicy: IfNotPresent
 requirements:
     kernel:
+        disabled: false
         enabled: true
 storage:
     enabled: true
@@ -297,7 +280,6 @@ tag: v1.0.1
 telemetry:
     config:
         schedule: ""
-    enable: true
     enabled: true
     image:
         name: ghcr.io/liqotech/telemetry
