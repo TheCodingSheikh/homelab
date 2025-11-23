@@ -1,3 +1,10 @@
+otel:
+  env:
+    - name: HYPERDX_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: hyperdx-secret
+          key: HYPERDX_API_KEY
 hyperdx:
   env:
     - name: HYPERDX_API_KEY

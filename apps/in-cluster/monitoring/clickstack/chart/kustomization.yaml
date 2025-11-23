@@ -13,3 +13,18 @@ helmCharts:
   namespace: clickstack
   releaseName: clickstack
   valuesFile: values.yaml
+
+patches:
+  - path: delete-secret.yaml
+  - target:
+      kind: Deployment
+      name: clickstack-app
+    patch: |
+      - op: remove
+        path: /spec/template/spec/containers/0/env/0
+  - target:
+      kind: Deployment
+      name: clickstack-otel-collector
+    patch: |
+      - op: remove
+        path: /spec/template/spec/containers/0/env/6
