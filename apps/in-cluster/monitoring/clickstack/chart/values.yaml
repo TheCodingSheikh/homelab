@@ -1,0 +1,17 @@
+hyperdx:
+  apiKey:
+    valueFrom:
+      secretKeyRef:
+        name: hyperdx-secret
+        key: HYPERDX_API_KEY
+  ingress:
+    enabled: true
+    host: "hyperdx.lab.com"
+    annotaions:
+      cert-manager.io/cluster-issuer: lab-issuer
+      gethomepage.dev/enabled: "true"
+      gethomepage.dev/name: "Clickhouse"
+      gethomepage.dev/icon: "clickhouse.png"
+    tls:
+      enabled: true
+      tlsSecretName: "hyperdx-tls"
