@@ -1,9 +1,10 @@
 hyperdx:
-  apiKey:
-    valueFrom:
-      secretKeyRef:
-        name: hyperdx-secret
-        key: HYPERDX_API_KEY
+  env:
+    - name: HYPERDX_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: hyperdx-secret
+          key: HYPERDX_API_KEY
   ingress:
     enabled: true
     host: "hyperdx.lab.com"
