@@ -205,6 +205,20 @@ resources:
     repoBranchOverride: release/v0.3.4
     kustomize:
       namespace: kubeflow
+      patches:
+      - target:
+          kind: Deployment
+          name: model-registry-deployment
+        # K8s Reverse service for MySQL uses port 3306
+        patch: |-
+          - op: add
+            path: /spec/template/spec/containers/0/env/-
+            value:
+              - name: DB_PORT
+                value: "3306"
+          - op: replace
+            path: /spec/template/spec/containers/0/args/3
+            value: "--embedmd-database-dsn=$(MYSQL_USER_NAME):$(MYSQL_ROOT_PASSWORD)@tcp(model-registry-db:$(DB_PORT))/$(MYSQL_DATABASE)?charset=utf8mb4"
 
   modelRegistryUi:
     enabled: true
@@ -213,6 +227,7 @@ resources:
     repoBranchOverride: release/v0.3.4
     kustomize:
       namespace: kubeflow
+      # ghcr.io/kubeflow/model-registry/ui:sha-6d6d7f5@sha256:b87024bb514e29cdab95707095988f425e926de521ce78ad3ad518d4a254d441
       patches:
       - target:
           kind: Deployment
