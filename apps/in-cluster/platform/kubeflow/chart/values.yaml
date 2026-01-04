@@ -8,6 +8,10 @@ defaultAppSpec:
 resources:
   certManagerBase:
     enabled: false
+  istioInstall:
+    kustomize:
+      commonAnnotations:
+        inject-certs: "enabled"
   dex:
     kustomize:
       commonAnnotations:
