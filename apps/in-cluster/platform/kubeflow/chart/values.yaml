@@ -220,7 +220,7 @@ resources:
         patch: |-
           - op: add
             path: /spec/template/spec/containers/0/env/-
-            value: |
+            value:
               name: INSECURE_SKIP_VERIFY
               value: "true"
 
