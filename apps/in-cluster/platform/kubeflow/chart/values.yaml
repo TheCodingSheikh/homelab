@@ -195,12 +195,16 @@ resources:
     path: manifests/kustomize/overlays/db
     repoOverride: https://github.com/kubeflow/model-registry
     repoBranchOverride: release/v0.3.4
+    kustomize:
+      namespace: kubeflow
 
   modelRegistryIstio:
     enabled: true
     path: manifests/kustomize/options/istio
     repoOverride: https://github.com/kubeflow/model-registry
     repoBranchOverride: release/v0.3.4
+    kustomize:
+      namespace: kubeflow
 
   modelRegistryUi:
     enabled: true
@@ -208,6 +212,7 @@ resources:
     repoOverride: https://github.com/kubeflow/model-registry
     repoBranchOverride: release/v0.3.4
     kustomize:
+      namespace: kubeflow
       patches:
       - target:
           kind: Deployment
@@ -218,6 +223,7 @@ resources:
             value: |
               name: INSECURE_SKIP_VERIFY
               value: "true"
+
   modelRegistryCsi:
     enabled: true
     path: manifests/kustomize/options/csi
