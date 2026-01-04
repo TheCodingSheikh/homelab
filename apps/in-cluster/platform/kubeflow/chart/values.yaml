@@ -12,6 +12,18 @@ resources:
     kustomize:
       commonAnnotations:
         inject-certs: "enabled"
+
+  centralDashboard:
+    kustomize:
+      patches:
+      - target:
+          kind: Deployment
+          name: centraldashboard
+        patch: |-
+          - op: replace
+            path: /spec/template/spec/containers/0/env/4/value
+            value: "true"
+
   dex:
     kustomize:
       commonAnnotations:
@@ -88,6 +100,9 @@ resources:
           - op: replace
             path: /spec/jwtRules/0/issuer
             value: https://kubeflow.lab.com/dex
+          - op: add
+            path: /spec/jwtRules/0/jwksUri
+            value: http://dex.auth.svc.cluster.local:5556/dex/keys
 
       - target:
           kind: ConfigMap
@@ -146,6 +161,7 @@ raw:
       apiVersion: networking.k8s.io/v1
       kind: Ingress
       annotations:
+        cert-manager.io/cluster-issuer: lab-issuer
         nginx.ingress.kubernetes.io/ssl-redirect: "true"
       namespace: istio-system
       spec:
