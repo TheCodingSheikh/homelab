@@ -7,3 +7,15 @@ helmCharts:
   version: 1.1.0
   valuesFile: values.yaml
   releaseName: kubeflow
+
+patchesStrategicMerge:
+  - patch-crd.yaml
+
+patches:
+  - target:
+      group: argoproj.io
+      version: v1alpha1
+      kind: Application
+    patch: |-
+      - op: remove
+        path: /spec/destination/namespace
