@@ -207,8 +207,8 @@ resources:
           - op: add
             path: /spec/template/spec/containers/0/env/-
             value:
-              - name: DB_PORT
-                value: "3306"
+              name: DB_PORT
+              value: "3306"
           - op: replace
             path: /spec/template/spec/containers/0/args/3
             value: "--embedmd-database-dsn=$(MYSQL_USER_NAME):$(MYSQL_ROOT_PASSWORD)@tcp(model-registry-db:$(DB_PORT))/$(MYSQL_DATABASE)?charset=utf8mb4"
