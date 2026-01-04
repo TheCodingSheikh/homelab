@@ -20,9 +20,6 @@ controlPlane:
   statefulSet:
     highAvailability:
       replicas: 3
-    pods:
-      annotations:
-        inject-certs: "enabled"
 experimental:
   deploy:
     host:
