@@ -155,6 +155,16 @@ resources:
               redirect_url = "/oauth2/callback"
               relative_redirect_url = true
 
+  kserve:
+    kustomize:
+      patches:
+        - target:
+            kind: CustomResourceDefinition
+          patch: |-
+            - op: add
+              path: /metadata/annotations/argocd.argoproj.io~1sync-options
+              value: "ServerSideApply=true"
+
   trainingOperator:
     kustomize:
       patches:
