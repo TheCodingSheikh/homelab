@@ -161,18 +161,18 @@ resources:
         - target:
             kind: CustomResourceDefinition
           patch: |-
-            metadata:
-              annotations:
-                "argocd.argoproj.io/sync-options": "ServerSideApply=true"
+            - op: add
+              path: /metadata/annotations/argocd.argoproj.io~1sync-options
+              value: "ServerSideApply=true"
   sparkOperator:
     kustomize:
       patches:
         - target:
             kind: CustomResourceDefinition
           patch: |-
-            metadata:
-              annotations:
-                "argocd.argoproj.io/sync-options": "ServerSideApply=true"
+            - op: add
+              path: /metadata/annotations/argocd.argoproj.io~1sync-options
+              value: "ServerSideApply=true"
                
   userNamespace:
     kustomize:
