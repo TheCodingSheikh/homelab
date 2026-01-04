@@ -143,7 +143,22 @@ components:
                             - email
                             - profile
                             - roles
-                            - web-origins	
+                            - web-origins
+              kubeflow:
+                forProvider:
+                  name: kubeflow
+                  clientId: kubeflow-oidc-authservice
+                  clientSecretSecretRef:
+                    key: secret-key
+                    name: kubeflow-client
+                    namespace: keycloak
+                  accessType: CONFIDENTIAL
+                  standardFlowEnabled: true
+                  directAccessGrantsEnabled: true
+                  rootUrl: https://kubeflow.lab.com
+                  validRedirectUris:
+                    - https://kubeflow.lab.com/dex/callback
+
           ClientScope:
             apiVersion: openidclient.keycloak.crossplane.io/v1alpha1
             refKey: "clientScopeIdRef"

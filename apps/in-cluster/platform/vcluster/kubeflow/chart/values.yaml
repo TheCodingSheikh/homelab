@@ -1,0 +1,79 @@
+sync:
+  toHost:
+    ingresses: 
+      enabled: true
+  fromHost:
+    storageClasses:
+      enabled: true
+    ingressClasses:
+      enabled: true
+    nodes:
+      enabled: true
+controlPlane:
+  statefulSet:
+    pods:
+      annotations:
+        inject-certs: "enabled"
+experimental:
+  deploy:
+    host:
+      manifestsTemplate: |
+        apiVersion: external-secrets.io/v1alpha1
+        kind: PushSecret
+        metadata:
+          name: {{ .Release.Name }}-pushsecret
+        spec:
+          refreshInterval: 5m
+          secretStoreRefs:
+            - kind: ClusterSecretStore
+              name: vault-backend
+          selector:
+            secret:
+              name: vc-{{ .Release.Name }}
+          data:
+            - match:
+                remoteRef:
+                  remoteKey: platform/vcluster/{{ .Release.Name }}
+        ---
+        apiVersion: external-secrets.io/v1beta1
+        kind: ExternalSecret
+        metadata:
+          name: argocd-cluster-{{ .Release.Name }}-externalsecret
+          namespace: argo-cd
+        spec:
+          secretStoreRef:
+            kind: ClusterSecretStore
+            name: vault-backend
+          target:
+            name: argocd-cluster-{{ .Release.Name }}-credentials
+            template:
+              engineVersion: v2
+              metadata:
+                annotations:
+                  managed-by: external-secrets
+                labels:
+                  argocd.argoproj.io/secret-type: cluster
+              data:
+                name: {{ .Release.Name }}
+                server: https://{{ .Release.Name }}.{{ .Release.Namespace }}:443
+                config: |
+                  {
+                    "tlsClientConfig": {
+                      "caData": "{{ printf `{{ index . "certificate-authority" | b64enc }}` }}",
+                      "certData": "{{ printf `{{ index . "client-certificate" | b64enc }}` }}",
+                      "keyData": "{{ printf `{{ index . "client-key" | b64enc }}` }}"
+                    }
+                  }
+          data:
+            - secretKey: certificate-authority
+              remoteRef:
+                key: platform/vcluster/{{ .Release.Name }}
+                property: certificate-authority
+            - secretKey: client-certificate
+              remoteRef:
+                key: platform/vcluster/{{ .Release.Name }}
+                property: client-certificate
+            - secretKey: client-key
+              remoteRef:
+                key: platform/vcluster/{{ .Release.Name }}
+                property: client-key
