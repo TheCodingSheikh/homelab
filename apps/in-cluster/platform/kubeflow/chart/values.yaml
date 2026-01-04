@@ -208,7 +208,7 @@ resources:
 
   modelRegistryUi:
     enabled: true
-    path: kustomize/options/ui/overlays/standalone
+    path: manifests/kustomize/options/ui/overlays/standalone
     repoOverride: https://github.com/kubeflow/model-registry
     repoBranchOverride: release/v0.3.4
     kustomize:
