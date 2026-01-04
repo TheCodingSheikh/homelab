@@ -10,7 +10,16 @@ sync:
     nodes:
       enabled: true
 controlPlane:
+  backingStore:
+    etcd:
+      deploy:
+        enabled: true
+        statefulSet:
+          highAvailability:
+            replicas: 3
   statefulSet:
+    highAvailability:
+      replicas: 3
     pods:
       annotations:
         inject-certs: "enabled"
