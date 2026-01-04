@@ -48,13 +48,13 @@ resources:
                 id: keycloak
                 name: keycloak
                 config:
-                  issuer: $KEYCLOAK_ISSUER
+                  issuer: https://sso.lab.com/realms/lab
 
                   # Override JWKS endpoint: Dex will fetch Keycloak's JWKs from here.
                   # This is useful when issuer discovery fails or when the IdP uses
                   # self-signed / internal-only certificates.
                   # Keycloak's endpoint /realms/{realm}/protocol/openid-connect/certs. See the Keycloak documentation here https://www.keycloak.org/docs/latest/securing_apps/index.html#certificate-endpoint
-                  jwksUri: https://sso.lab.com/realms/labprotocol/openid-connect/certs
+                  jwksUri: https://sso.lab.com/realms/lab/protocol/openid-connect/certs
                   clientID: kubeflow-oidc-authservice
                   clientSecret: lXiyS3PagqDhiXucjVYK69kqBzaStV2v
                   redirectURI: https://kubeflow.lab.com/dex/callback
