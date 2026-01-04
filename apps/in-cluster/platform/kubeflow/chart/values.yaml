@@ -197,13 +197,6 @@ resources:
     repoBranchOverride: release/v0.3.4
     kustomize:
       namespace: kubeflow
-
-  modelRegistryIstio:
-    enabled: true
-    path: manifests/kustomize/options/istio
-    repoOverride: https://github.com/kubeflow/model-registry
-    repoBranchOverride: release/v0.3.4
-    kustomize:
       namespace: kubeflow
       patches:
       - target:
@@ -219,6 +212,14 @@ resources:
           - op: replace
             path: /spec/template/spec/containers/0/args/3
             value: "--embedmd-database-dsn=$(MYSQL_USER_NAME):$(MYSQL_ROOT_PASSWORD)@tcp(model-registry-db:$(DB_PORT))/$(MYSQL_DATABASE)?charset=utf8mb4"
+
+  modelRegistryIstio:
+    enabled: true
+    path: manifests/kustomize/options/istio
+    repoOverride: https://github.com/kubeflow/model-registry
+    repoBranchOverride: release/v0.3.4
+    kustomize:
+      namespace: kubeflow
 
   modelRegistryUi:
     enabled: true
