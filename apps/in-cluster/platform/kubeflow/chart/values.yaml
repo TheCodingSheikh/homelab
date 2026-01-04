@@ -1,0 +1,164 @@
+argoNamespace: argo-cd
+destinationServer: https://kubeflow.vcluster-kubeflow:443
+defaultAppSpec:
+  syncPolicy:
+    syncOptions:
+    - ApplyOutOfSyncOnly=true
+
+resources:
+  certManagerBase:
+    enabled: false
+  dex:
+    kustomize:
+      commonAnnotations:
+        inject-certs: "enabled"
+      patches:
+      - target:
+          kind: ConfigMap
+          name: dex
+        patch: |-
+          - op: replace
+            path: /data/config.yaml
+            value: |
+              issuer: https://kubeflow.lab.com/dex
+              storage:
+                type: kubernetes
+                config:
+                  inCluster: true
+              web:
+                http: 0.0.0.0:5556
+              logger:
+                level: "debug"
+                format: text
+              oauth2:
+                skipApprovalScreen: true
+              enablePasswordDB: false
+              # staticPasswords:
+              # - email: user@example.com
+              #   hashFromEnv: DEX_USER_PASSWORD
+              #   username: user
+              #   userID: "15841185641784"
+              staticClients:
+              - idEnv: OIDC_CLIENT_ID
+                redirectURIs: ["/oauth2/callback"]
+                name: 'Dex Login Application'
+                secretEnv: OIDC_CLIENT_SECRET
+              connectors:
+              - type: oidc
+                id: keycloak
+                name: keycloak
+                config:
+                  issuer: $KEYCLOAK_ISSUER
+
+                  # Override JWKS endpoint: Dex will fetch Keycloak's JWKs from here.
+                  # This is useful when issuer discovery fails or when the IdP uses
+                  # self-signed / internal-only certificates.
+                  # Keycloak's endpoint /realms/{realm}/protocol/openid-connect/certs. See the Keycloak documentation here https://www.keycloak.org/docs/latest/securing_apps/index.html#certificate-endpoint
+                  jwksUri: https://sso.lab.com/realms/labprotocol/openid-connect/certs
+                  clientID: kubeflow-oidc-authservice
+                  clientSecret: lXiyS3PagqDhiXucjVYK69kqBzaStV2v
+                  redirectURI: https://kubeflow.lab.com/dex/callback
+                  insecureSkipVerify: true 
+                  # Disable TLS certificate verification when connecting to the issuer.
+                  # This is required for test or on-premises installations using self-signed
+                  # certificates.
+                  # Dex does not support an `insecure` field. TLS verification is controlled
+                  # via `insecureSkipVerify`, which is implemented in the Dex OIDC connector.
+                  # Source: https://github.com/dexidp/dex/blob/master/connector/oidc/oidc.go
+                  insecureSkipEmailVerified: true
+                  userNameKey: email       
+                  scopes:
+                    - openid
+                    - profile
+                    - email
+                    - offline_access
+  oauth2Proxy:
+    kustomize:
+      commonAnnotations:
+        inject-certs: "enabled"
+      patches:
+      - target:
+          kind: RequestAuthentication
+          name: dex-jwt
+        patch: |-
+          - op: replace
+            path: /spec/jwtRules/0/issuer
+            value: https://kubeflow.lab.com/dex
+
+      - target:
+          kind: ConfigMap
+          name: oauth2-proxy
+        patch: |-
+          - op: replace
+            path: /data/oauth2_proxy.cfg
+            value: |
+              provider = "oidc"
+              oidc_issuer_url = "https://kubeflow.lab.com/dex"
+              scope = "profile email offline_access openid"
+              email_domains = "*"
+              insecure_oidc_allow_unverified_email = "true"
+
+              upstreams = [ "static://200" ]
+
+              skip_auth_routes = [
+                "^/dex/",
+              ]
+
+              api_routes = [
+                "/api/",
+                "/apis/",
+                "^/ml_metadata",
+              ]
+
+              skip_oidc_discovery = true
+              login_url = "/dex/auth"
+              redeem_url = "http://dex.auth.svc.cluster.local:5556/dex/token"
+              oidc_jwks_url = "http://dex.auth.svc.cluster.local:5556/dex/keys"
+
+              skip_provider_button = false
+
+              provider_display_name = "Dex"
+              custom_sign_in_logo = "/custom-theme/kubeflow-logo.svg"
+              banner = "-"
+              footer = "-"
+
+              prompt = "none"
+
+              set_authorization_header = true
+              set_xauthrequest = true
+
+              cookie_name = "oauth2_proxy_kubeflow"
+              cookie_expire = "24h"
+              cookie_refresh = 0
+
+              code_challenge_method = "S256"
+
+              redirect_url = "/oauth2/callback"
+              relative_redirect_url = true
+
+raw:
+  resources:
+    istio-ingress:
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      annotations:
+        nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      namespace: istio-system
+      spec:
+        spec:
+          ingressClassName: nginx
+          rules:
+          - host: kubeflow.lab.com
+            http:
+              paths:
+              - backend:
+                  service:
+                    name: istio-ingressgateway
+                    port:
+                      number: 80
+                path: /
+                pathType: Prefix
+          tls:
+          - hosts:
+            - kubeflow.lab.com
+            secretName: kubeflow-ingressgateway-tls
