@@ -8,9 +8,6 @@ helmCharts:
   valuesFile: values.yaml
   releaseName: kubeflow
 
-patchesStrategicMerge:
-  - patch-crd.yaml
-
 patches:
   - target:
       group: argoproj.io
