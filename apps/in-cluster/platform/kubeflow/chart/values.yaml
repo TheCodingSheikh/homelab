@@ -219,10 +219,10 @@ resources:
           name: model-registry-ui
         patch: |-
           - op: add
-            path: /spec/template/spec/containers/0/env/-
+            path: /spec/template/spec/containers/0/env
             value:
-              name: INSECURE_SKIP_VERIFY
-              value: "true"
+              - name: INSECURE_SKIP_VERIFY
+                value: "true"
 
   modelRegistryCsi:
     enabled: true
