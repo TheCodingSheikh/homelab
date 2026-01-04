@@ -10,6 +10,9 @@ sync:
     nodes:
       enabled: true
 controlPlane:
+  distro:
+    k8s:
+      version: v1.34.0
   backingStore:
     etcd:
       deploy:
