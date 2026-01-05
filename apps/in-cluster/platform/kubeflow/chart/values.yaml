@@ -2,6 +2,8 @@ argoNamespace: argo-cd
 destinationServer: https://kubeflow.vcluster-kubeflow:443
 defaultAppSpec:
   syncPolicy:
+    automated:
+      selfHeal: false
     syncOptions:
     - ApplyOutOfSyncOnly=true
 
@@ -223,7 +225,7 @@ resources:
 
   modelRegistryUi:
     enabled: true
-    path: manifests/kustomize/options/ui/overlays/standalone
+    path: manifests/kustomize/options/ui/overlays/istio
     repoOverride: https://github.com/kubeflow/model-registry
     repoBranchOverride: release/v0.3.4
     kustomize:
