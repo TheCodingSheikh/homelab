@@ -223,22 +223,25 @@ resources:
 
   modelRegistryUi:
     enabled: true
-    path: manifests/kustomize/options/ui/overlays/istio
+    path: manifests/kustomize/options/ui/overlays/standalone
     repoOverride: https://github.com/kubeflow/model-registry
     repoBranchOverride: release/v0.3.4
     kustomize:
       namespace: kubeflow
-      # ghcr.io/kubeflow/model-registry/ui:sha-6d6d7f5@sha256:b87024bb514e29cdab95707095988f425e926de521ce78ad3ad518d4a254d441
       patches:
       - target:
           kind: Deployment
           name: model-registry-ui
+        # arm image
         patch: |-
           - op: add
             path: /spec/template/spec/containers/0/env
             value:
               - name: INSECURE_SKIP_VERIFY
                 value: "true"
+          - op: replace
+            path: /spec/template/spec/containers/0/image
+            value: "ghcr.io/kubeflow/model-registry/ui:sha-6d6d7f5@sha256:b87024bb514e29cdab95707095988f425e926de521ce78ad3ad518d4a254d441"
 
   modelRegistryCsi:
     enabled: true
