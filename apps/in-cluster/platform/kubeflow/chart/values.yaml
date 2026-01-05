@@ -327,8 +327,7 @@ resources:
     repoOverride: https://github.com/kubeflow/model-registry
     repoBranchOverride: release/v0.3.4
     kustomize:
-      namespace: kubeflow
-      namespace: kubeflow
+      namespace: model-registry
       patches:
       - target:
           kind: Deployment
@@ -350,7 +349,7 @@ resources:
     repoOverride: https://github.com/kubeflow/model-registry
     repoBranchOverride: release/v0.3.4
     kustomize:
-      namespace: kubeflow
+      namespace: model-registry
 
   modelRegistryUi:
     enabled: true
