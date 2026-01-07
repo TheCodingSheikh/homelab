@@ -23,3 +23,16 @@ stringData:
     ldap_search_base = dc=example,dc=com
     ldap_user_search_base = ou=Users,dc=example,dc=com
     ldap_group_search_base = ou=Groups,dc=example,dc=com
+    auth_provider = ldap
+    id_provider = ldap
+    ldap_uri = ldap://openldap.ldap-test.svc.cluster.local
+    ldap_search_base = dc=example,dc=com
+    ldap_user_search_base = ou=Users,dc=example,dc=com
+    ldap_group_search_base = ou=Groups,dc=example,dc=com
+
+    ldap_id_use_start_tls = False
+
+    ldap_default_bind_dn = cn=admin,dc=example,dc=com
+    ldap_default_authtok = admin
+
+    enumerate = True
