@@ -11,27 +11,41 @@ stringData:
     domains = DEFAULT
 
     [nss]
-    filter_groups = root,slurm
-    filter_users = root,slurm
+    filter_groups = root
+    filter_users = root
+    entry_negative_timeout = 0
 
     [pam]
 
     [domain/DEFAULT]
-      auth_provider = ldap
-      id_provider = ldap
-      ldap_uri = ldap://10.43.32.15
-      ldap_search_base = dc=example,dc=com
-      ldap_user_search_base = ou=Users,dc=example,dc=com
-      ldap_group_search_base = ou=Groups,dc=example,dc=com
-      ldap_default_bind_dn = cn=admin,dc=example,dc=com
-      ldap_default_authtok = admin
+    # 1. CONNECTION
+    id_provider = ldap
+    auth_provider = ldap
+    # Use the IP you found earlier (10.43.32.15) or the service DNS
+    ldap_uri = ldap://10.43.32.15
 
+    # 2. SEARCH BASES
+    ldap_search_base = dc=example,dc=com
+    ldap_user_search_base = ou=Users,dc=example,dc=com
+    ldap_group_search_base = ou=Groups,dc=example,dc=com
 
-      ldap_id_use_start_tls = False
-      ldap_tls_reqcert = never
+    # 3. BIND CREDENTIALS (REQUIRED)
+    ldap_default_bind_dn = cn=admin,dc=example,dc=com
+    ldap_default_authtok = admin
 
-      ldap_network_timeout = 6
-      ldap_opt_timeout = 6
+    # 4. SECURITY BYPASS (CRITICAL FOR K8S TESTING)
+    # Disable TLS entirely
+    ldap_id_use_start_tls = False
+    ldap_tls_reqcert = never
+    # Allow sending password over cleartext (Fixes "Offline" error)
+    ldap_auth_disable_tls_never_use_in_production = True
 
-      cache_credentials = False
-      entry_cache_timeout = 0
+    # 5. SHADOW/EXPIRY FIXES
+    # Tell SSSD which attribute contains the expiration date
+    ldap_user_shadow_last_change = shadowLastChange
+    # Access provider 'permit' allows login even if rules are fuzzy
+    access_provider = permit
+
+    # 6. DISABLE CACHING (FOR DEBUGGING)
+    cache_credentials = False
+    entry_cache_timeout = 0
