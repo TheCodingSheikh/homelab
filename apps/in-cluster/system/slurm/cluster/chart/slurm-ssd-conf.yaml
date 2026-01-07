@@ -17,22 +17,21 @@ stringData:
     [pam]
 
     [domain/DEFAULT]
-    auth_provider = ldap
-    id_provider = ldap
-    ldap_uri = ldap://openldap.ldap-test.svc.cluster.local
-    ldap_search_base = dc=example,dc=com
-    ldap_user_search_base = ou=Users,dc=example,dc=com
-    ldap_group_search_base = ou=Groups,dc=example,dc=com
-    auth_provider = ldap
-    id_provider = ldap
-    ldap_uri = ldap://openldap.ldap-test.svc.cluster.local
-    ldap_search_base = dc=example,dc=com
-    ldap_user_search_base = ou=Users,dc=example,dc=com
-    ldap_group_search_base = ou=Groups,dc=example,dc=com
+      auth_provider = ldap
+      id_provider = ldap
+      ldap_uri = ldap://openldap.ldap-test.svc.cluster.local
+      ldap_search_base = dc=example,dc=com
+      ldap_user_search_base = ou=Users,dc=example,dc=com
+      ldap_group_search_base = ou=Groups,dc=example,dc=com
+      ldap_default_bind_dn = cn=admin,dc=example,dc=com
+      ldap_default_authtok = admin
 
-    ldap_id_use_start_tls = False
 
-    ldap_default_bind_dn = cn=admin,dc=example,dc=com
-    ldap_default_authtok = admin
+      ldap_id_use_start_tls = False
+      ldap_tls_reqcert = never
 
-    enumerate = True
+      ldap_network_timeout = 6
+      ldap_opt_timeout = 6
+
+      cache_credentials = False
+      entry_cache_timeout = 0
