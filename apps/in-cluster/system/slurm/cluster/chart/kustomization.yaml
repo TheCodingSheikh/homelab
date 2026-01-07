@@ -6,7 +6,7 @@ namespace: slurm
 helmCharts:
 - name: slurm
   repo: oci://ghcr.io/slinkyproject/charts
-  version: 1.0.0
+  version: 1.0.1
   releaseName: slurm
   includeCRDs: true
   namespace: slurm
