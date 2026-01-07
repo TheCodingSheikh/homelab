@@ -10,3 +10,4 @@ helmCharts:
   releaseName: slurm
   includeCRDs: true
   namespace: slurm
+  valuesFile: values.yaml
