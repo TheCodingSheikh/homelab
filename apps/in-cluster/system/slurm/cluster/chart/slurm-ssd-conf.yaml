@@ -1,0 +1,25 @@
+apiVersion: v1
+stringData:
+  sssd.conf: |
+    [sssd]
+    config_file_version = 2
+    services = nss,pam
+    domains = DEFAULT
+
+    [nss]
+    filter_groups = root,slurm
+    filter_users = root,slurm
+
+    [pam]
+
+    [domain/DEFAULT]
+    auth_provider = ldap
+    id_provider = ldap
+    ldap_uri = ldap://openldap.ldap-test.svc.cluster.local
+    ldap_search_base = dc=example,dc=com
+    ldap_user_search_base = ou=Users,dc=example,dc=com
+    ldap_group_search_base = ou=Groups,dc=example,dc=com
+kind: Secret
+metadata:
+  name: slurm-sssd-conf
+  namespace: slurm

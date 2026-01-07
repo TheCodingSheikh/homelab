@@ -3,6 +3,9 @@ kind: Kustomization
 
 namespace: slurm
 
+resources:
+  - slurm-ssd-conf.yaml
+  
 helmCharts:
 - name: slurm
   repo: oci://ghcr.io/slinkyproject/charts
