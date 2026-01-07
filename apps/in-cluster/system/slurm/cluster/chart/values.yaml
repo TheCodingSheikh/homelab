@@ -2,6 +2,7 @@ accounting:
   enabled: true
 
 sssd:
+  # not working, need to patch
   conf: |
     [sssd]
     config_file_version = 2
