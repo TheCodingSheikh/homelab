@@ -1,4 +1,7 @@
 apiVersion: v1
+kind: Secret
+metadata:
+  name: slurm-login-slinky-sssd-conf
 stringData:
   sssd.conf: |
     [sssd]
@@ -19,7 +22,3 @@ stringData:
     ldap_search_base = dc=example,dc=com
     ldap_user_search_base = ou=Users,dc=example,dc=com
     ldap_group_search_base = ou=Groups,dc=example,dc=com
-kind: Secret
-metadata:
-  name: slurm-sssd-conf
-  namespace: slurm

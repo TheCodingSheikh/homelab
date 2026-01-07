@@ -3,9 +3,6 @@ kind: Kustomization
 
 namespace: slurm
 
-resources:
-  - slurm-ssd-conf.yaml
-  
 helmCharts:
 - name: slurm
   repo: oci://ghcr.io/slinkyproject/charts
@@ -13,4 +10,6 @@ helmCharts:
   releaseName: slurm
   includeCRDs: true
   namespace: slurm
-  valuesFile: values.yaml
+  
+patchesStrategicMerge:
+  - slurm-ssd-conf.yaml
