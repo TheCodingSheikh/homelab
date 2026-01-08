@@ -9,7 +9,7 @@ defaultAppSpec:
 
 resources:
   certManagerBase:
-    enabled: false
+    enabled: true
   istioInstall:
     kustomize:
       commonAnnotations:
