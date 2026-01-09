@@ -26,3 +26,8 @@ sssd:
 loginsets:
   slinky:
     enabled: true
+
+vendor:
+  nvidia:
+    dcgm:
+      enabled: true
