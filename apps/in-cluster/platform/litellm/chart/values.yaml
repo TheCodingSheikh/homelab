@@ -11,6 +11,9 @@ envVars:
 image:
   pullPolicy: IfNotPresent
 
+podAnnotations:
+  inject-certs: "enabled"
+  
 ingress:
   enabled: true
   className: "nginx"
