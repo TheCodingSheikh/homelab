@@ -8,6 +8,8 @@ args:
 envVars:
   STORE_MODEL_IN_DB: "true"
   SSL_CERT_FILE: /etc/ssl/certs/ca.crt
+  LITELLM_LICENSE: "bypass"
+  DOCS_TITLE: "MYLLM"
   # LITELLM_LICENSE: "eyJleHBpcmF0aW9uX2RhdGUiOiAiMjAyNi0wMi0wOCIsICJ1c2VyX2lkIjogInRyaWFsLWxpY2Vuc2UtbGl0ZWxsbSIsICJhbGxvd2VkX2ZlYXR1cmVzIjogWyIqIl0sICJtYXhfdXNlcnMiOiAxMDAsICJtYXhfdGVhbXMiOiA1fS4AGH/wkeFQm+xFbezcZIh50px/NDwk7MIge0ZrNRroJDei+OMhh1l5rtBxA8SAzw4rmdAjtEM9BZPhrQcutuWuEvuaHBrRWBR6UT8q1HOkcMJD41wnmmHwb+ea7w+Qq7C0DxH7qgLOomBaSlzGsAH9m1Ftn3vI1I4ZGymJ/qyQlRw006tQUCKfWCnoicklNnxwVhuppCUQBYv7KBOs/I8m/rFT8K7yN1a7yMogLKQwwttHNhYaDD9NQR40XCzKwG8l3iV5V4coQVwEtn3Rplg8MGe5SJ38T1waLPhsAFw5xVvh84IFlBgXwsKgasesLwL81eLXUJvLZctk76Dfh5YZ"
 image:
   pullPolicy: IfNotPresent
