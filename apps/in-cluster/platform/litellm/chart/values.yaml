@@ -3,7 +3,7 @@ command:
   - -c
 args:
   - |
-    sed -i 's/premium_user: bool = _license_check.is_premium()/premium_user: bool = True/' filename.py
+    sed -i 's/premium_user: bool = _license_check.is_premium()/premium_user: bool = True/' /app/litellm/proxy/proxy_server.py
     docker/prod_entrypoint.sh --config /etc/litellm/config.yaml
 envVars:
   STORE_MODEL_IN_DB: "true"
@@ -13,7 +13,7 @@ image:
 
 podAnnotations:
   inject-certs: "enabled"
-  
+
 ingress:
   enabled: true
   className: "nginx"
