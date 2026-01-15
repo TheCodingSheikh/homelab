@@ -144,6 +144,39 @@ components:
                             - profile
                             - roles
                             - web-origins
+              litellm:
+                forProvider:
+                  name: litellm
+                  clientId: litellm
+                  clientSecretSecretRef:
+                    key: secret-key
+                    name: litellm-client
+                    namespace: keycloak
+                  accessType: CONFIDENTIAL
+                  standardFlowEnabled: true
+                  directAccessGrantsEnabled: true
+                  rootUrl: https://llm.lab.com
+                  validRedirectUris:
+                    - "*"
+                dependants:
+                  Role:
+                    apiVersion: role.keycloak.crossplane.io/v1alpha1
+                    appendName: true
+                    list:
+                      - Admin
+                  ClientDefaultScopes:
+                    list:
+                      litellm:
+                        forProvider:
+                          defaultScopes:
+                            - litellm
+                            # Mandatory
+                            - acr
+                            - basic
+                            - email
+                            - profile
+                            - roles
+                            - web-origins
               kubeflow:
                 forProvider:
                   name: kubeflow
@@ -233,6 +266,24 @@ components:
                             id.token.claim: "true"
                             multivalued: "true"
                           name: grafana
+                          protocol: openid-connect
+                          protocolMapper: oidc-usermodel-client-role-mapper
+              litellm:
+                forProvider:
+                  name: litellm
+                dependants:
+                  ProtocolMapper:
+                    apiVersion: client.keycloak.crossplane.io/v1alpha1
+                    list:
+                      litellm:
+                        forProvider:
+                          config:
+                            usermodel.clientRoleMapping.clientId: litellm
+                            claim.name: litellm
+                            access.token.claim: "true"
+                            id.token.claim: "true"
+                            multivalued: "true"
+                          name: litellm
                           protocol: openid-connect
                           protocolMapper: oidc-usermodel-client-role-mapper
 
