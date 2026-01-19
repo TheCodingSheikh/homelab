@@ -3,7 +3,9 @@ command:
   - -c
 args:
   - |
-    sed -i 's/premium_user: bool = _license_check.is_premium()/premium_user: bool = True/' /app/litellm/proxy/proxy_server.py
+    sed -i '/def is_premium(self) -> bool:/a\        return True' /app/litellm/proxy/auth/litellm_license.py /usr/lib/python3.13/site-packages/litellm/proxy/auth/litellm_license.py 2>/dev/null
+    sed -i 's/premium_user: bool = _license_check.is_premium()/premium_user: bool = True/g; s/premium_user = _license_check.is_premium()/premium_user = True/g' /app/litellm/proxy/proxy_server.py /usr/lib/python3.13/site-packages/litellm/proxy/proxy_server.py 2>/dev/null
+    find /app /usr/lib/python3.13 -name "*.pyc" -delete 2>/dev/null; find /app /usr/lib/python3.13 -name __pycache__ -exec rm -rf {} + 2>/dev/null
     docker/prod_entrypoint.sh --config /etc/litellm/config.yaml
 envVars:
   STORE_MODEL_IN_DB: "true"
