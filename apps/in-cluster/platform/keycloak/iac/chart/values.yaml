@@ -163,7 +163,10 @@ components:
                     apiVersion: role.keycloak.crossplane.io/v1alpha1
                     appendName: true
                     list:
-                      - Admin
+                      - proxy_admin
+                      - proxy_admin_viewer
+                      - internal_user
+                      - internal_user_viewer
                   ClientDefaultScopes:
                     list:
                       litellm:
