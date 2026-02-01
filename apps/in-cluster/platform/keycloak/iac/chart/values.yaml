@@ -170,6 +170,7 @@ components:
                         forProvider:
                           defaultScopes:
                             - litellm
+                            - groups
                             # Mandatory
                             - acr
                             - basic
@@ -196,6 +197,24 @@ components:
             apiVersion: openidclient.keycloak.crossplane.io/v1alpha1
             refKey: "clientScopeIdRef"
             list:
+              groups:
+                forProvider:
+                  name: groups
+                dependants:
+                  ProtocolMapper:
+                    apiVersion: client.keycloak.crossplane.io/v1alpha1
+                    list:
+                      groups:
+                        forProvider:
+                          config:
+                            usermodel.clientRoleMapping.clientId: groups
+                            claim.name: groups
+                            access.token.claim: "true"
+                            id.token.claim: "true"
+                            multivalued: "true"
+                          name: groups
+                          protocol: openid-connect
+                          protocolMapper: oidc-group-membership-mapper
               argo-cd:
                 forProvider:
                   name: argo-cd
