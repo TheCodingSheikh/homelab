@@ -304,7 +304,7 @@ components:
                             claim.name: litellm
                             access.token.claim: "true"
                             id.token.claim: "true"
-                            multivalued: "true"
+                            multivalued: "false"
                           name: litellm
                           protocol: openid-connect
                           protocolMapper: oidc-usermodel-client-role-mapper
