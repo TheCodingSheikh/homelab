@@ -30,6 +30,7 @@ users:
   - name: backstage
     databases:
       - backstage
+    options: "CREATEDB"
     password:
       type: AlphaNumeric
   # - name: authentik
