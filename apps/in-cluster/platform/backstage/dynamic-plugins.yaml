@@ -18,18 +18,6 @@ data:
         disabled: false
       - package: ./dynamic-plugins/dist/backstage-community-plugin-topology
         disabled: false
-      - package: ./dynamic-plugins/dist/backstage-community-plugin-scaffolder-backend-module-kubernetes-dynamic
-        disabled: false
-      - package: ./dynamic-plugins/dist/backstage-plugin-scaffolder-backend-module-gitlab-dynamic
-        disabled: false
-      - package: ./dynamic-plugins/dist/immobiliarelabs-backstage-plugin-gitlab-backend-dynamic
-        disabled: false
-      - package: ./dynamic-plugins/dist/immobiliarelabs-backstage-plugin-gitlab
-        disabled: false
-      - package: ./dynamic-plugins/dist/backstage-plugin-notifications
-        disabled: false
-      - package: ./dynamic-plugins/dist/backstage-plugin-notifications-backend-dynamic
-        disabled: false
       - package: ./dynamic-plugins/dist/backstage-plugin-notifications
         disabled: false
       - package: ./dynamic-plugins/dist/backstage-plugin-notifications-backend-dynamic
@@ -80,12 +68,34 @@ data:
               onlyIngestAnnotatedResources: true
             crossplane:
               enabled: false
+
       - disabled: false
-        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/17972617348-1/roadiehq-plugin-scaffolder-frontend-module-http-request-field-dynamic-2.2.0.tgz"
-        integrity: sha512-ucwLRD1GH2d10msd0NZXZCy3vCyw4Vmq8sDliAIOCmJ2//tyHYf04Od1xrcF2yiojbfRkI6Zy4MOe8GRAUyEhA==
+        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/19874095301-1/roadiehq-plugin-scaffolder-frontend-module-http-request-field-dynamic-2.3.0.tgz"
+        integrity: sha512-tsixfJJtL6zBgdMltd3ngBj7FFM8wVunrSdRtY42nJ+N24MjZ8oqixRiArPDI1Z7siHz9Xc6ZWAlfCP0qEYx7Q==
+        pluginConfig:        
+          dynamicPlugins:
+            frontend:
+        roadiehq.plugin-scaffolder-frontend-module-http-request-field:
+          scaffolderFieldExtensions:
+            - importName: SelectFieldFromApiExtension
+
+      - disabled: false
+        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/19874628921-1/thecodingsheikh-backstage-plugin-entity-scaffolder-dynamic-0.1.0.tgz"
+        integrity: sha512-R7L5jy1qhvk27UUBZ7FZRvgEgEfGRXSjQmlFv3xNCwipwxF+TSAd2Tjy/C0l2KFydPZE73YI5/tiRcoyd7HLQA==
         pluginConfig:
           dynamicPlugins:
             frontend:
-              roadiehq.plugin-scaffolder-frontend-module-http-request-field:
-                scaffolderFieldExtensions:
-                  - importName: SelectFieldFromApiExtension
+              thecodingsheikh.backstage-plugin-entity-scaffolder:
+                entityTabs:
+                  - path: /entity-scaffolder
+                    title: Manage
+                    mountPoint: entity.page.entity-scaffolder
+                mountPoints:
+                  - mountPoint: entity.page.entity-scaffolder/cards
+                    importName: EntityScaffolderContent
+                    config:
+                      layout:
+                        gridColumn: "1 / -1"
+                      if:
+                        allOf:
+                          - isEntityScaffolderAvailable

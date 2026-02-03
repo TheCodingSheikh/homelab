@@ -6,3 +6,4 @@ resources:
   - dynamic-plugins.yaml
   - externalsecret.yaml
   - role.yaml
+  - pushsecret.yaml

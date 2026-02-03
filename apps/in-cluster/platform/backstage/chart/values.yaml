@@ -1,5 +1,6 @@
 backstage:
-backstage:
+  podAnnotations:
+    inject-certs: "enabled"
   args:
     - "--config"
     - app-config.yaml
@@ -27,24 +28,21 @@ backstage:
     - name: KEYCLOAK_CLIENT_ID
       value: "backstage"
     - name: KEYCLOAK_CLIENT_SECRET
-      valueFrom:
-        secretKeyRef:
-          name: backstage
-          key: KEYCLOAK_CLIENT_SECRET
+      value: IZuloslEZZXnYdbyE66Y2vgiBOemGuUe
     - name: K8S_CLUSTER_NAME
       value: "lab"
     - name: K8S_CLUSTER_URL
-      value: "https://kubernetes.default.k8s.dev.estishraf.gov.sa"
+      value: "http://kubernetes.default:443"
     - name: K8S_CLUSTER_TOKEN
       valueFrom:
         secretKeyRef:
-          name: backstage
-          key: K8S_CLUSTER_TOKEN
+          name: backstage-token
+          key: token
     - name: APP_SECRET_KEY
       valueFrom:
         secretKeyRef:
           name: backstage
-          key: APP_SECRET_KEY
+          key: secret-key
     - name: GITHUB_HOST
       value: "github.com"
     - name: GITHUB_TOKEN
@@ -52,22 +50,22 @@ backstage:
         secretKeyRef:
           name: backstage
           key: GITHUB_TOKEN
-    - name: host
+    - name: POSTGRES_HOST
       valueFrom:
         secretKeyRef:
           name: backstage
           key: host
-    - name: port
+    - name: POSTGRES_PORT
       valueFrom:
         secretKeyRef:
           name: backstage
           key: port
-    - name: user
+    - name: POSTGRES_USER
       valueFrom:
         secretKeyRef:
           name: backstage
           key: user
-    - name: password
+    - name: POSTGRES_PASSWORD
       valueFrom:
         secretKeyRef:
           name: backstage
@@ -189,7 +187,7 @@ backstage:
 
     integrations:
       github:
-        - host: GITHUB_HOST
+        - host: ${GITHUB_HOST}
           token: ${GITHUB_TOKEN}
 
     proxy:
@@ -232,9 +230,7 @@ backstage:
             
       locations:
         - type: url
-          target: https://${GITLAB_HOST}/sre/backstage/blob/master/catalog-entities/all.yaml
-        - type: url
-          target: https://${GITLAB_HOST}/sre/software-templates/blob/main/templates.yaml
+          target: https://${GITHUB_HOST}/thecodingsheikh/software-templates/blob/main/templates.yaml
 
     buildInfo:
       title: 'IDP Build info'
@@ -368,6 +364,8 @@ backstage:
 ingress:
   enabled: true
   className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "lab-issuer"
   host: "portal.lab.com"
   tls:
     enabled: true

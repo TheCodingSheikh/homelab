@@ -1,16 +1,16 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: k8sadmin
-  namespace: kube-system
+  name: backstage
+  namespace: backstage
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: k8sadmin-token
-  namespace: kube-system
+  name: backstage-token
+  namespace: backstage
   annotations:
-    kubernetes.io/service-account.name: k8sadmin
+    kubernetes.io/service-account.name: backstage
 type: kubernetes.io/service-account-token
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -36,12 +36,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: k8sadmin
+  name: backstage
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: cluster-view
 subjects:
 - kind: ServiceAccount
-  name: k8sadmin
-  namespace: kube-system
+  name: backstage
+  namespace: backstage
