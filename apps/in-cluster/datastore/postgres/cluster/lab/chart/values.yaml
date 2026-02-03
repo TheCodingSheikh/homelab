@@ -27,6 +27,11 @@ users:
       - gitea
     password:
       type: AlphaNumeric
+  - name: backstage
+    databases:
+      - backstage
+    password:
+      type: AlphaNumeric
   # - name: authentik
   #   databases:
   #     - authentik
