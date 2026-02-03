@@ -85,12 +85,12 @@ controllers:
           - node
           - packages/backend
         args:
-          - "--config"
-          - "app-config.yaml"
-          - "--config"
-          - "dynamic-plugins-root/app-config.dynamic-plugins.yaml"
-          - "--config"
-          - "/opt/app-root/src/app-config.k8s.yaml"
+          - --config
+          - app-config.yaml
+          - --config
+          - dynamic-plugins-root/app-config.dynamic-plugins.yaml
+          - --config
+          - /opt/app-root/src/app-config.k8s.yaml
 
         resources:
           requests:
