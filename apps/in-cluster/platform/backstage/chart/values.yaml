@@ -30,7 +30,7 @@ backstage:
     - name: K8S_CLUSTER_NAME
       value: "lab"
     - name: K8S_CLUSTER_URL
-      value: "http://kubernetes.default:443"
+      value: "https://kubernetes.default:443"
     - name: K8S_CLUSTER_TOKEN
       valueFrom:
         secretKeyRef:
