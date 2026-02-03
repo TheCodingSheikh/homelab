@@ -184,7 +184,6 @@ persistence:
       main:
         main:
           - path: /opt/app-root/src/dynamic-plugins-root
-      main:
         install-dynamic-plugins:
           - path: /dynamic-plugins-root
   
