@@ -1,0 +1,204 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backstage-app-config
+  namespace: backstage
+data:
+  app-config.yaml: |
+    app:
+      title: Lab IDP
+      baseUrl: https://portal.lab.com
+    
+    backend:
+      baseUrl: https://portal.lab.com
+      cors:
+        origin: https://portal.lab.com
+      database:
+        client: pg
+        connection:
+          host: ${POSTGRES_HOST}
+          port: ${POSTGRES_PORT}
+          user: ${POSTGRES_USER}
+          password: ${POSTGRES_PASSWORD}
+    
+    techdocs:
+      builder: external
+    
+    signInPage: oidc
+    
+    integrations:
+      github:
+        - host: ${GITHUB_HOST}
+          token: ${GITHUB_TOKEN}
+    
+    proxy:
+      skipInvalidProxies: true
+      endpoints:
+        '/github':
+          target: 'https://${GITHUB_HOST}/api/v4'
+          secure: false
+          headers:
+            PRIVATE-TOKEN: ${GITHUB_TOKEN}
+        '/k8s':
+          target: '${K8S_CLUSTER_URL}/api/v1'
+          secure: false
+          headers:
+            Authorization: Bearer ${K8S_CLUSTER_TOKEN}
+    
+    auth:
+      environment: production
+      session:
+        secret: ${APP_SECRET_KEY}
+    
+      providers:
+        oidc:
+          production:
+            metadataUrl: ${KEYCLOAK_BASE_URL}/realms/${KEYCLOAK_REALM}/.well-known/openid-configuration
+            clientId: "${KEYCLOAK_CLIENT_ID}"
+            clientSecret: "${KEYCLOAK_CLIENT_SECRET}"
+            prompt: auto
+            signIn:
+              resolvers:
+                - resolver: preferredUsernameMatchingUserEntityName
+    
+    catalog:
+      providers:
+        keycloakOrg:
+          default:
+            userQuerySize: 500
+            groupQuerySize: 200
+            maxConcurrency: 1
+            
+      locations:
+        - type: url
+          target: https://${GITHUB_HOST}/thecodingsheikh/software-templates/blob/main/templates.yaml
+    
+    buildInfo:
+      title: 'IDP Build info'
+      card:
+        Version: 1.7.0
+      full: true
+    
+    kubernetes:
+      customResources:
+        - group:    'argoproj.io'
+          apiVersion: 'v1alpha1'
+          plural:   'applications'
+    
+    kubernetesIngestor:
+      annotationPrefix: lab.backstage.io
+      components:
+        customWorkloadTypes:
+          - group: argoproj.io
+            apiVersion: v1alpha1
+            plural: applications
+      
+    dynamicPlugins:
+      frontend:
+        red-hat-developer-hub.backstage-plugin-dynamic-home-page:
+          dynamicRoutes:
+            - path: /
+              importName: DynamicHomePage
+          mountPoints:
+            - mountPoint: application/listener
+              importName: VisitListener
+            - mountPoint: home.page/cards
+              importName: CatalogStarredEntitiesCard
+            - mountPoint: home.page/cards
+              importName: TemplateSection
+            - mountPoint: home.page/cards
+              importName: FeaturedDocsCard
+            - mountPoint: home.page/cards
+              importName: RecentlyVisitedCard
+              config:
+                layouts:
+                  xl: { w: 6, h: 4, x: 6 }
+                  lg: { w: 6, h: 4, x: 6 }
+                  md: { w: 6, h: 4, x: 6 }
+                  sm: { w: 6, h: 4, x: 6 }
+                  xs: { w: 6, h: 4, x: 6 }
+                  xxs: { w: 6, h: 4, x: 6 }
+            - mountPoint: home.page/cards
+              importName: TopVisitedCard
+              config:
+                layouts:
+                  xl: { w: 6, h: 4 }
+                  lg: { w: 6, h: 4 }
+                  md: { w: 6, h: 4 }
+                  sm: { w: 6, h: 4 }
+                  xs: { w: 6, h: 4 }
+                  xxs: { w: 6, h: 4 }
+        
+        red-hat-developer-hub.backstage-plugin-global-header:
+          mountPoints:
+            - mountPoint: application/header
+              importName: GlobalHeader
+              config:
+                position: above-sidebar # above-main-content | above-sidebar
+            - mountPoint: global.header/component
+              importName: CompanyLogo
+              config:
+                priority: 200
+                props:
+                  to: '/'
+            - mountPoint: global.header/component
+              importName: SearchComponent
+              config:
+                priority: 100
+            - mountPoint: global.header/component
+              importName: Spacer
+              config:
+                priority: 99
+                props:
+                  growFactor: 0
+            - mountPoint: global.header/component
+              importName: HeaderIconButton
+              config:
+                priority: 90
+                props:
+                  title: Self-service
+                  icon: add
+                  to: create
+            - mountPoint: global.header/component
+              importName: StarredDropdown
+              config:
+                priority: 85
+            
+            - mountPoint: global.header/component
+              importName: NotificationButton
+              config:
+                priority: 70
+            - mountPoint: global.header/component
+              importName: Divider
+              config:
+                priority: 50
+            - mountPoint: global.header/component
+              importName: ProfileDropdown
+              config:
+                priority: 10
+            - mountPoint: global.header/profile
+              importName: MenuItemLink
+              config:
+                priority: 100
+                props:
+                  title: Settings
+                  link: /settings
+                  icon: manageAccounts
+            - mountPoint: global.header/profile
+              importName: MenuItemLink
+              config:
+                priority: 90
+                props:
+                  title: My profile
+                  icon: account
+            - mountPoint: global.header/profile
+              importName: LogoutButton
+              config:
+                priority: 10
+                
+        default.main-menu-items:
+          menuItems:
+            default.learning-path:
+              enabled: false
+            default.create:
+              title: 'Self Service'

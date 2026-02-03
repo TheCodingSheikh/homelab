@@ -1,378 +1,198 @@
-backstage:
-  podAnnotations:
-    inject-certs: "enabled"
-  args:
-    - "--config"
-    - app-config.yaml
-    - "--config"
-    - dynamic-plugins-root/app-config.dynamic-plugins.yaml
-  extraEnvVars:
-    - name: NODE_EXTRA_CA_CERTS
-      value: /etc/ssl/certs/ca.crt
-    - name: ORGANIZATION_NAME
-      value: Lab
-    - name: LIGHTHOUSE_BASEURL
-      value: temp
-    - name: DYNATRACE_URL
-      value: temp
-    - name: PERMISSION_ENABLED
-      value: "false"
-    - name: KEYCLOAK_BASE_URL
-      value: "https://sso.lab.com"
-    - name: KEYCLOAK_LOGIN_REALM
-      value: "master"
-    - name: KEYCLOAK_REALM
-      value: "lab"
-    - name: KEYCLOAK_CLIENT_ID
-      value: "backstage"
-    - name: KEYCLOAK_CLIENT_SECRET
-      value: IZuloslEZZXnYdbyE66Y2vgiBOemGuUe
-    - name: K8S_CLUSTER_NAME
-      value: "lab"
-    - name: K8S_CLUSTER_URL
-      value: "https://kubernetes.default:443"
-    - name: K8S_CLUSTER_TOKEN
-      valueFrom:
-        secretKeyRef:
-          name: backstage-token
-          key: token
-    - name: APP_SECRET_KEY
-      valueFrom:
-        secretKeyRef:
-          name: backstage
-          key: secret-key
-    - name: GITHUB_HOST
-      value: "github.com"
-    - name: GITHUB_TOKEN
-      valueFrom:
-        secretKeyRef:
-          name: backstage
-          key: github-token
-    - name: POSTGRES_HOST
-      valueFrom:
-        secretKeyRef:
-          name: backstage
-          key: host
-    - name: POSTGRES_PORT
-      valueFrom:
-        secretKeyRef:
-          name: backstage
-          key: port
-    - name: POSTGRES_USER
-      valueFrom:
-        secretKeyRef:
-          name: backstage
-          key: user
-    - name: POSTGRES_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: backstage
-          key: password
-  image:
-    registry: quay.io
-    repository: rhdh-community/rhdh
-    tag: "1.7"
-  extraVolumeMounts:
-    - name: dynamic-plugins-root
-      mountPath: /opt/app-root/src/dynamic-plugins-root
-  extraVolumes:
-    - name: dynamic-plugins-root
-      emptyDir: {}
-    - name: dynamic-plugins
-      configMap:
-        defaultMode: 420
-        name: backstage-dynamic-plugins
-        optional: true
+controllers:
+  main:
+    pod:
+      annotations:
+        inject-certs: "enabled"
+    initContainers:
+      install-dynamic-plugins:
+        image:
+          repository: rhdh-community/rhdh
+          tag: "1.7"
+        command:
+          - ./install-dynamic-plugins.sh
+          - /dynamic-plugins-root
+        env:
+          SKIP_INTEGRITY_CHECK: "true"
+          MAX_ENTRY_SIZE: "30000000"
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 2.5Gi
+            ephemeral-storage: 5Gi
+        securityContext:
+          runAsUser: 0
+        workingDir: /opt/app-root/src
 
-  # containerSecurityContext:
-  #   readOnlyRootFilesystem: true
-  #   allowPrivilegeEscalation: false
-  #   capabilities:
-  #     drop: ["ALL"]
-  #   runAsNonRoot: true
-  #   seccompProfile:
-  #     type: "RuntimeDefault"
-  resources:
-    requests:
-      cpu: 250m
-      memory: 1Gi
-    limits:
-      cpu: 1000m
-      memory: 2.5Gi
-      ephemeral-storage: 5Gi
-  startupProbe:
-    httpGet:
-      path: /.backstage/health/v1/liveness
-      port: backend
-      scheme: HTTP
-    initialDelaySeconds: 30
-    timeoutSeconds: 4
-    periodSeconds: 20
-    successThreshold: 1
-    failureThreshold: 10
-  readinessProbe:
-    failureThreshold: 10
-    httpGet:
-      path: /.backstage/health/v1/readiness
-      port: backend
-      scheme: HTTP
-    periodSeconds: 10
-    successThreshold: 2
-    timeoutSeconds: 4
-  livenessProbe:
-    failureThreshold: 10
-    httpGet:
-      path: /.backstage/health/v1/liveness
-      port: backend
-      scheme: HTTP
-    periodSeconds: 10
-    successThreshold: 1
-    timeoutSeconds: 4
-  initContainers:
-    - name: install-dynamic-plugins
-      resources:
-        requests:
-          cpu: 250m
-          memory: 256Mi
-        limits:
-          cpu: 1000m
-          memory: 2.5Gi
-          ephemeral-storage: 5Gi
-      securityContext:
-        # readOnlyRootFilesystem: true
-        # allowPrivilegeEscalation: false
-        # capabilities:
-        #   drop: ["ALL"]
-        runAsUser: 0
-        # seccompProfile:
-        #   type: "RuntimeDefault"
-      image: '{{ include "backstage.image" . }}'
-      command:
-        - ./install-dynamic-plugins.sh
-        - /dynamic-plugins-root
-      env:
-        - name: SKIP_INTEGRITY_CHECK
-          value: "true"
-        - name: MAX_ENTRY_SIZE
-          value: "30000000"
-      imagePullPolicy: Always
-      volumeMounts:
-        - mountPath: /dynamic-plugins-root
-          name: dynamic-plugins-root
-        - mountPath: /opt/app-root/src/dynamic-plugins.yaml
-          name: dynamic-plugins
-          readOnly: true
-          subPath: dynamic-plugins.yaml
-      workingDir: /opt/app-root/src
-  
-  ######
-  # App Config
-  ######
-  installDir: /opt/app-root/src
-  appConfig:
-    app:
-      title: Lab IDP
-      baseUrl: https://portal.lab.com
+    containers:
+      main:
+        image:
+          repository: rhdh-community/rhdh
+          tag: "1.7"        
+        env:
+          NODE_EXTRA_CA_CERTS: /etc/ssl/certs/ca.crt
+          ORGANIZATION_NAME: Lab
+          LIGHTHOUSE_BASEURL: temp
+          DYNATRACE_URL: temp
+          PERMISSION_ENABLED: "false"
+          GITHUB_HOST: "github.com"
+          KEYCLOAK_BASE_URL: "https://sso.lab.com"
+          KEYCLOAK_LOGIN_REALM: "master"
+          KEYCLOAK_REALM: "lab"
+          KEYCLOAK_CLIENT_ID: "backstage"
+          KEYCLOAK_CLIENT_SECRET: "IZuloslEZZXnYdbyE66Y2vgiBOemGuUe"
+          K8S_CLUSTER_NAME: "lab"
+          K8S_CLUSTER_URL: "https://kubernetes.default:443"
+          K8S_CLUSTER_TOKEN:
+            valueFrom:
+              secretKeyRef:
+                name: backstage-token
+                key: token
+          APP_SECRET_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: backstage
+                key: secret-key
+          GITHUB_TOKEN:
+            valueFrom:
+              secretKeyRef:
+                name: backstage
+                key: github-token
+          POSTGRES_HOST:
+            valueFrom:
+              secretKeyRef:
+                name: backstage
+                key: host
+          POSTGRES_PORT:
+            valueFrom:
+              secretKeyRef:
+                name: backstage
+                key: port
+          POSTGRES_USER:
+            valueFrom:
+              secretKeyRef:
+                name: backstage
+                key: user
+          POSTGRES_PASSWORD:
+            valueFrom:
+              secretKeyRef:
+                name: backstage
+                key: password
 
-    backend:
-      baseUrl: https://portal.lab.com
-      cors:
-        origin: https://portal.lab.com
-      database:
-        client: pg
-        connection:
-          host: ${POSTGRES_HOST}
-          port: ${POSTGRES_PORT}
-          user: ${POSTGRES_USER}
-          password: ${POSTGRES_PASSWORD}
+        args:
+          - "--config"
+          - "app-config.yaml"
+          - "--config"
+          - "dynamic-plugins-root/app-config.dynamic-plugins.yaml"
+          - "--config"
+          - "/opt/app-root/src/app-config.yaml"
 
-    techdocs:
-      builder: external
+        resources:
+          requests:
+            cpu: 250m
+            memory: 1Gi
+          limits:
+            cpu: 1000m
+            memory: 2.5Gi
+            ephemeral-storage: 5Gi
 
-    signInPage: oidc
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              failureThreshold: 10
+              httpGet:
+                path: /.backstage/health/v1/liveness
+                port: backend
+                scheme: HTTP
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 4
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              failureThreshold: 10
+              httpGet:
+                path: /.backstage/health/v1/readiness
+                port: backend
+                scheme: HTTP
+              periodSeconds: 10
+              successThreshold: 2
+              timeoutSeconds: 4
+          startup:
+            enabled: true
+            custom: true
+            spec:
+              failureThreshold: 10
+              httpGet:
+                path: /.backstage/health/v1/liveness
+                port: backend
+                scheme: HTTP
+              initialDelaySeconds: 30
+              periodSeconds: 20
+              successThreshold: 1
+              timeoutSeconds: 4
 
-    integrations:
-      github:
-        - host: ${GITHUB_HOST}
-          token: ${GITHUB_TOKEN}
+service:
+  main:
+    controller: main
+    ports:
+      http:
+        port: 7007
 
-    proxy:
-      skipInvalidProxies: true
-      endpoints:
-        '/github':
-          target: 'https://${GITHUB_HOST}/api/v4'
-          secure: false
-          headers:
-            PRIVATE-TOKEN: ${GITHUB_TOKEN}
-        '/k8s':
-          target: '${K8S_CLUSTER_URL}/api/v1'
-          secure: false
-          headers:
-            Authorization: Bearer ${K8S_CLUSTER_TOKEN}
-
-    auth:
-      environment: production
-      session:
-        secret: ${APP_SECRET_KEY}
-
-      providers:
-        oidc:
-          production:
-            metadataUrl: ${KEYCLOAK_BASE_URL}/realms/${KEYCLOAK_REALM}/.well-known/openid-configuration
-            clientId: "${KEYCLOAK_CLIENT_ID}"
-            clientSecret: "${KEYCLOAK_CLIENT_SECRET}"
-            prompt: auto
-            signIn:
-              resolvers:
-                - resolver: preferredUsernameMatchingUserEntityName
-
-    catalog:
-      providers:
-        keycloakOrg:
-          default:
-            userQuerySize: 500
-            groupQuerySize: 200
-            maxConcurrency: 1
-            
-      locations:
-        - type: url
-          target: https://${GITHUB_HOST}/thecodingsheikh/software-templates/blob/main/templates.yaml
-
-    buildInfo:
-      title: 'IDP Build info'
-      card:
-        Version: 1.7.0
-      full: true
-
-    kubernetes:
-      customResources:
-        - group:    'argoproj.io'
-          apiVersion: 'v1alpha1'
-          plural:   'applications'
-
-    kubernetesIngestor:
-      annotationPrefix: lab.backstage.io
-      components:
-        customWorkloadTypes:
-          - group: argoproj.io
-            apiVersion: v1alpha1
-            plural: applications
-      
-    dynamicPlugins:
-      frontend:
-        red-hat-developer-hub.backstage-plugin-dynamic-home-page:
-          dynamicRoutes:
-            - path: /
-              importName: DynamicHomePage
-          mountPoints:
-            - mountPoint: application/listener
-              importName: VisitListener
-            - mountPoint: home.page/cards
-              importName: CatalogStarredEntitiesCard
-            - mountPoint: home.page/cards
-              importName: TemplateSection
-            - mountPoint: home.page/cards
-              importName: FeaturedDocsCard
-            - mountPoint: home.page/cards
-              importName: RecentlyVisitedCard
-              config:
-                layouts:
-                  xl: { w: 6, h: 4, x: 6 }
-                  lg: { w: 6, h: 4, x: 6 }
-                  md: { w: 6, h: 4, x: 6 }
-                  sm: { w: 6, h: 4, x: 6 }
-                  xs: { w: 6, h: 4, x: 6 }
-                  xxs: { w: 6, h: 4, x: 6 }
-            - mountPoint: home.page/cards
-              importName: TopVisitedCard
-              config:
-                layouts:
-                  xl: { w: 6, h: 4 }
-                  lg: { w: 6, h: 4 }
-                  md: { w: 6, h: 4 }
-                  sm: { w: 6, h: 4 }
-                  xs: { w: 6, h: 4 }
-                  xxs: { w: 6, h: 4 }
-
-        red-hat-developer-hub.backstage-plugin-global-header:
-          mountPoints:
-            - mountPoint: application/header
-              importName: GlobalHeader
-              config:
-                position: above-sidebar # above-main-content | above-sidebar
-            - mountPoint: global.header/component
-              importName: CompanyLogo
-              config:
-                priority: 200
-                props:
-                  to: '/'
-            - mountPoint: global.header/component
-              importName: SearchComponent
-              config:
-                priority: 100
-            - mountPoint: global.header/component
-              importName: Spacer
-              config:
-                priority: 99
-                props:
-                  growFactor: 0
-            - mountPoint: global.header/component
-              importName: HeaderIconButton
-              config:
-                priority: 90
-                props:
-                  title: Self-service
-                  icon: add
-                  to: create
-            - mountPoint: global.header/component
-              importName: StarredDropdown
-              config:
-                priority: 85
-            
-            - mountPoint: global.header/component
-              importName: NotificationButton
-              config:
-                priority: 70
-            - mountPoint: global.header/component
-              importName: Divider
-              config:
-                priority: 50
-            - mountPoint: global.header/component
-              importName: ProfileDropdown
-              config:
-                priority: 10
-            - mountPoint: global.header/profile
-              importName: MenuItemLink
-              config:
-                priority: 100
-                props:
-                  title: Settings
-                  link: /settings
-                  icon: manageAccounts
-            - mountPoint: global.header/profile
-              importName: MenuItemLink
-              config:
-                priority: 90
-                props:
-                  title: My profile
-                  icon: account
-            - mountPoint: global.header/profile
-              importName: LogoutButton
-              config:
-                priority: 10
-                
-        default.main-menu-items:
-          menuItems:
-            default.learning-path:
-              enabled: false
-            default.create:
-              title: 'Self Service'
 ingress:
-  enabled: true
-  className: "nginx"
-  annotations:
-    cert-manager.io/cluster-issuer: "lab-issuer"
-  host: "portal.lab.com"
-  tls:
+  main:
     enabled: true
-    secretName: "backstage-tls"
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: "lab-issuer"
+    hosts:
+      - host: portal.lab.com
+        paths:
+          - path: /
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: backstage-tls
+        hosts:
+          - portal.lab.com
+
+persistence:
+  app-config:
+    enabled: true
+    type: configMap
+    name: backstage-app-config
+    advancedMounts:
+      main:
+        main:
+          - path: /opt/app-root/src/app-config.yaml
+            subPath: app-config.yaml
+            readOnly: true
+  
+  dynamic-plugins-root:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 5Gi
+    advancedMounts:
+      main:
+        main:
+          - path: /opt/app-root/src/dynamic-plugins-root
+      main:
+        install-dynamic-plugins:
+          - path: /dynamic-plugins-root
+  
+  dynamic-plugins:
+    enabled: true
+    type: configMap
+    name: backstage-dynamic-plugins
+    advancedMounts:
+      main:
+        install-dynamic-plugins:
+          - path: /opt/app-root/src/dynamic-plugins.yaml
+            readOnly: true
+            subPath: dynamic-plugins.yaml
