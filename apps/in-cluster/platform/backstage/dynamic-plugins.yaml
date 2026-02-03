@@ -75,9 +75,9 @@ data:
         pluginConfig:        
           dynamicPlugins:
             frontend:
-        roadiehq.plugin-scaffolder-frontend-module-http-request-field:
-          scaffolderFieldExtensions:
-            - importName: SelectFieldFromApiExtension
+              roadiehq.plugin-scaffolder-frontend-module-http-request-field:
+                scaffolderFieldExtensions:
+                  - importName: SelectFieldFromApiExtension
 
       - disabled: false
         package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/19874628921-1/thecodingsheikh-backstage-plugin-entity-scaffolder-dynamic-0.1.0.tgz"
