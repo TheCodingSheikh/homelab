@@ -67,16 +67,18 @@ data:
       providers:
         keycloakOrg:
           default:
-            userQuerySize: 500
-            groupQuerySize: 200
-            maxConcurrency: 1
+            baseUrl: ${KEYCLOAK_BASE_URL}
+            clientId: ${KEYCLOAK_CLIENT_ID}
+            clientSecret: ${KEYCLOAK_CLIENT_SECRET}
+            loginRealm: ${KEYCLOAK_LOGIN_REALM}
+            realm: ${KEYCLOAK_REALM}
             schedule:
               frequency:
-                seconds: 5
+                minutes: 60
               initialDelay:
-                seconds: 5
+                seconds: 15
               timeout:
-                minutes: 1
+                minutes: 50
       locations:
         - type: url
           target: https://${GITHUB_HOST}/thecodingsheikh/software-templates/blob/main/templates.yaml
