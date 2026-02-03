@@ -144,6 +144,21 @@ components:
                             - profile
                             - roles
                             - web-origins
+              backstage:
+                forProvider:
+                  name: backstage
+                  clientId: backstage
+                  clientSecretSecretRef:
+                    key: secret-key
+                    name: backstage-client
+                    namespace: keycloak
+                  accessType: CONFIDENTIAL
+                  standardFlowEnabled: true
+                  directAccessGrantsEnabled: true
+                  rootUrl: https://portal.lab.com
+                  validRedirectUris:
+                    - https://portal.lab.com/login/generic_oauth
+                    
               litellm:
                 forProvider:
                   name: litellm
