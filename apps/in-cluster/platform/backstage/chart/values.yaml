@@ -39,7 +39,7 @@ controllers:
           PERMISSION_ENABLED: "false"
           GITHUB_HOST: "github.com"
           KEYCLOAK_BASE_URL: "https://sso.lab.com"
-          KEYCLOAK_LOGIN_REALM: "master"
+          KEYCLOAK_LOGIN_REALM: "lab"
           KEYCLOAK_REALM: "lab"
           KEYCLOAK_CLIENT_ID: "backstage"
           KEYCLOAK_CLIENT_SECRET: "IZuloslEZZXnYdbyE66Y2vgiBOemGuUe"
