@@ -157,8 +157,8 @@ components:
                   directAccessGrantsEnabled: true
                   rootUrl: https://portal.lab.com
                   validRedirectUris:
-                    - https://portal.lab.com/login/generic_oauth
-                    
+                    - https://portal.lab.com/api/auth/oidc/handler/frame
+
               litellm:
                 forProvider:
                   name: litellm
