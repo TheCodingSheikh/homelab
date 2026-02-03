@@ -85,7 +85,7 @@ controllers:
           - "--config"
           - "app-config.yaml"
           - "--config"
-          - "dynamic-plugins-root/dynamic-plugins.yaml"
+          - "/opt/app-root/src/dynamic-plugins.yaml"
           - "--config"
           - "/opt/app-root/src/app-config.yaml"
 
