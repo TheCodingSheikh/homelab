@@ -156,6 +156,7 @@ components:
                   standardFlowEnabled: true
                   directAccessGrantsEnabled: true
                   rootUrl: https://portal.lab.com
+                  serviceAccountsEnabled: true
                   validRedirectUris:
                     - https://portal.lab.com/api/auth/oidc/handler/frame
 
@@ -324,6 +325,16 @@ components:
                           protocol: openid-connect
                           protocolMapper: oidc-usermodel-client-role-mapper
 
+          ClientServiceAccountRole:
+            apiVersion: openidclient.keycloak.crossplane.io/v1alpha1
+            list:
+              backstage:
+                forProvider:
+                  serviceAccountUserClientIdRef:
+                    name: lab-backstage-client
+                  clientIdRef:
+                    name: lab-realm-management-client
+                  role: query-groups
           User:
             apiVersion: user.keycloak.crossplane.io/v1alpha1
             list:
