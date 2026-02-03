@@ -182,6 +182,9 @@ backstage:
       baseUrl: https://portal.lab.com
       cors:
         origin: https://portal.lab.com
+      database:
+        connection:
+          ssl: null
     techdocs:
       builder: external
 
