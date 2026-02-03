@@ -328,13 +328,28 @@ components:
           ClientServiceAccountRole:
             apiVersion: openidclient.keycloak.crossplane.io/v1alpha1
             list:
-              backstage:
+              backstage-query-groups:
                 forProvider:
                   serviceAccountUserClientIdRef:
                     name: lab-backstage-client
                   clientIdRef:
                     name: lab-realm-management-client
                   role: query-groups
+              backstage-query-users:
+                forProvider:
+                  serviceAccountUserClientIdRef:
+                    name: lab-backstage-client
+                  clientIdRef:
+                    name: lab-realm-management-client
+                  role: query-users
+              backstage-view-users:
+                forProvider:
+                  serviceAccountUserClientIdRef:
+                    name: lab-backstage-client
+                  clientIdRef:
+                    name: lab-realm-management-client
+                  role: view-users
+                  
           User:
             apiVersion: user.keycloak.crossplane.io/v1alpha1
             list:
