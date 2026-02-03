@@ -87,9 +87,9 @@ controllers:
           - "--config"
           - "app-config.yaml"
           - "--config"
-          - "app-config.dynamic-plugins.yaml"
+          - "dynamic-plugins-root/app-config.dynamic-plugins.yaml"
           - "--config"
-          - "app-config.k8s.yaml"
+          - "/opt/app-root/src/app-config.k8s.yaml"
 
         resources:
           requests:
