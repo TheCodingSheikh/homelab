@@ -86,6 +86,8 @@ controllers:
           - "app-config.yaml"
           - "--config"
           - "app-config.dynamic-plugins.yaml"
+          - "--config"
+          - "app-config.k8s.yaml"
 
         resources:
           requests:
@@ -168,8 +170,8 @@ persistence:
     advancedMounts:
       main:
         main:
-          - path: /opt/app-root/src/app-config.yaml
-            subPath: app-config.yaml
+          - path: /opt/app-root/src/app-config.k8s.yaml
+            subPath: app-config.k8s.yaml
             readOnly: true
   
   dynamic-plugins-root:

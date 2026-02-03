@@ -4,7 +4,7 @@ metadata:
   name: backstage-app-config
   namespace: backstage
 data:
-  app-config.yaml: |
+  app-config.k8s.yaml: |
     app:
       title: Lab IDP
       baseUrl: https://portal.lab.com
