@@ -6,7 +6,7 @@ controllers:
     initContainers:
       install-dynamic-plugins:
         image:
-          repository: rhdh-community/rhdh
+          repository: quay.io/rhdh-community/rhdh
           tag: "1.7"
         command:
           - ./install-dynamic-plugins.sh
@@ -29,7 +29,7 @@ controllers:
     containers:
       main:
         image:
-          repository: rhdh-community/rhdh
+          repository: quay.io/rhdh-community/rhdh
           tag: "1.7"        
         env:
           NODE_EXTRA_CA_CERTS: /etc/ssl/certs/ca.crt
