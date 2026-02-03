@@ -85,9 +85,7 @@ controllers:
           - "--config"
           - "app-config.yaml"
           - "--config"
-          - "/opt/app-root/src/dynamic-plugins.yaml"
-          - "--config"
-          - "/opt/app-root/src/app-config.yaml"
+          - "app-config.dynamic-plugins.yaml"
 
         resources:
           requests:
@@ -193,6 +191,6 @@ persistence:
     advancedMounts:
       main:
         install-dynamic-plugins:
-          - path: /opt/app-root/src/dynamic-plugins.yaml
+          - path: /opt/app-root/src/app-config.dynamic-plugins.yaml
             readOnly: true
-            subPath: dynamic-plugins.yaml
+            subPath: app-config.dynamic-plugins.yaml
