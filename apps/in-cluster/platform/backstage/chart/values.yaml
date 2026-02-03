@@ -33,7 +33,6 @@ controllers:
           tag: "1.7"        
         env:
           NODE_EXTRA_CA_CERTS: /etc/ssl/certs/ca.crt
-          LOG_LEVEL: "debug"
           ORGANIZATION_NAME: Lab
           LIGHTHOUSE_BASEURL: temp
           DYNATRACE_URL: temp

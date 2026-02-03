@@ -1,0 +1,22 @@
+resources:
+  pushsecrets:
+    enabled: true
+    rangeKey: users
+    template: |-
+      apiVersion: external-secrets.io/v1alpha1
+      kind: PushSecret
+      metadata:
+        name: {{ .Values.name }}-pguser-{{ .name }}-pushsecret
+      spec:
+        deletionPolicy: None
+        secretStoreRefs:
+          - kind: ClusterSecretStore
+            name: vault-backend
+        selector:
+          secret:
+            name: {{ .Values.name }}-pguser-{{ .name }}
+        data:
+          - match:
+              remoteRef:
+                # Need to append /data/ after the mount
+                remoteKey: datastore/postgres/{{ .Values.name }}/{{ .name }}
