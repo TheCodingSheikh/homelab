@@ -70,6 +70,8 @@ backstage:
         secretKeyRef:
           name: backstage
           key: password
+    - name: PGSSLMODE
+      value: "disable"
   image:
     registry: quay.io
     repository: rhdh-community/rhdh
