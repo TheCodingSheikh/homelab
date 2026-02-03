@@ -1,7 +1,5 @@
 name: lab
 metadata:
-  annotations:
-    terasky.backstage.io/add-to-catalog: "true"
   labels:
     crunchy-userinit.drummyfloyd.github.com/enabled: "true"
     crunchy-userinit.drummyfloyd.github.com/superuser: "postgres"
