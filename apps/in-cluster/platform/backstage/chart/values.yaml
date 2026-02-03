@@ -5,8 +5,6 @@ backstage:
     - "--config"
     - app-config.yaml
     - "--config"
-    - app-config.production.yaml
-    - "--config"
     - dynamic-plugins-root/app-config.dynamic-plugins.yaml
   extraEnvVars:
     - name: NODE_EXTRA_CA_CERTS
@@ -70,8 +68,6 @@ backstage:
         secretKeyRef:
           name: backstage
           key: password
-    - name: PGSSLMODE
-      value: "disable"
   image:
     registry: quay.io
     repository: rhdh-community/rhdh
@@ -183,8 +179,13 @@ backstage:
       cors:
         origin: https://portal.lab.com
       database:
+        client: pg
         connection:
-          ssl: null
+          host: ${POSTGRES_HOST}
+          port: ${POSTGRES_PORT}
+          user: ${POSTGRES_USER}
+          password: ${POSTGRES_PASSWORD}
+
     techdocs:
       builder: external
 
