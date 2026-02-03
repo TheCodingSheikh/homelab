@@ -49,7 +49,7 @@ backstage:
       valueFrom:
         secretKeyRef:
           name: backstage
-          key: GITHUB_TOKEN
+          key: github-token
     - name: POSTGRES_HOST
       valueFrom:
         secretKeyRef:
