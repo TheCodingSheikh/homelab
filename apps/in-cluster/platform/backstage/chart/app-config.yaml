@@ -68,7 +68,13 @@ data:
             userQuerySize: 500
             groupQuerySize: 200
             maxConcurrency: 1
-            
+            schedule:
+              frequency:
+                seconds: 5
+              initialDelay:
+                seconds: 5
+              timeout:
+                minutes: 1
       locations:
         - type: url
           target: https://${GITHUB_HOST}/thecodingsheikh/software-templates/blob/main/templates.yaml
