@@ -108,7 +108,7 @@ controllers:
               failureThreshold: 10
               httpGet:
                 path: /.backstage/health/v1/liveness
-                port: http
+                port: 7007
                 scheme: HTTP
               periodSeconds: 10
               successThreshold: 1
@@ -120,7 +120,7 @@ controllers:
               failureThreshold: 10
               httpGet:
                 path: /.backstage/health/v1/readiness
-                port: http
+                port: 7007
                 scheme: HTTP
               periodSeconds: 10
               successThreshold: 2
@@ -132,7 +132,7 @@ controllers:
               failureThreshold: 10
               httpGet:
                 path: /.backstage/health/v1/liveness
-                port: http
+                port: 7007
                 scheme: HTTP
               initialDelaySeconds: 30
               periodSeconds: 20
