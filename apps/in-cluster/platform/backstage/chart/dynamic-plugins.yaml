@@ -4,7 +4,7 @@ metadata:
   name: backstage-dynamic-plugins
   namespace: backstage
 data:
-  app-config.dynamic-plugins.yaml: |
+  dynamic-plugins.yaml: |
     includes:
       - "dynamic-plugins.default.yaml"
     plugins:

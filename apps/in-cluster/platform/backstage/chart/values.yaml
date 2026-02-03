@@ -194,6 +194,6 @@ persistence:
     advancedMounts:
       main:
         install-dynamic-plugins:
-          - path: /opt/app-root/src/app-config.dynamic-plugins.yaml
+          - path: /opt/app-root/src/dynamic-plugins.yaml
             readOnly: true
-            subPath: app-config.dynamic-plugins.yaml
+            subPath: dynamic-plugins.yaml
