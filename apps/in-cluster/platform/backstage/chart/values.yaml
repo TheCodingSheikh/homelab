@@ -134,7 +134,7 @@ controllers:
                 path: /.backstage/health/v1/liveness
                 port: 7007
                 scheme: HTTP
-              initialDelaySeconds: 30
+              initialDelaySeconds: 10
               periodSeconds: 20
               successThreshold: 1
               timeoutSeconds: 4
