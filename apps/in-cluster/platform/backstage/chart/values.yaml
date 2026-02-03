@@ -80,7 +80,9 @@ controllers:
               secretKeyRef:
                 name: backstage
                 key: password
-
+        command:
+          - node
+          - packages/backend
         args:
           - "--config"
           - "app-config.yaml"
