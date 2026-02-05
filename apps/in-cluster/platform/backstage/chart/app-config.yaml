@@ -40,7 +40,7 @@ data:
           headers:
             PRIVATE-TOKEN: ${GITHUB_TOKEN}
         '/k8s':
-          target: '${K8S_CLUSTER_URL}/api/v1'
+          target: '${K8S_CLUSTER_URL}/apis'
           secure: false
           headers:
             Authorization: Bearer ${K8S_CLUSTER_TOKEN}
