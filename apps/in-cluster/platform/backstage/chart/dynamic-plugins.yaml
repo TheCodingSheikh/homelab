@@ -99,3 +99,13 @@ data:
                       if:
                         allOf:
                           - isEntityScaffolderAvailable
+
+      - disabled: false
+        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/21714058755-1/thecodingsheikh-backstage-plugin-scaffolder-field-validator-dynamic-0.1.0.tgz"
+        integrity: sha512-Gvvyt+DMyzAEp/tYpNw4boaOsljqvnVhN32pdap2UKum7sUnQJbgLjmz4acK32JQ5s5MlxmipWP+NGF/bp5h8A==
+        pluginConfig:
+          dynamicPlugins:
+            frontend:
+              thecodingsheikh.backstage-plugin-scaffolder-field-validator:
+                scaffolderFieldExtensions:
+                  - importName: ScaffolderFieldValidatorExtension
