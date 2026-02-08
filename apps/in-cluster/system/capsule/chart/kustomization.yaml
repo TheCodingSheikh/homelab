@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+helmCharts:
+- name: capsule
+  repo: https://projectcapsule.github.io/charts
+  version: 0.12.4
+  includeCRDs: true
+  namespace: capsule
+  releaseName: capsule
+  valuesFile: values.yaml

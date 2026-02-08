@@ -3,7 +3,7 @@ annotations:
   lab.backstage.io/owner: abso
   lab.backstage.io/system-type: app
   lab.backstage.io/system: app
-  lab.backstage.io/kubernetes-label-selector: "app.kubernetes.io/name=backstage"
+  backstage.io/kubernetes-label-selector: 'app.kubernetes.io/name=backstage'
   lab.backstage.io/component-type: service
   lab.backstage.io/lifecycle: managed
   lab.backstage.io/links: string

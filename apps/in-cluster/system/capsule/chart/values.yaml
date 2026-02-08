@@ -1,0 +1,4 @@
+proxy:
+  enabled: true
+certManager:
+  generateCertificates: true
