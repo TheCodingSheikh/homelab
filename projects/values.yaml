@@ -8,3 +8,4 @@ projects:
   - name: system
   - name: datastore
   - name: storage
+  - name: managed-services

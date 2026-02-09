@@ -1,0 +1,5 @@
+appName: in-cluster-managed-services-definitions
+repoURL: https://github.com/TheCodingSheikh/managed-services.git
+srcPath: definitions
+createNamespace: false
+destNamespace: managed-services
