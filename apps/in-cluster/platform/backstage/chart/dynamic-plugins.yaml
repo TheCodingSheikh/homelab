@@ -48,6 +48,8 @@ data:
         disabled: false
       - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-marketplace
         disabled: false
+      - package: ./dynamic-plugins/dist/backstage-plugin-scaffolder-backend-module-github-dynamic
+        disabled: false
 
       - disabled: false
         package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/17973327717-1/terasky-backstage-plugin-kubernetes-ingestor-dynamic-2.1.0.tgz"
