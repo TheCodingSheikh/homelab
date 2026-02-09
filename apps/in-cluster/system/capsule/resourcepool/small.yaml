@@ -19,7 +19,6 @@ apiVersion: capsule.clastix.io/v1beta2
 kind: TenantResource
 metadata:
   name: small-tenant-quota
-  namespace: solar-system
 spec:
   resyncPeriod: 60s
   resources:
