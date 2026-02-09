@@ -1,0 +1,12 @@
+# clusterDomain: cluster.local
+imageAutomationController:
+  create: false
+imageReflectionController:
+  create: false
+kustomizeController:
+  create: false
+notificationController:
+  create: false
+# prometheus:
+#   podMonitor:
+#     create: true
