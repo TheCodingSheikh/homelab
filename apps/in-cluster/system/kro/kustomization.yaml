@@ -3,6 +3,4 @@ kind: Kustomization
 
 resources:
   - chart
-  - globaltenantresource.yaml
-  - resources
   
