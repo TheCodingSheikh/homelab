@@ -1,0 +1,43 @@
+---
+apiVersion: capsule.clastix.io/v1beta2
+kind: ResourcePool
+metadata:
+  name: large-tenant-quota
+spec:
+  selectors:
+  - matchLabels:
+      capsule.clastix.io/tenant-quota: large
+  quota:
+    hard:
+      requests.cpu: "16"
+      requests.memory: 32Gi
+      limits.cpu: "32"
+      limits.memory: 64Gi
+      requests.storage: 500Gi
+---
+apiVersion: capsule.clastix.io/v1beta2
+kind: TenantResource
+metadata:
+  name: large-tenant-quota
+spec:
+  resyncPeriod: 60s
+  resources:
+    - namespaceSelector:
+        matchLabels:
+          capsule.clastix.io/tenant-quota: large
+      rawItems:
+        - apiVersion: v1
+          kind: LimitRange
+          metadata:
+            name: default-limits
+          spec:
+            limits:
+            - default:
+                cpu: 500m
+              defaultRequest:
+                cpu: 500m
+              max:
+                cpu: "1"
+              min:
+                cpu: 100m
+              type: Container

@@ -1,0 +1,44 @@
+---
+apiVersion: capsule.clastix.io/v1beta2
+kind: ResourcePool
+metadata:
+  name: small-tenant-quota
+spec:
+  selectors:
+  - matchLabels:
+      capsule.clastix.io/tenant-quota: small
+  quota:
+    hard:
+      requests.cpu: "4"
+      requests.memory: 8Gi
+      limits.cpu: "8"
+      limits.memory: 16Gi
+      requests.storage: 100Gi
+---
+apiVersion: capsule.clastix.io/v1beta2
+kind: TenantResource
+metadata:
+  name: small-tenant-quota
+  namespace: solar-system
+spec:
+  resyncPeriod: 60s
+  resources:
+    - namespaceSelector:
+        matchLabels:
+          capsule.clastix.io/tenant-quota: small
+      rawItems:
+        - apiVersion: v1
+          kind: LimitRange
+          metadata:
+            name: default-limits
+          spec:
+            limits:
+            - default:
+                cpu: 200m
+              defaultRequest:
+                cpu: 100m
+              max:
+                cpu: 250m
+              min:
+                cpu: 25m
+              type: Container

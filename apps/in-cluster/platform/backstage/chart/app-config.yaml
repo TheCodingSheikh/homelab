@@ -87,6 +87,8 @@ data:
     
     kubernetesIngestor:
       annotationPrefix: lab.backstage.io
+      defaultOwner: system
+      argoIntegration: true
       components:
         customWorkloadTypes:
           - group: argoproj.io
