@@ -16,7 +16,7 @@ spec:
       requests.storage: 250Gi
 ---
 apiVersion: capsule.clastix.io/v1beta2
-kind: TenantResource
+kind: GlobalTenantResource
 metadata:
   name: medium-tenant-quota
 spec:
