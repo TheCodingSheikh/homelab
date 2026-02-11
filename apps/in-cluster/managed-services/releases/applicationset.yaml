@@ -43,7 +43,7 @@ spec:
       {{ if gt (len .path.segments) 3 }}
       name: '{{ .values.tenant }}-tenant-{{ index .path.segments 3  }}-{{ .values.name }}'
       {{ else }}
-      name: '{{ .values.tenant }}-tenant-{{ .values.name }}'
+      name: '{{ .values.tenant }}-tenant'
       {{ end }}
       namespace: argo-cd
     spec:
@@ -51,6 +51,6 @@ spec:
         {{ if gt (len .path.segments) 3 }}
         namespace: '{{ .values.tenant }}-tenant-{{ index .path.segments 3  }}-{{ .values.name }}'
         {{ else }}
-        namespace: '{{ .values.tenant }}-tenant-{{ .values.name }}'
+        namespace: '{{ .values.tenant }}-tenant'
         {{ end }}
         name: in-cluster
