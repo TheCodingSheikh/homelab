@@ -16,9 +16,8 @@ spec:
         values:
           tenant_name: '{{ index (splitList "/" .path.path) 1 }}'
           folder: '{{ index (splitList "/" .path.path) 2 }}'
-          depth: '{{ len (splitList "/" .path.path) }}'
-          filename: '{{ .path.filenameNormalized }}'
-          service_name: '{{ if eq (len (splitList "/" .path.path)) 5 }}{{ index (splitList "/" .path.path) 3 }}{{ else }}none{{ end }}'
+          clean_filename: '{{ trimSuffix ".yaml" .path.basename }}'
+          parent_dir: '{{ index (splitList "/" .path.path) (sub (len (splitList "/" .path.path)) 2) }}'
   template:
     metadata:
       name: placeholder
@@ -43,17 +42,17 @@ spec:
           - CreateNamespace=true
   templatePatch: |
     metadata:
-      name: {{ if ne .values.service_name "none" -}}
-        {{ .values.folder }}-{{ .values.tenant_name }}-{{ .values.filename }}-{{ .values.service_name }}
-      {{- else if ne .values.filename "manifest" -}}
-        {{ .values.folder }}-{{ .values.tenant_name }}-{{ .values.filename }}
+      name: {{ if ne .values.folder .values.parent_dir -}}
+        {{ .values.folder }}-{{ .values.tenant_name }}-{{ .values.clean_filename }}-{{ .values.parent_dir }}
+      {{- else if ne .values.clean_filename "manifest" -}}
+        {{ .values.folder }}-{{ .values.tenant_name }}-{{ .values.clean_filename }}
       {{- else -}}
         {{ .values.folder }}-{{ .values.tenant_name }}
       {{- end }}
     spec:
       destination:
-        namespace: {{ if ne .values.service_name "none" -}}
-          {{ .values.folder }}-{{ .values.tenant_name }}-{{ .values.filename }}-{{ .values.service_name }}
+        namespace: {{ if ne .values.folder .values.parent_dir -}}
+          {{ .values.folder }}-{{ .values.tenant_name }}-{{ .values.clean_filename }}-{{ .values.parent_dir }}
         {{- else -}}
           {{ .values.folder }}-{{ .values.tenant_name }}
         {{- end }}
