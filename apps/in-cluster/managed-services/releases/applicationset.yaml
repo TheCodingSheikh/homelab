@@ -9,15 +9,14 @@ spec:
   generators:
     - git:
         files:
-          - path: "releases/*/*/manifest.yaml"
-          - path: "releases/*/*/*/*.yaml"
+          - path: "releases/**/manifest.yaml"
         repoURL: https://github.com/TheCodingSheikh/managed-services.git
         revision: HEAD
+        requeueAfterSeconds: 20
         values:
-          tenant_name: '{{ index (splitList "/" .path.path) 1 }}'
-          folder: '{{ index (splitList "/" .path.path) 2 }}'
-          clean_filename: '{{ trimSuffix ".yaml" .path.filename }}'
-          parent_dir: '{{ index (splitList "/" .path.path) (sub (len (splitList "/" .path.path)) 2) }}'
+          tenant: "{{index .path.segments 2}}"
+          service: "{{index .path.segments 3}}"
+          name: "{{.path.basename}}"
   template:
     metadata:
       name: placeholder
@@ -25,7 +24,7 @@ spec:
     spec:
       project: "managed-services"
       source:
-        path: '{{ .path.path }}/{{ .path.filename }}'
+        path: '{{ .path.path }}'
         repoURL: 'https://github.com/TheCodingSheikh/managed-services.git'
         targetRevision: HEAD
       destination:
@@ -37,22 +36,14 @@ spec:
         #   selfHeal: true
         managedNamespaceMetadata:
           labels:
-            capsule.clastix.io/tenant: "{{ .values.folder }}"
+            capsule.clastix.io/tenant: "{{ .values.tenant }}"
         syncOptions:
           - CreateNamespace=true
   templatePatch: |
     metadata:
-      name: {{ if ne .values.folder .values.parent_dir -}}
-        {{ .values.folder }}-{{ .values.tenant_name }}-{{ .values.clean_filename }}-{{ .values.parent_dir }}
-      {{- else if ne .values.clean_filename "manifest" -}}
-        {{ .values.folder }}-{{ .values.tenant_name }}-{{ .values.clean_filename }}
-      {{- else -}}
-        {{ .values.folder }}-{{ .values.tenant_name }}
-      {{- end }}
+      name: '{{ .values.tenant }}-tenant-{{ .values.name }}-{{ .values.service }}'
+      namespace: argo-cd
     spec:
       destination:
-        namespace: {{ if ne .values.folder .values.parent_dir -}}
-          {{ .values.folder }}-{{ .values.tenant_name }}-{{ .values.clean_filename }}-{{ .values.parent_dir }}
-        {{- else -}}
-          {{ .values.folder }}-{{ .values.tenant_name }}
-        {{- end }}
+        namespace: '{{ .values.tenant }}-tenant-{{ .values.name }}-{{ .values.service }}'
+        name: in-cluster
