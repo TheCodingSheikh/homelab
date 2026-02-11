@@ -40,13 +40,12 @@ spec:
           - CreateNamespace=true
   templatePatch: |
     {{- $segments := splitList "/" .path.path -}}
-    {{- $service := index $segments 3 -}}
     metadata:
       name: '{{ .values.tenant }}-tenant-{{ .values.name }}'
       namespace: argo-cd
       annotations:
         {{ if gt (len .path.segments) 3 }}
-        service: "{{ $service }}"
+        service: "{{ index $segments 3  }}"
         {{ end }}
     spec:
       destination:
