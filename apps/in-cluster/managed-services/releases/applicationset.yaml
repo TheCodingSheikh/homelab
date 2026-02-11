@@ -40,11 +40,11 @@ spec:
           - CreateNamespace=true
   templatePatch: |
     metadata:
-      name: '{{ .values.tenant }}-tenant-{{ .values.name }}-{{ .values.service }}'
+      name: '{{ .values.tenant }}-tenant-{{ .values.name }}'
       namespace: argo-cd
       annotations:
         test: "{{ len .path.segments }}"
     spec:
       destination:
-        namespace: '{{ .values.tenant }}-tenant-{{ .values.name }}-{{ .values.service }}'
+        namespace: '{{ .values.tenant }}-tenant-{{ .values.name }}'
         name: in-cluster
