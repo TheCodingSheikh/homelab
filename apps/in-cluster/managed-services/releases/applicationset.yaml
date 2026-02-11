@@ -45,7 +45,7 @@ spec:
       namespace: argo-cd
       annotations:
         {{ if gt (len .path.segments) 3 }}
-        service: "{{ index $segments 3  }}"
+        service: "{{ index .path.segments 3  }}"
         {{ end }}
     spec:
       destination:
