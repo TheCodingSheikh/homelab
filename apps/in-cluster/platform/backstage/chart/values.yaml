@@ -7,7 +7,7 @@ controllers:
       install-dynamic-plugins:
         image:
           repository: quay.io/rhdh-community/rhdh
-          tag: "1.7"
+          tag: "1.9"
         command:
           - ./install-dynamic-plugins.sh
           - /dynamic-plugins-root
