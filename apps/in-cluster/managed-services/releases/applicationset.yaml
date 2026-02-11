@@ -32,9 +32,9 @@ spec:
         name: '{{ .values.cluster }}'
         namespace: '{{ .values.tenant }}-{{ .values.parent }}-{{ .values.service }}'
       syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
+        # automated:
+        #   prune: true
+        #   selfHeal: true
         syncOptions:
           - CreateNamespace=true
   templatePatch: |
