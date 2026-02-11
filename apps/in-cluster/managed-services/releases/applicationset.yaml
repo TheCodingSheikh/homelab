@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: managed-services-releases
+  namespace: argo-cd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=default"]
+  generators:
+    - git:
+        directories:
+          - path: releases/*/*/*
+        repoURL: https://github.com/TheCodingSheikh/managed-services.git
+        revision: HEAD
+        values:
+          tenant: '{{ index (splitList "/" .path.path) 1 }}'
+          middle: '{{ index (splitList "/" .path.path) 2 }}'
+          name: '{{ index (splitList "/" .path.path) 3 }}'
+          cluster: "in-cluster"
+  template:
+    metadata:
+      name: '{{ .values.tenant }}-{{ .values.middle }}-{{ .values.name }}'
+      namespace: argo-cd
+    spec:
+      project: "managed-services"
+      source:
+        path: '{{ .path.path }}'
+        repoURL: 'https://github.com/TheCodingSheikh/managed-services.git'
+        targetRevision: HEAD
+      destination:
+        name: '{{ .values.cluster }}'
+        namespace: '{{ .values.tenant }}-{{ .values.middle }}-{{ .values.name }}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+  templatePatch: |
+    {{- if eq .values.middle "manifest.yaml" }}
+    metadata:
+      name: "{{ .values.tenant }}-{{ .values.name }}"
+      namespace: argo-cd
+    spec:
+      destination:
+        name: '{{ .values.cluster }}'
+        namespace: null
+      syncPolicy:
+        syncOptions: []
+    {{- end }}
