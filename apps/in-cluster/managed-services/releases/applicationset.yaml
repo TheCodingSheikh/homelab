@@ -9,13 +9,13 @@ spec:
   generators:
     - git:
         files:
-          - path: "releases/*/*/*.yaml"
+          - path: "releases/*/*/manifest.yaml" 
           - path: "releases/*/*/*/*.yaml"
         repoURL: https://github.com/TheCodingSheikh/managed-services.git
         revision: HEAD
         values:
-          tenant_name: '{{ index (splitList "/" .path.path) 1 }}' # e.g. "tenant"
-          folder: '{{ index (splitList "/" .path.path) 2 }}'      # e.g. "test"
+          tenant_name: '{{ index (splitList "/" .path.path) 1 }}'
+          folder: '{{ index (splitList "/" .path.path) 2 }}'
           depth: '{{ len (splitList "/" .path.path) }}'
           filename: '{{ .path.filenameNormalized }}'
           service_name: '{{ if eq (len (splitList "/" .path.path)) 5 }}{{ index (splitList "/" .path.path) 3 }}{{ else }}none{{ end }}'
