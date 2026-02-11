@@ -39,15 +39,18 @@ spec:
         syncOptions:
           - CreateNamespace=true
   templatePatch: |
-    {{- $segments := splitList "/" .path.path -}}
     metadata:
+      {{ if gt (len .path.segments) 3 }}
+      name: '{{ .values.tenant }}-tenant-{{ index .path.segments 3  }}-{{ .values.name }}'
+      {{ else }}
       name: '{{ .values.tenant }}-tenant-{{ .values.name }}'
+      {{ end }}
       namespace: argo-cd
-      annotations:
-        {{ if gt (len .path.segments) 3 }}
-        service: "{{ index .path.segments 3  }}"
-        {{ end }}
     spec:
       destination:
+        {{ if gt (len .path.segments) 3 }}
+        namespace: '{{ .values.tenant }}-tenant-{{ index .path.segments 3  }}-{{ .values.name }}'
+        {{ else }}
         namespace: '{{ .values.tenant }}-tenant-{{ .values.name }}'
+        {{ end }}
         name: in-cluster
