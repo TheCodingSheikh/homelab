@@ -1,0 +1,3 @@
+appName: in-cluster-managed-services-releases
+createNamespace: false
+destNamespace: managed-services
