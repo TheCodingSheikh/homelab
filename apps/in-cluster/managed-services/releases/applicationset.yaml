@@ -14,7 +14,8 @@ spec:
         repoURL: https://github.com/TheCodingSheikh/managed-services.git
         revision: HEAD
         values:
-          folder: '{{ index (splitList "/" .path.path) 2 }}'
+          tenant_name: '{{ index (splitList "/" .path.path) 1 }}' # e.g. "tenant"
+          folder: '{{ index (splitList "/" .path.path) 2 }}'      # e.g. "test"
           depth: '{{ len (splitList "/" .path.path) }}'
           filename: '{{ .path.filenameNormalized }}'
           service_name: '{{ if eq (len (splitList "/" .path.path)) 5 }}{{ index (splitList "/" .path.path) 3 }}{{ else }}none{{ end }}'
@@ -42,17 +43,15 @@ spec:
           - CreateNamespace=true
   templatePatch: |
     metadata:
-      name: {{ if eq .values.depth "5" -}}
-          {{ .values.folder }}-{{ .values.filename }}-{{ .values.service_name }}
-        {{- else -}}
-          {{ .values.folder }}
-        {{- end -}}
-      namespace: argo-cd
+      name: {{ if eq .values.depth "5" }}
+        {{- .values.folder }}-{{ .values.tenant_name }}-{{ .values.filename }}-{{ .values.service_name }}
+      {{- else }}
+        {{- .values.folder }}-{{ .values.tenant_name }}
+      {{- end }}
     spec:
       destination:
-        name: in-cluster
-        namespace: {{ if eq .values.depth "5" -}}
-            {{ .values.folder }}-{{ .values.filename }}-{{ .values.service_name }}
-          {{- else -}}
-            {{ .values.folder }}
-          {{- end -}}
+        namespace: {{ if eq .values.depth "5" }}
+          {{- .values.folder }}-{{ .values.tenant_name }}-{{ .values.filename }}-{{ .values.service_name }}
+        {{- else }}
+          {{- .values.folder }}-{{ .values.tenant_name }}
+        {{- end }}
