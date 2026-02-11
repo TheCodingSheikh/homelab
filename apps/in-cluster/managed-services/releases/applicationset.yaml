@@ -8,44 +8,53 @@ spec:
   goTemplateOptions: ["missingkey=default"]
   generators:
     - git:
-        directories:
-          - path: releases/*/*
-          - path: releases/*/*/*
+        files:
+          - path: "releases/*/*/*.yaml"
+          - path: "releases/*/*/*/*.yaml"
         repoURL: https://github.com/TheCodingSheikh/managed-services.git
         revision: HEAD
         values:
-          tenant: '{{ index (splitList "/" .path.path) 1 }}'
-          parent: '{{ index (splitList "/" .path.path) 2 }}'
-          service: '{{ if eq (len (splitList "/" .path.path)) 4 }}{{ index (splitList "/" .path.path) 3 }}{{ else }}base{{ end }}'
-          cluster: "in-cluster"
+          folder: '{{ index (splitList "/" .path.path) 2 }}'
+          depth: '{{ len (splitList "/" .path.path) }}'
+          filename: '{{ .path.filenameNormalized }}'
+          service_name: '{{ if eq (len (splitList "/" .path.path)) 5 }}{{ index (splitList "/" .path.path) 3 }}{{ else }}none{{ end }}'
   template:
     metadata:
-      name: '{{ .values.tenant }}-{{ .values.parent }}-{{ .values.service }}'
+      name: placeholder
       namespace: argo-cd
     spec:
       project: "managed-services"
       source:
-        path: '{{ .path.path }}'
+        path: '{{ .path.pathDir }}'
         repoURL: 'https://github.com/TheCodingSheikh/managed-services.git'
         targetRevision: HEAD
       destination:
-        name: '{{ .values.cluster }}'
-        namespace: '{{ .values.tenant }}-{{ .values.parent }}-{{ .values.service }}'
+        name: in-cluster
+        namespace: placeholder
       syncPolicy:
         # automated:
         #   prune: true
         #   selfHeal: true
+        managedNamespaceMetadata:
+          labels:
+            capsule.clastix.io/tenant: "{{ .values.folder }}"
         syncOptions:
           - CreateNamespace=true
   templatePatch: |
-    {{- if eq .values.service "base" }}
     metadata:
-      name: "{{ .values.tenant }}-{{ .values.parent }}"
+      name: >-
+        {{- if eq .values.depth "5" -}}
+          {{ .values.folder }}-{{ .values.filename }}-{{ .values.service_name }}
+        {{- else -}}
+          {{ .values.folder }}
+        {{- end -}}
       namespace: argo-cd
     spec:
       destination:
-        name: '{{ .values.cluster }}'
-        namespace: null
-      syncPolicy:
-        syncOptions: []
-    {{- end }}
+        name: in-cluster
+        namespace: >-
+          {{- if eq .values.depth "5" -}}
+            {{ .values.folder }}-{{ .values.filename }}-{{ .values.service_name }}
+          {{- else -}}
+            {{ .values.folder }}
+          {{- end -}}
