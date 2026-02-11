@@ -45,6 +45,8 @@ spec:
     metadata:
       name: {{ if ne .values.service_name "none" -}}
         {{ .values.folder }}-{{ .values.tenant_name }}-{{ .values.filename }}-{{ .values.service_name }}
+      {{- else if ne .values.filename "manifest" -}}
+        {{ .values.folder }}-{{ .values.tenant_name }}-{{ .values.filename }}
       {{- else -}}
         {{ .values.folder }}-{{ .values.tenant_name }}
       {{- end }}
