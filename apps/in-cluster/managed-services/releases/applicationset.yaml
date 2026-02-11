@@ -42,7 +42,7 @@ spec:
           - CreateNamespace=true
   templatePatch: |
     metadata:
-      name: {{- if eq .values.depth "5" -}}
+      name: {{ if eq .values.depth "5" -}}
           {{ .values.folder }}-{{ .values.filename }}-{{ .values.service_name }}
         {{- else -}}
           {{ .values.folder }}
@@ -51,7 +51,7 @@ spec:
     spec:
       destination:
         name: in-cluster
-        namespace: {{- if eq .values.depth "5" -}}
+        namespace: {{ if eq .values.depth "5" -}}
             {{ .values.folder }}-{{ .values.filename }}-{{ .values.service_name }}
           {{- else -}}
             {{ .values.folder }}
