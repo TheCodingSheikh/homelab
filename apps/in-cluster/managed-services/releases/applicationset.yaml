@@ -9,17 +9,18 @@ spec:
   generators:
     - git:
         directories:
+          - path: releases/*/*
           - path: releases/*/*/*
         repoURL: https://github.com/TheCodingSheikh/managed-services.git
         revision: HEAD
         values:
           tenant: '{{ index (splitList "/" .path.path) 1 }}'
-          middle: '{{ index (splitList "/" .path.path) 2 }}'
-          name: '{{ index (splitList "/" .path.path) 3 }}'
+          parent: '{{ index (splitList "/" .path.path) 2 }}'
+          service: '{{ if eq (len (splitList "/" .path.path)) 4 }}{{ index (splitList "/" .path.path) 3 }}{{ else }}base{{ end }}'
           cluster: "in-cluster"
   template:
     metadata:
-      name: '{{ .values.tenant }}-{{ .values.middle }}-{{ .values.name }}'
+      name: '{{ .values.tenant }}-{{ .values.parent }}-{{ .values.service }}'
       namespace: argo-cd
     spec:
       project: "managed-services"
@@ -29,7 +30,7 @@ spec:
         targetRevision: HEAD
       destination:
         name: '{{ .values.cluster }}'
-        namespace: '{{ .values.tenant }}-{{ .values.middle }}-{{ .values.name }}'
+        namespace: '{{ .values.tenant }}-{{ .values.parent }}-{{ .values.service }}'
       syncPolicy:
         automated:
           prune: true
@@ -37,9 +38,9 @@ spec:
         syncOptions:
           - CreateNamespace=true
   templatePatch: |
-    {{- if eq .values.middle "manifest.yaml" }}
+    {{- if eq .values.service "base" }}
     metadata:
-      name: "{{ .values.tenant }}-{{ .values.name }}"
+      name: "{{ .values.tenant }}-{{ .values.parent }}"
       namespace: argo-cd
     spec:
       destination:
