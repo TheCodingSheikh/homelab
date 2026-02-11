@@ -43,14 +43,14 @@ spec:
           - CreateNamespace=true
   templatePatch: |
     metadata:
-      name: {{ if eq .values.depth "5" -}}
+      name: {{ if ne .values.service_name "none" -}}
         {{ .values.folder }}-{{ .values.tenant_name }}-{{ .values.filename }}-{{ .values.service_name }}
       {{- else -}}
         {{ .values.folder }}-{{ .values.tenant_name }}
       {{- end }}
     spec:
       destination:
-        namespace: {{ if eq .values.depth "5" -}}
+        namespace: {{ if ne .values.service_name "none" -}}
           {{ .values.folder }}-{{ .values.tenant_name }}-{{ .values.filename }}-{{ .values.service_name }}
         {{- else -}}
           {{ .values.folder }}-{{ .values.tenant_name }}
