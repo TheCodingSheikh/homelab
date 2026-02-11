@@ -43,7 +43,7 @@ spec:
       name: '{{ .values.tenant }}-tenant-{{ .values.name }}-{{ .values.service }}'
       namespace: argo-cd
       annotations:
-        {{- if (len .path.segments) gt 2 }}
+        {{- if gt (len .path.segments) 2 }}
         test: "{{index .path.segments 3}}"
         {{- end }}
     spec:
