@@ -15,7 +15,6 @@ spec:
         requeueAfterSeconds: 20
         values:
           tenant: "{{index .path.segments 2}}"
-          service: "{{index .path.segments 3}}"
           name: "{{.path.basename}}"
   template:
     metadata:
@@ -43,6 +42,8 @@ spec:
     metadata:
       name: '{{ .values.tenant }}-tenant-{{ .values.name }}-{{ .values.service }}'
       namespace: argo-cd
+      annotations:
+        test: "{{index .path.segments 3}}"
     spec:
       destination:
         namespace: '{{ .values.tenant }}-tenant-{{ .values.name }}-{{ .values.service }}'
