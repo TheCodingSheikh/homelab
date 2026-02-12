@@ -87,7 +87,9 @@ data:
         - group:    'managedservices.thecodingsheikh.io'
           apiVersion: 'v1alpha1'
           plural:   'postgres'
-
+        - group:    'argoproj.io'
+          apiVersion: 'v1alpha1'
+          plural:   'applications'
 
     kubernetesIngestor:
       annotationPrefix: lab.backstage.io
@@ -101,7 +103,10 @@ data:
           - group:    'managedservices.thecodingsheikh.io'
             apiVersion: 'v1alpha1'
             plural:   'postgres'
-      
+          - group:    'argoproj.io'
+            apiVersion: 'v1alpha1'
+            plural:   'applications'
+            
     dynamicPlugins:
       frontend:
         red-hat-developer-hub.backstage-plugin-dynamic-home-page:
