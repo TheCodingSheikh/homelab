@@ -108,7 +108,12 @@ data:
           - group:    'argoproj.io'
             apiVersion: 'v1alpha1'
             plural:   'applications'
-            
+      kro:
+        enabled: true
+        instances:
+          ingestAsResources: false
+        rgds:
+          ingestOnlyAsAPI: false  
     dynamicPlugins:
       frontend:
         red-hat-developer-hub.backstage-plugin-dynamic-home-page:
