@@ -81,19 +81,26 @@ data:
     
     kubernetes:
       customResources:
-        - group:    'argoproj.io'
+        - group:    'managedservices.thecodingsheikh.io'
           apiVersion: 'v1alpha1'
-          plural:   'applications'
-    
+          plural:   'tenants'
+        - group:    'managedservices.thecodingsheikh.io'
+          apiVersion: 'v1alpha1'
+          plural:   'postgres'
+
+
     kubernetesIngestor:
       annotationPrefix: lab.backstage.io
       defaultOwner: system
       argoIntegration: true
       components:
         customWorkloadTypes:
-          - group: argoproj.io
-            apiVersion: v1alpha1
-            plural: applications
+          - group:    'managedservices.thecodingsheikh.io'
+            apiVersion: 'v1alpha1'
+            plural:   'tenants'
+          - group:    'managedservices.thecodingsheikh.io'
+            apiVersion: 'v1alpha1'
+            plural:   'postgres'
       
     dynamicPlugins:
       frontend:
