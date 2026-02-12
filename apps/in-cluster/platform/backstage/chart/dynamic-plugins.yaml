@@ -60,8 +60,8 @@ data:
         disabled: false
 
       - disabled: false
-        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/17973327717-1/terasky-backstage-plugin-kubernetes-ingestor-dynamic-2.1.0.tgz"
-        integrity: sha512-Q1FhXNP4EJVaRpuOjp/rdLOgR2ymjdxXqjkSvgN1IuF+S6Mg3pALgxvIlvmkyc1M/gm7H80PvzXLQKjoHRBJ5Q==
+        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/2389434567-1/terasky-backstage-plugin-kubernetes-ingestor-dynamic-3.6.0.tgz"
+        integrity: sha512-So3ZpZwS86wZyczg1o1Wp/e6x4Bh/vQBZcpC82FCgcewTlrljUpKiZAW6D8Guogf/trOMTaqEto5Jtl+gv0pew==
         pluginConfig:
           kubernetesIngestor:
             mappings:
@@ -73,7 +73,7 @@ data:
             components:
               enabled: true
               taskRunner:
-                frequency: 60
+                frequency: 20
                 timeout: 600
               onlyIngestAnnotatedResources: true
             crossplane:
