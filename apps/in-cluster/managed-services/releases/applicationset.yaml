@@ -46,7 +46,7 @@ spec:
       name: '{{ .values.tenant }}-tenant'
       {{ end }}
       namespace: argo-cd
-      labels:
+      annotations:
         base: "{{.path.basename}}"
         path: "{{.path.path}}"
     spec:
