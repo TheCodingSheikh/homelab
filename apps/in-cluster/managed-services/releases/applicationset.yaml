@@ -42,7 +42,7 @@ spec:
           - CreateNamespace=true
   templatePatch: |
     metadata:
-      {{ if gt (len .path.segments) 3 }}
+      {{ if gt (len .path.segments) 4 }}
       name: '{{ .values.tenant }}-tenant-{{ index .path.segments 3  }}-{{ .values.name }}'
       {{ else }}
       name: '{{ .values.tenant }}-tenant'
@@ -53,7 +53,7 @@ spec:
         path: "{{.values.path}}"
     spec:
       destination:
-        {{ if gt (len .path.segments) 3 }}
+        {{ if gt (len .path.segments) 4 }}
         namespace: '{{ .values.tenant }}-tenant-{{ index .path.segments 3  }}-{{ .values.name }}'
         {{ else }}
         namespace: '{{ .values.tenant }}-tenant'
