@@ -16,6 +16,8 @@ spec:
         values:
           tenant: "{{index .path.segments 2}}"
           name: "{{.path.basename}}"
+          path: "{{.path.path}}"
+
   template:
     metadata:
       name: placeholder
@@ -23,7 +25,7 @@ spec:
     spec:
       project: "managed-services"
       source:
-        path: '{{ .path.path }}'
+        path: '{{ .values.path }}'
         repoURL: 'https://github.com/TheCodingSheikh/managed-services.git'
         targetRevision: HEAD
       destination:
@@ -40,19 +42,19 @@ spec:
           - CreateNamespace=true
   templatePatch: |
     metadata:
-      {{ if gt (len .path.segments) 3 }}
-      name: '{{ .values.tenant }}-tenant-{{ index .path.segments 3  }}-{{ .values.name }}'
+      {{ if gt (len .values.path.segments) 3 }}
+      name: '{{ .values.tenant }}-tenant-{{ index .values.path.segments 3  }}-{{ .values.name }}'
       {{ else }}
       name: '{{ .values.tenant }}-tenant'
       {{ end }}
       namespace: argo-cd
       annotations:
-        base: "{{.path.basename}}"
-        path: "{{.path.path}}"
+        base: "{{.values.name}}"
+        path: "{{.values.path}}"
     spec:
       destination:
-        {{ if gt (len .path.segments) 3 }}
-        namespace: '{{ .values.tenant }}-tenant-{{ index .path.segments 3  }}-{{ .values.name }}'
+        {{ if gt (len .values.path.segments) 3 }}
+        namespace: '{{ .values.tenant }}-tenant-{{ index .values.path.segments 3  }}-{{ .values.name }}'
         {{ else }}
         namespace: '{{ .values.tenant }}-tenant'
         {{ end }}
