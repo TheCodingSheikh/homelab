@@ -46,6 +46,9 @@ spec:
       name: '{{ .values.tenant }}-tenant'
       {{ end }}
       namespace: argo-cd
+      labels:
+        base: {{.path.basename}}
+        path: {{.path.path}}
     spec:
       destination:
         {{ if gt (len .path.segments) 3 }}
