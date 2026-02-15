@@ -58,7 +58,9 @@ data:
         disabled: false
       - package: ./dynamic-plugins/dist/backstage-community-plugin-catalog-backend-module-scaffolder-relation-processor-dynamic
         disabled: false
-
+      - package: ./dynamic-plugins/dist/backstage-community-plugin-rbac
+        disabled: true
+        
       - disabled: false
         package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/2389434567-1/terasky-backstage-plugin-kubernetes-ingestor-dynamic-3.6.0.tgz"
         integrity: sha512-So3ZpZwS86wZyczg1o1Wp/e6x4Bh/vQBZcpC82FCgcewTlrljUpKiZAW6D8Guogf/trOMTaqEto5Jtl+gv0pew==

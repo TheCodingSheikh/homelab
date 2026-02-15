@@ -25,7 +25,22 @@ data:
       builder: external
     
     signInPage: oidc
-    
+
+    permission:
+      enabled: true
+      rbac:
+        maxDepth: 1
+        policyFileReload: true
+        policies-csv-file: "./rbac/rbac-policy.csv"
+        conditionalPoliciesFile: "./rbac/conditional-policies.yaml"
+        pluginsWithPermission:
+          - catalog
+          - permission
+          - scaffolder
+        admin:
+          users:
+            - name: user:default/abdo
+            
     integrations:
       github:
         - host: ${GITHUB_HOST}

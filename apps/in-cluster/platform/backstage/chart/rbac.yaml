@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backstage-rbac
+  namespace: backstage
+data:
+  rbac-policy.csv: |
+    p, role:default/all_users, catalog-entity, update, deny
+    p, role:default/all_users, catalog-entity, delete, deny
+
+    g, group:default/user, role:default/all_users
+  conditional-policies.yaml: |
+    ---
+    roleEntityRef: role:default/all_users
+    resourceType: catalog-entity
+    pluginId: catalog
+    permissionMapping:
+      - read
+    result: CONDITIONAL
+    conditions:
+      anyOf:
+        - not:
+            rule: HAS_ANNOTATION
+            params:
+              annotation: backstage.io/rbac
+              value: "true"
+        - rule: IS_ENTITY_OWNER
+          params: {}
+    ---
+    roleEntityRef: role:default/all_users
+    resourceType: catalog-entity
+    pluginId: catalog
+    permissionMapping:
+      - update
+      - delete
+    result: DENY

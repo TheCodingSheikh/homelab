@@ -36,7 +36,7 @@ controllers:
           ORGANIZATION_NAME: Lab
           LIGHTHOUSE_BASEURL: temp
           DYNATRACE_URL: temp
-          PERMISSION_ENABLED: "false"
+          PERMISSION_ENABLED: "true"
           GITHUB_HOST: "github.com"
           KEYCLOAK_BASE_URL: "https://sso.lab.com"
           KEYCLOAK_LOGIN_REALM: "lab"
@@ -175,7 +175,17 @@ persistence:
           - path: /opt/app-root/src/app-config.k8s.yaml
             subPath: app-config.k8s.yaml
             readOnly: true
-  
+
+  rbac:
+    enabled: true
+    type: configMap
+    name: backstage-rbac
+    advancedMounts:
+      main:
+        main:
+          - path: /opt/app-root/src/rbac
+            readOnly: true
+
   dynamic-plugins-root:
     enabled: true
     accessMode: ReadWriteOnce
