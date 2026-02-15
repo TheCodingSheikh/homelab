@@ -39,7 +39,7 @@ data:
           - permission
           - scaffolder
         admin:
-          users:
+          superUsers:
             - name: user:default/abdo
             
     integrations:
