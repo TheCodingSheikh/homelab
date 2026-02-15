@@ -28,4 +28,4 @@ data:
         - rule: IS_ENTITY_OWNER
           resourceType: catalog-entity
           params:
-            claims: ["$ownerRefs"]
+            claims: ["$currentUser"]
