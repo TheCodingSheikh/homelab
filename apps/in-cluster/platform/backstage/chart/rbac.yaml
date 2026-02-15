@@ -11,26 +11,20 @@ data:
     g, group:default/user, role:default/all_users
   conditional-policies.yaml: |
     ---
+    result: CONDITIONAL
     roleEntityRef: role:default/all_users
-    resourceType: catalog-entity
     pluginId: catalog
+    resourceType: catalog-entity
     permissionMapping:
       - read
-    result: CONDITIONAL
     conditions:
       anyOf:
         - not:
             rule: HAS_ANNOTATION
+            resourceType: catalog-entity
             params:
-              annotation: backstage.io/rbac
-              value: "true"
+              annotation: rbac:enabled
         - rule: IS_ENTITY_OWNER
-          params: {}
-    ---
-    roleEntityRef: role:default/all_users
-    resourceType: catalog-entity
-    pluginId: catalog
-    permissionMapping:
-      - update
-      - delete
-    result: DENY
+          resourceType: catalog-entity
+          params:
+            claims: ["$ownerRefs"]
