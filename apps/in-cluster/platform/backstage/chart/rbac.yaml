@@ -23,7 +23,8 @@ data:
             rule: HAS_ANNOTATION
             resourceType: catalog-entity
             params:
-              annotation: rbac:enabled
+              annotation: backstage.io/rbac
+              value: "true"
         - rule: IS_ENTITY_OWNER
           resourceType: catalog-entity
           params:
