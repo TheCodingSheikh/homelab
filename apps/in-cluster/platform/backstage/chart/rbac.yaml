@@ -7,7 +7,6 @@ data:
   rbac-policy.csv: |
     p, role:default/all_users, catalog-entity, update, deny
     p, role:default/all_users, catalog-entity, delete, deny
-    p, role:default/all_users, catalog-entity, read, allow
     
     g, group:default/user, role:default/all_users
   conditional-policies.yaml: |
