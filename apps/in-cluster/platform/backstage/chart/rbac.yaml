@@ -19,18 +19,12 @@ data:
       - read
     conditions:
       anyOf:
-          - allOf:
-              - not:
-                  rule: HAS_ANNOTATION
-                  resourceType: catalog-entity
-                  params: 
-                    annotation: 'backstage.io/rbac'
-          - allOf:
-              - rule: HAS_ANNOTATION
-                resourceType: catalog-entity
-                params: 
-                  annotation: 'backstage.io/rbac'
-              - rule: IS_ENTITY_OWNER
-                resourceType: catalog-entity
-                params: 
-                  claims: ["$ownerRefs"]
+          - not:
+              rule: HAS_ANNOTATION
+              resourceType: catalog-entity
+              params:
+                annotation: backstage.io/rbac
+          - rule: IS_ENTITY_OWNER
+            resourceType: catalog-entity
+            params:
+              claims: ["$ownerRefs"]
