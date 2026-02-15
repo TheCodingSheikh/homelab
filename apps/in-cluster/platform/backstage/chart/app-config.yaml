@@ -33,7 +33,6 @@ data:
         policyFileReload: true
         policies-csv-file: "./rbac/rbac-policy.csv"
         conditionalPoliciesFile: "./rbac/conditional-policies.yaml"
-        policyFileReload: true
         pluginsWithPermission:
           - catalog
           - permission
