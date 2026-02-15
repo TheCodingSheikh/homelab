@@ -121,3 +121,26 @@ data:
               thecodingsheikh.backstage-plugin-scaffolder-field-validator:
                 scaffolderFieldExtensions:
                   - importName: ScaffolderFieldValidatorExtension
+
+      - disabled: false
+        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/22032259055-1/thecodingsheikh-backstage-plugin-catalog-backend-module-multi-owner-processor-dynamic-1.0.3.tgz"
+        integrity: sha512-UGK/PLpKabDL+xOoPMfj4ZMXpIyxyDXY1LoML8hRmXmyAvZ88bx0dvlPv7hyjOVPSnn707nZwDB0fR1zTibVjA==
+        
+      - disabled: false
+        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/22032263783-1/thecodingsheikh-backstage-plugin-multi-owner-dynamic-1.0.3.tgz"
+        integrity: sha512-1/NqLTfkTNqxGzqATYoeMi5S+pwi3WLlSePv7W0ApPCZGl1tS2ksb46MMzrPGrYoEnRMKAy2+WIVADaBBwkwdQ==
+        pluginConfig:
+          dynamicPlugins:
+            frontend:
+              thecodingsheikh.backstage-plugin-multi-owner:
+                mountPoints:
+                  - mountPoint: entity.page.overview/cards
+                    importName: EntityMultiOwnerCard
+                    config:
+                      layout:
+                        gridColumnEnd:
+                          lg: "span 8"
+                          xs: "span 12"
+                      if:
+                        allOf:
+                          - isMultiOwnerAvailable
