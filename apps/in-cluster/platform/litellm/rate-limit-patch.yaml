@@ -1,0 +1,323 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: litellm-org-rate-limit-patch
+  namespace: litellm  # Change to your namespace
+data:
+  apply-patch.py: |
+    #!/usr/bin/env python3
+    """
+    Patch script to add organization rate limit enforcement for user API keys.
+
+    This patch ensures that when a user creates a key without specifying a team,
+    the key still respects the rate limits from the user's organizations
+    (both direct membership and through teams).
+    """
+    import os
+    import sys
+    import re
+
+    def get_litellm_paths():
+        """Find all litellm installation paths."""
+        paths = []
+
+        # Check common installation locations
+        candidates = [
+            "/app/litellm",
+            "/usr/lib/python3.13/site-packages/litellm",
+            "/usr/lib/python3.11/site-packages/litellm",
+            "/usr/local/lib/python3.11/site-packages/litellm",
+        ]
+
+        for path in candidates:
+            if os.path.isdir(path):
+                paths.append(path)
+
+        # Also try to find via import
+        try:
+            import litellm
+            import_path = os.path.dirname(litellm.__file__)
+            if import_path not in paths and os.path.isdir(import_path):
+                paths.append(import_path)
+        except ImportError:
+            pass
+
+        return paths
+
+    # New code to append to auth_checks_organization.py
+    AUTH_CHECKS_ORG_PATCH = '''
+
+    class OrganizationRateLimits:
+        """
+        Represents the rate limits from an organization.
+        """
+
+        def __init__(
+            self,
+            organization_id: str,
+            tpm_limit: Optional[int] = None,
+            rpm_limit: Optional[int] = None,
+        ):
+            self.organization_id = organization_id
+            self.tpm_limit = tpm_limit
+            self.rpm_limit = rpm_limit
+
+
+    def _get_most_restrictive_rate_limits(
+        org_rate_limits: List["OrganizationRateLimits"],
+    ) -> Tuple[Optional[int], Optional[int], Optional[str]]:
+        """
+        Given a list of organization rate limits, return the most restrictive (lowest non-None) values.
+        """
+        if not org_rate_limits:
+            return None, None, None
+
+        most_restrictive_tpm: Optional[int] = None
+        most_restrictive_rpm: Optional[int] = None
+        tpm_org_id: Optional[str] = None
+        rpm_org_id: Optional[str] = None
+
+        for org_limits in org_rate_limits:
+            if org_limits.tpm_limit is not None:
+                if most_restrictive_tpm is None or org_limits.tpm_limit < most_restrictive_tpm:
+                    most_restrictive_tpm = org_limits.tpm_limit
+                    tpm_org_id = org_limits.organization_id
+
+            if org_limits.rpm_limit is not None:
+                if most_restrictive_rpm is None or org_limits.rpm_limit < most_restrictive_rpm:
+                    most_restrictive_rpm = org_limits.rpm_limit
+                    rpm_org_id = org_limits.organization_id
+
+        most_restrictive_org_id = rpm_org_id or tpm_org_id
+        return most_restrictive_tpm, most_restrictive_rpm, most_restrictive_org_id
+
+
+    async def get_user_organization_rate_limits(
+        user_id: str,
+        user_object: Optional[LiteLLM_UserTable],
+        prisma_client,
+    ) -> Tuple[Optional[int], Optional[int], Optional[str]]:
+        """
+        Get the most restrictive organization rate limits for a user based on:
+        1. User's direct organization memberships
+        2. User's teams' organizations
+        """
+        from litellm._logging import verbose_proxy_logger
+
+        org_ids_to_check: List[str] = []
+
+        if user_object is not None and user_object.organization_memberships is not None:
+            for membership in user_object.organization_memberships:
+                if membership.organization_id is not None:
+                    org_ids_to_check.append(membership.organization_id)
+
+        if user_object is not None and user_object.teams:
+            try:
+                teams = await prisma_client.db.litellm_teamtable.find_many(
+                    where={"team_id": {"in": user_object.teams}},
+                )
+                for team in teams:
+                    if team.organization_id is not None:
+                        org_ids_to_check.append(team.organization_id)
+            except Exception as e:
+                verbose_proxy_logger.debug(f"Error fetching teams for user {user_id}: {e}")
+
+        org_ids_to_check = list(set(org_ids_to_check))
+
+        if not org_ids_to_check:
+            return None, None, None
+
+        org_rate_limits: List[OrganizationRateLimits] = []
+        try:
+            sql_query = f"""
+                SELECT o.organization_id, b.tpm_limit, b.rpm_limit
+                FROM "LiteLLM_OrganizationTable" AS o
+                LEFT JOIN "LiteLLM_BudgetTable" AS b ON o.budget_id = b.budget_id
+                WHERE o.organization_id IN ({','.join([f"'{org_id}'" for org_id in org_ids_to_check])})
+            """
+            results = await prisma_client.db.query_raw(query=sql_query)
+
+            for row in results:
+                org_rate_limits.append(
+                    OrganizationRateLimits(
+                        organization_id=row["organization_id"],
+                        tpm_limit=row.get("tpm_limit"),
+                        rpm_limit=row.get("rpm_limit"),
+                    )
+                )
+        except Exception as e:
+            verbose_proxy_logger.debug(f"Error fetching organization rate limits for user {user_id}: {e}")
+            return None, None, None
+
+        return _get_most_restrictive_rate_limits(org_rate_limits)
+    '''
+
+    # Code to insert into user_api_key_auth.py
+    USER_API_KEY_AUTH_PATCH = '''
+            # Check 2b. If key has no direct org_id and no team_id, check user's organizations for rate limits
+            # This ensures keys created without a team still respect the user's organization rate limits
+            if (
+                valid_token.org_id is None
+                and valid_token.team_id is None
+                and valid_token.user_id is not None
+                and prisma_client is not None
+                and user_obj is not None
+            ):
+                try:
+                    from litellm.proxy.auth.auth_checks_organization import get_user_organization_rate_limits
+                    (
+                        org_tpm_limit,
+                        org_rpm_limit,
+                        org_id_for_rate_limits,
+                    ) = await get_user_organization_rate_limits(
+                        user_id=valid_token.user_id,
+                        user_object=user_obj,
+                        prisma_client=prisma_client,
+                    )
+                    if org_tpm_limit is not None or org_rpm_limit is not None:
+                        valid_token.organization_tpm_limit = org_tpm_limit
+                        valid_token.organization_rpm_limit = org_rpm_limit
+                        valid_token.org_id = org_id_for_rate_limits
+                        verbose_proxy_logger.debug(
+                            f"Applied organization rate limits for user {valid_token.user_id} "
+                            f"from org {org_id_for_rate_limits}: "
+                            f"tpm_limit={org_tpm_limit}, rpm_limit={org_rpm_limit}"
+                        )
+                except Exception as e:
+                    verbose_proxy_logger.debug(
+                        f"Error getting organization rate limits for user {valid_token.user_id}: {e}"
+                    )
+
+    '''
+
+    def patch_auth_checks_organization(litellm_path):
+        """Patch auth_checks_organization.py with new functions."""
+        filepath = os.path.join(litellm_path, "proxy", "auth", "auth_checks_organization.py")
+
+        with open(filepath, 'r') as f:
+            content = f.read()
+
+        # Check if already patched
+        if 'get_user_organization_rate_limits' in content:
+            print(f"✓ {filepath} already patched, skipping...")
+            return True
+
+        # Append the new code
+        content += AUTH_CHECKS_ORG_PATCH
+
+        with open(filepath, 'w') as f:
+            f.write(content)
+
+        print(f"✓ Patched {filepath}")
+        return True
+
+    def patch_user_api_key_auth(litellm_path):
+        """Patch user_api_key_auth.py to call the new function."""
+        filepath = os.path.join(litellm_path, "proxy", "auth", "user_api_key_auth.py")
+
+        with open(filepath, 'r') as f:
+            content = f.read()
+
+        # Check if already patched
+        if 'Check 2b. If key has no direct org_id' in content:
+            print(f"✓ {filepath} already patched, skipping...")
+            return True
+
+        # Find insertion point: after "user_obj = None" and before "# Check 2a."
+        # The pattern looks for the except block that sets user_obj = None
+        pattern = r'(                    user_obj = None\n)(\n            # Check 2a\.)'
+
+        if re.search(pattern, content):
+            content = re.sub(pattern, r'\1' + USER_API_KEY_AUTH_PATCH + r'\2', content)
+            with open(filepath, 'w') as f:
+                f.write(content)
+            print(f"✓ Patched {filepath}")
+            return True
+        else:
+            # Try alternative pattern (spacing might differ)
+            pattern2 = r'(                    user_obj = None)(\s+# Check 2a\.)'
+            if re.search(pattern2, content):
+                content = re.sub(pattern2, r'\1\n' + USER_API_KEY_AUTH_PATCH + r'\2', content)
+                with open(filepath, 'w') as f:
+                    f.write(content)
+                print(f"✓ Patched {filepath}")
+                return True
+
+            print(f"✗ Could not find insertion point in {filepath}")
+            print("  Looking for pattern: 'user_obj = None' followed by '# Check 2a.'")
+            return False
+
+    def verify_patch():
+        """Verify the patch was applied successfully."""
+        try:
+            from litellm.proxy.auth.auth_checks_organization import get_user_organization_rate_limits
+            print("✓ Patch verified: get_user_organization_rate_limits is importable")
+            return True
+        except ImportError as e:
+            print(f"✗ Patch verification failed: {e}")
+            return False
+
+    def clear_pycache(litellm_path):
+        """Clear __pycache__ directories to ensure patched code is used."""
+        import shutil
+        auth_dir = os.path.join(litellm_path, "proxy", "auth")
+        pycache = os.path.join(auth_dir, "__pycache__")
+        if os.path.isdir(pycache):
+            shutil.rmtree(pycache)
+            print(f"  Cleared {pycache}")
+
+    def main():
+        print("=" * 60)
+        print("LiteLLM Organization Rate Limit Patch")
+        print("=" * 60)
+
+        litellm_paths = get_litellm_paths()
+
+        if not litellm_paths:
+            print("✗ LiteLLM not found at any known location.")
+            sys.exit(1)
+
+        print(f"Found LiteLLM at: {', '.join(litellm_paths)}")
+
+        print()
+        print("Applying patches...")
+
+        success = True
+        for litellm_path in litellm_paths:
+            print(f"\nPatching {litellm_path}...")
+            success = patch_auth_checks_organization(litellm_path) and success
+            success = patch_user_api_key_auth(litellm_path) and success
+            clear_pycache(litellm_path)
+
+        print()
+        print("Verifying patches...")
+        success = verify_patch() and success
+
+        print()
+        if success:
+            print("=" * 60)
+            print("✓ All patches applied successfully!")
+            print("=" * 60)
+        else:
+            print("=" * 60)
+            print("✗ Some patches failed. Check the output above.")
+            print("=" * 60)
+            sys.exit(1)
+
+    if __name__ == "__main__":
+        main()
+
+  # Wrapper script that applies patch then starts litellm
+  start-with-patch.sh: |
+    #!/bin/bash
+    set -e
+
+    echo "Applying organization rate limit patch..."
+    python /patches/apply-patch.py
+
+    echo ""
+    echo "Starting LiteLLM..."
+    sed -i '/def is_premium(self) -> bool:/a\        return True' /app/litellm/proxy/auth/litellm_license.py /usr/lib/python3.13/site-packages/litellm/proxy/auth/litellm_license.py 2>/dev/null
+    sed -i 's/premium_user: bool = _license_check.is_premium()/premium_user: bool = True/g; s/premium_user = _license_check.is_premium()/premium_user = True/g' /app/litellm/proxy/proxy_server.py /usr/lib/python3.13/site-packages/litellm/proxy/proxy_server.py 2>/dev/null
+    find /app /usr/lib/python3.13 -name "*.pyc" -delete 2>/dev/null; find /app /usr/lib/python3.13 -name __pycache__ -exec rm -rf {} + 2>/dev/null
+    docker/prod_entrypoint.sh --config /etc/litellm/config.yaml

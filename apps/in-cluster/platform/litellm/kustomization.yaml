@@ -3,3 +3,11 @@ kind: Kustomization
 
 resources:
   - chart
+  - rate-limit-patch.yaml
+
+
+# configMapGenerator:
+# - name: litellm-config
+#   behavior: merge
+#   files:
+#     - custom_sso.py

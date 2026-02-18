@@ -1,23 +1,50 @@
-command:
-  - /bin/bash
-  - -c
-args:
-  - |
-    sed -i '/def is_premium(self) -> bool:/a\        return True' /app/litellm/proxy/auth/litellm_license.py /usr/lib/python3.13/site-packages/litellm/proxy/auth/litellm_license.py 2>/dev/null
-    sed -i 's/premium_user: bool = _license_check.is_premium()/premium_user: bool = True/g; s/premium_user = _license_check.is_premium()/premium_user = True/g' /app/litellm/proxy/proxy_server.py /usr/lib/python3.13/site-packages/litellm/proxy/proxy_server.py 2>/dev/null
-    find /app /usr/lib/python3.13 -name "*.pyc" -delete 2>/dev/null; find /app /usr/lib/python3.13 -name __pycache__ -exec rm -rf {} + 2>/dev/null
-    docker/prod_entrypoint.sh --config /etc/litellm/config.yaml
+command: 
+  - /bin/bash 
+  - /patches/start-with-patch.sh
+
 envVars:
   STORE_MODEL_IN_DB: "true"
   SSL_CERT_FILE: /etc/ssl/certs/ca.crt
   LITELLM_LICENSE: "bypass"
   DOCS_TITLE: "MYLLM"
-  # LITELLM_LICENSE: "eyJleHBpcmF0aW9uX2RhdGUiOiAiMjAyNi0wMi0wOCIsICJ1c2VyX2lkIjogInRyaWFsLWxpY2Vuc2UtbGl0ZWxsbSIsICJhbGxvd2VkX2ZlYXR1cmVzIjogWyIqIl0sICJtYXhfdXNlcnMiOiAxMDAsICJtYXhfdGVhbXMiOiA1fS4AGH/wkeFQm+xFbezcZIh50px/NDwk7MIge0ZrNRroJDei+OMhh1l5rtBxA8SAzw4rmdAjtEM9BZPhrQcutuWuEvuaHBrRWBR6UT8q1HOkcMJD41wnmmHwb+ea7w+Qq7C0DxH7qgLOomBaSlzGsAH9m1Ftn3vI1I4ZGymJ/qyQlRw006tQUCKfWCnoicklNnxwVhuppCUQBYv7KBOs/I8m/rFT8K7yN1a7yMogLKQwwttHNhYaDD9NQR40XCzKwG8l3iV5V4coQVwEtn3Rplg8MGe5SJ38T1waLPhsAFw5xVvh84IFlBgXwsKgasesLwL81eLXUJvLZctk76Dfh5YZ"
+  GENERIC_CLIENT_ID: litellm
+  GENERIC_CLIENT_SECRET: "tVphFDdl26D8yG8VrlhsPO7M9V5y9vls"
+  GENERIC_AUTHORIZATION_ENDPOINT: "https://sso.lab.com/realms/lab/protocol/openid-connect/auth"
+  GENERIC_TOKEN_ENDPOINT: "https://sso.lab.com/realms/lab/protocol/openid-connect/token"
+  GENERIC_USERINFO_ENDPOINT: "https://sso.lab.com/realms/lab/protocol/openid-connect/userinfo"
+  GENERIC_USER_ID_ATTRIBUTE: "preferred_username"
+  GENERIC_USER_EMAIL_ATTRIBUTE: "email"
+  GENERIC_USER_DISPLAY_NAME_ATTRIBUTE: "preferred_username"
+  GENERIC_USER_FIRST_NAME_ATTRIBUTE: "given_name"
+  GENERIC_USER_LAST_NAME_ATTRIBUTE: "family_name"
+  GENERIC_INCLUDE_CLIENT_ID: "true"
+  GENERIC_SCOPE: "openid profile email litellm"
+  GENERIC_USER_ROLE_ATTRIBUTE: "litellm"
 image:
   pullPolicy: IfNotPresent
 
 podAnnotations:
   inject-certs: "enabled"
+
+volumeMounts:
+  - name: patch-scripts
+    mountPath: /patches
+
+volumes:
+  - name: patch-scripts
+    configMap:
+      name: litellm-org-rate-limit-patch
+      defaultMode: 0755
+
+proxy_config:
+  general_settings:
+    litellm_jwtauth:
+      team_ids_jwt_field: "groups"
+    # custom_sso: "custom_sso.custom_sso_handler"
+  
+  litellm_settings:
+    default_internal_user_params:
+      user_role: "internal_user"
 
 ingress:
   enabled: true
@@ -36,3 +63,6 @@ ingress:
    - secretName: litellm-tls
      hosts:
        - llm.lab.com
+
+
+       
