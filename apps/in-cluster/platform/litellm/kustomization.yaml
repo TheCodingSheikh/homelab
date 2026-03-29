@@ -3,8 +3,19 @@ kind: Kustomization
 
 resources:
   - chart
-  - rate-limit-patch.yaml
+  # - rate-limit-patch.yaml
 
+# patches:
+#   - target:
+#       kind: Deployment
+#       name: litellm
+#     patch: |-
+#       - op: replace
+#         path: /spec/template/spec/volumes/0
+#         value:
+#           name: litellm-config
+#           configMap:
+#             name: litellm-config
 
 # configMapGenerator:
 # - name: litellm-config
