@@ -6,4 +6,5 @@ helmCharts:
   repo: https://vllm-project.github.io/production-stack
   version: 0.1.10
   valuesFile: values.yaml
+  releaseName: facebook-opt-125m
   namespace: ai
