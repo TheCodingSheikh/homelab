@@ -1,6 +1,7 @@
 servingEngineSpec:
   enableEngine: true
   runtimeClassName: ""
+  imagePullPolicy: IfNotPresent
 
   modelSpec:
     - name: "model"
