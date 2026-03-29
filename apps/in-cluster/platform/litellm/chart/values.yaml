@@ -64,6 +64,11 @@ separateHealthApp: true
 #   enabled: true
 
 proxy_config:
+  model_list:
+    - model_name: "qwen3:0.6b"             
+      litellm_params:
+        model: "ollama/qwen3:0.6b"
+        api_base: "http://qwen3-0-6b-ollama.ai:11434"
   sso_settings:
     role_mappings:
       provider: "generic"
