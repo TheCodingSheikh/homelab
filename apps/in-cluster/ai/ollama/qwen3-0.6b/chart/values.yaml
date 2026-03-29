@@ -1,4 +1,4 @@
 ollama:
   models:
-    pull:
+    run:
       - qwen3:0.6b

@@ -6,5 +6,5 @@ helmCharts:
   repo: https://helm.otwld.com/
   version: 1.53.0
   valuesFile: values.yaml
-  releaseName: qwen3-0.6b
+  releaseName: qwen3-0-6b
   namespace: ai
