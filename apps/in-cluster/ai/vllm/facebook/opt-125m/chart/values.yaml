@@ -5,7 +5,7 @@ servingEngineSpec:
   modelSpec:
     - name: "model"
       repository: "vllm/vllm-openai"
-      tag: "latest"
+      tag: "v0.18.0"
       modelURL: "facebook/opt-125m"
       replicaCount: 1
       requestCPU: 1
