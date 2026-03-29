@@ -1,0 +1,4 @@
+ollama:
+  models:
+    pull:
+      - qwen3:0.6b
