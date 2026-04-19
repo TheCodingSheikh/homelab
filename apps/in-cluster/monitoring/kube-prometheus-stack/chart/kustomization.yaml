@@ -9,3 +9,6 @@ helmCharts:
   namespace: kube-prometheus-stack
   releaseName: kube-prometheus-stack
   valuesFile: values.yaml
+
+patchesStrategicMerge:
+  - patch-crd.yaml

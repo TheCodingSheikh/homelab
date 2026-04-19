@@ -1,0 +1,34 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: alertmanagerconfigs.monitoring.coreos.com
+  annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: prometheuses.monitoring.coreos.com
+  annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: scrapeconfigs.monitoring.coreos.com
+  annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: alertmanagers.monitoring.coreos.com
+  annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: thanosrulers.monitoring.coreos.com
+  annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true
