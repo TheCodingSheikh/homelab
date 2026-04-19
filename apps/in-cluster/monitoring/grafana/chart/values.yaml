@@ -1,0 +1,159 @@
+deploymentStrategy:
+  type: Recreate
+annotations:
+  inject-certs: "enabled"
+admin:
+  existingSecret: "grafana-secret"
+  userKey: admin-user
+  passwordKey: admin-password
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: default
+        disableDeletion: false
+        editable: true
+        folder: ""
+        options:
+          path: /var/lib/grafana/dashboards/default
+        orgId: 1
+        type: file
+      - name: nginx
+        orgId: 1
+        folder: Nginx
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/nginx
+      - name: postgres
+        orgId: 1
+        folder: Postgres
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/postgres
+dashboards:
+  default:
+    external-secrets:
+      url: https://raw.githubusercontent.com/external-secrets/external-secrets/main/docs/snippets/dashboard.json
+      datasource: Prometheus
+  nginx:
+    nginx:
+      url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/grafana/dashboards/nginx.json
+      datasource: Prometheus
+    nginx-request-handling-performance:
+      url: https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/grafana/dashboards/request-handling-performance.json
+      datasource: Prometheus
+  postgres:
+    crunchy-pgbackrest:
+      url: https://raw.githubusercontent.com/CrunchyData/postgres-operator-examples/main/kustomize/monitoring/grafana/dashboards/pgbackrest.json
+      datasource: Prometheus
+    crunchy-pod-details:
+      url: https://raw.githubusercontent.com/CrunchyData/postgres-operator-examples/main/kustomize/monitoring/grafana/dashboards/pod_details.json
+      datasource: Prometheus
+    crunchy-postgresql-details:
+      url: https://raw.githubusercontent.com/CrunchyData/postgres-operator-examples/main/kustomize/monitoring/grafana/dashboards/postgresql_details.json
+      datasource: Prometheus
+    crunchy-postgresql-overview:
+      url: https://raw.githubusercontent.com/CrunchyData/postgres-operator-examples/main/kustomize/monitoring/grafana/dashboards/postgresql_overview.json
+      datasource: Prometheus
+    crunchy-postgresql-service_health:
+      url: https://raw.githubusercontent.com/CrunchyData/postgres-operator-examples/main/kustomize/monitoring/grafana/dashboards/postgresql_service_health.json
+      datasource: Prometheus
+    crunchy-prometheus-alerts:
+      url: https://raw.githubusercontent.com/CrunchyData/postgres-operator-examples/main/kustomize/monitoring/grafana/dashboards/prometheus_alerts.json
+      datasource: Prometheus
+    crunchy-query-statistics:
+      url: https://raw.githubusercontent.com/CrunchyData/postgres-operator-examples/main/kustomize/monitoring/grafana/dashboards/query_statistics.json
+      datasource: Prometheus
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - access: proxy
+        name: Prometheus
+        type: prometheus
+        url: http://kube-prometheus-stack-prometheus.kube-prometheus-stack.svc.cluster.local:9090
+        isDefault: true
+        jsonData:
+          prometheusType: Prometheus
+      - access: proxy
+        name: Loki
+        type: loki
+        url: http://loki-gateway.loki.svc.cluster.local
+      - name: Alertmanager
+        type: alertmanager
+        access: proxy
+        url: http://kube-prometheus-stack-alertmanager.kube-prometheus-stack.svc.cluster.local:9093
+        jsonData:
+          implementation: prometheus
+    deleteDatasources:
+      - name: Alertmanager
+        orgId: 1
+      - name: Prometheus
+        orgId: 1
+      - name: Loki
+        orgId: 1
+imageRenderer:
+  enabled: true
+# https://grafana.com/docs/grafana/next/setup-grafana/configure-security/configure-authentication/keycloak/
+assertNoLeakedSecrets: false
+grafana.ini:
+  server:
+    root_url: https://grafana.lab.com
+  auth.generic_oauth:
+    enabled: true
+    name: SSO
+    client_id: grafana
+    # client_secret: $__env{GRAFANA_SSO_CLIENT_SECRET}
+    client_secret: 08Monvlrfcn26OTFdY0nqf6pRYRYs1Np
+    scopes: openid email profile grafana
+    email_attribute_path: email
+    login_attribute_path: username
+    name_attribute_path: full_name
+    auth_url: https://sso.lab.com/realms/lab/protocol/openid-connect/auth
+    token_url: https://sso.lab.com/realms/lab/protocol/openid-connect/token
+    api_url: https://sso.lab.com/realms/lab/protocol/openid-connect/userinfo
+    role_attribute_path: contains(grafana[*], 'Admin') && 'Admin' || contains(grafana[*], 'Editor') && 'Editor' || 'Viewer'
+env:
+  GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+  GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+  GF_ANALYTICS_REPORTING_ENABLED: "false"
+  GF_NEWS_NEWS_FEED_ENABLED: "false"
+  GF_DATE_FORMATS_USE_BROWSER_LOCALE: true
+# envValueFrom:
+  # GRAFANA_SSO_CLIENT_SECRET:
+  #   secretKeyRef:
+  #     name: grafana-secret
+  #     key: secret-key
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: lab-issuer
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Grafana"
+    gethomepage.dev/icon: "grafana.png"
+  hosts:
+    - grafana.lab.com
+  tls:
+    - secretName: grafana-tls
+      hosts:
+        - grafana.lab.com
+serviceMonitor:
+  enabled: true
+sidecar:
+  dashboards:
+    enabled: true
+    searchNamespace: ALL
+    folderAnnotation: grafana_folder
+    provider:
+      disableDelete: true
+      foldersFromFilesStructure: true
+  datasources:
+    enabled: true
+    searchNamespace: ALL
+persistence:
+  enabled: true
