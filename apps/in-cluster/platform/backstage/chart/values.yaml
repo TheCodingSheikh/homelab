@@ -43,14 +43,14 @@ controllers:
           KEYCLOAK_REALM: "lab"
           KEYCLOAK_CLIENT_ID: "backstage"
           KEYCLOAK_CLIENT_SECRET: "IZuloslEZZXnYdbyE66Y2vgiBOemGuUe"
-          GRAFANA_ENDPOINT: "http://grafana.grafana:3000"
+          GRAFANA_ENDPOINT: "http://grafana.monitoring:3000"
           GRAFANA_PUBLIC_DOMAIN: "https://grafana.lab.com"
           K8S_CLUSTER_NAME: "lab"
           K8S_CLUSTER_URL: "https://kubernetes.default:443"
           VAULT_BASE_URL: "http://vault.vault:8200"
           VAULT_PUBLIC_URL: "https://vault.lab.com"
           VAULT_TOKEN: "hvs.yUjuLq7J7StMFvHZjW2idkyV"
-          GRAFANA_TOKEN: "temp"
+          GRAFANA_TOKEN: "glsa_6boKZPmnkxnSS5m9NCLImoDolg4G9ldM_ee9f5896"
           K8S_CLUSTER_TOKEN:
             valueFrom:
               secretKeyRef:
@@ -87,15 +87,17 @@ controllers:
                 name: backstage
                 key: password
         command:
-          - node
-          - packages/backend
-        args:
-          - --config
-          - app-config.yaml
-          - --config
-          - dynamic-plugins-root/app-config.dynamic-plugins.yaml
-          - --config
-          - /opt/app-root/src/app-config.k8s.yaml
+          - sleep
+          - "3600"
+          # - node
+          # - packages/backend
+        # args:
+        #   - --config
+        #   - app-config.yaml
+        #   - --config
+        #   - dynamic-plugins-root/app-config.dynamic-plugins.yaml
+        #   - --config
+        #   - /opt/app-root/src/app-config.k8s.yaml
 
         resources:
           requests:
