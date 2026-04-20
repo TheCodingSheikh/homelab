@@ -7,7 +7,7 @@ controllers:
       install-dynamic-plugins:
         image:
           repository: quay.io/rhdh-community/rhdh
-          tag: "1.8"
+          tag: "1.9"
         command:
           - ./install-dynamic-plugins.sh
           - /dynamic-plugins-root
@@ -30,7 +30,7 @@ controllers:
       main:
         image:
           repository: quay.io/rhdh-community/rhdh
-          tag: "1.8"        
+          tag: "1.9"        
         env:
           NODE_EXTRA_CA_CERTS: /etc/ssl/certs/ca.crt
           ORGANIZATION_NAME: Lab
