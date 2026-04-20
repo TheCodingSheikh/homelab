@@ -75,7 +75,7 @@ datasources:
       - access: proxy
         name: Prometheus
         type: prometheus
-        url: http://kube-prometheus-stack-prometheus.kube-prometheus-stack.svc.cluster.local:9090
+        url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
         isDefault: true
         jsonData:
           prometheusType: Prometheus
@@ -86,7 +86,7 @@ datasources:
       - name: Alertmanager
         type: alertmanager
         access: proxy
-        url: http://kube-prometheus-stack-alertmanager.kube-prometheus-stack.svc.cluster.local:9093
+        url: http://kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local:9093
         jsonData:
           implementation: prometheus
     deleteDatasources:
