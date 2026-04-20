@@ -62,8 +62,8 @@ data:
         disabled: true
               
       - disabled: false
-        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/thecodingsheikh-backstage-plugin-scaffolder-field-validator-v1.0.0/thecodingsheikh-backstage-plugin-scaffolder-field-validator-dynamic-1.0.0.tgz"
-        integrity: sha512-F8Q/QnpYT2MU8xXVhxYk4MTkfOc8ZEs/Z3d7gvdzkVnpxFqCXhdMZDFhSDh3UTkZbiaIYZzuvh4UI7SVrzntIQ==
+        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/thecodingsheikh-backstage-plugin-scaffolder-field-validator-v1.0.1/thecodingsheikh-backstage-plugin-scaffolder-field-validator-dynamic-1.0.1.tgz"
+        integrity: sha512-a5C/DGKyvolEIR/xIuP5SBPfHxVKJFqAZXH0bT8Ku7q/jgUoggNACdOGoGSyLckATZaqOQKjd3Peznx/f9ZYAA==
         pluginConfig:
           dynamicPlugins:
             frontend:
@@ -91,8 +91,8 @@ data:
                           - isMultiOwnerAvailable
 
       - disabled: false
-        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/thecodingsheikh-backstage-plugin-entity-scaffolder-v0.3.0/thecodingsheikh-backstage-plugin-entity-scaffolder-dynamic-0.3.0.tgz"
-        integrity: sha512-1PrYjvlcdnLFwC0jng2XTpcSV9e7kY3BhhTDqDRGwRitccyAJqlVRGhK/M9audjHaknJoGh8DiSKNeq2Hl12pw==
+        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/thecodingsheikh-backstage-plugin-entity-scaffolder-v0.3.1/thecodingsheikh-backstage-plugin-entity-scaffolder-dynamic-0.3.1.tgz"
+        integrity: sha512-leXMjgA0kSQyzwVhm7pHpHyjXOR4L96Uzu7CF6GIZy16EqM0s2Lml3eXLAEsGdn5y9vS8zJUSF23Ae1Ul3dSxg==
         pluginConfig:
           dynamicPlugins:
             frontend:
