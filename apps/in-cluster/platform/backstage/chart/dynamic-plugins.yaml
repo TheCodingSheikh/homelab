@@ -115,7 +115,7 @@ data:
         package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/thecodingsheikh-backstage-plugin-catalog-backend-module-multi-owner-processor-v1.0.4/thecodingsheikh-backstage-plugin-catalog-backend-module-multi-owner-processor-dynamic-1.0.4.tgz"
         integrity: sha512-U+RLFz2Jy+UgMzdrwYiZIOA9hFhFZYKDSmuzvD27xchWZ2QuttaTNM5ahh8kP2Eil/OJ7P5GZV1VNvT8BOXadg==
 
-      - disabled: false
+      - disabled: true
         package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/terasky-backstage-plugin-kubernetes-ingestor-v3.14.0/terasky-backstage-plugin-kubernetes-ingestor-dynamic-3.14.0.tgz"
         integrity: sha512-lm8Oukvg+v1MGnMXNxzWQG7I0LopaIYC/hJRxGsU9LOdytwuyPs1Kb4kfev8/aAvkNsoAlf6UjcKKESKSvr1ZQ==
         pluginConfig:
