@@ -41,9 +41,9 @@ data:
       - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-catalog-backend-module-marketplace-dynamic
         disabled: true
       - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-marketplace-backend-dynamic
-        disabled: true
+        disabled: false
       - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-marketplace
-        disabled: true
+        disabled: false
       - package: ./dynamic-plugins/dist/backstage-plugin-scaffolder-backend-module-github-dynamic
         disabled: false
       - package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-module-utils-dynamic
