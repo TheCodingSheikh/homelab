@@ -87,17 +87,15 @@ controllers:
                 name: backstage
                 key: password
         command:
-          - sleep
-          - "3600"
-          # - node
-          # - packages/backend
-        # args:
-        #   - --config
-        #   - app-config.yaml
-        #   - --config
-        #   - dynamic-plugins-root/app-config.dynamic-plugins.yaml
-        #   - --config
-        #   - /opt/app-root/src/app-config.k8s.yaml
+          - node
+          - packages/backend
+        args:
+          - --config
+          - app-config.yaml
+          - --config
+          - dynamic-plugins-root/app-config.dynamic-plugins.yaml
+          - --config
+          - /opt/app-root/src/app-config.k8s.yaml
 
         resources:
           requests:
