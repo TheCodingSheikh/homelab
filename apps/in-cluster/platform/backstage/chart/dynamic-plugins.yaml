@@ -25,10 +25,7 @@ data:
       - package: ./dynamic-plugins/dist/backstage-plugin-signals-backend-dynamic
         disabled: false
       - package: ./dynamic-plugins/dist/backstage-plugin-signals
-        disabled: false
-        
-      - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-quickstart
-        disabled: true    
+        disabled: false  
       - package: ./dynamic-plugins/dist/backstage-community-plugin-analytics-provider-segment
         disabled: true
       - package: ./dynamic-plugins/dist/backstage-community-plugin-scaffolder-backend-module-kubernetes-dynamic
@@ -41,7 +38,6 @@ data:
         disabled: true
       - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-quickstart
         disabled: true
-
       - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-catalog-backend-module-marketplace-dynamic
         disabled: false
       - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-marketplace-backend-dynamic
@@ -49,8 +45,6 @@ data:
       - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-marketplace
         disabled: false
       - package: ./dynamic-plugins/dist/backstage-plugin-scaffolder-backend-module-github-dynamic
-        disabled: false
-      - package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-module-http-request-dynamic
         disabled: false
       - package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-module-utils-dynamic
         disabled: false
