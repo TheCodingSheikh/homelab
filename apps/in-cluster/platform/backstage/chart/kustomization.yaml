@@ -13,3 +13,11 @@ resources:
   - dynamic-plugins.yaml
   - app-config.yaml
   - rbac.yaml
+
+configMapGenerator:
+  - name: backstage-dynamic-plugins-default
+    namespace: backstage
+    files:
+      - dynamic-plugins.default.yaml=dynamic-plugins-defaults.yaml
+    options:
+      disableNameSuffixHash: true

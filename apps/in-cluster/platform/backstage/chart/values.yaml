@@ -229,3 +229,14 @@ persistence:
           - path: /opt/app-root/src/dynamic-plugins.yaml
             readOnly: true
             subPath: dynamic-plugins.yaml
+
+  dynamic-plugins-default:
+    enabled: true
+    type: configMap
+    name: backstage-dynamic-plugins-default
+    advancedMounts:
+      main:
+        install-dynamic-plugins:
+          - path: /opt/app-root/src/dynamic-plugins.default.yaml
+            readOnly: true
+            subPath: dynamic-plugins.default.yaml
