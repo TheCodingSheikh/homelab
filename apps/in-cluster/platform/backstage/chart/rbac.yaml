@@ -28,3 +28,22 @@ data:
             resourceType: catalog-entity
             params:
               claims: ["$ownerRefs"]
+    ---
+    result: CONDITIONAL
+    roleEntityRef: role:default/all_users
+    pluginId: catalog
+    resourceType: catalog-entity
+    permissionMapping:
+      - entity-scaffolder.edit
+    conditions:
+      anyOf:
+        - not:
+            rule: HAS_ANNOTATION
+            resourceType: catalog-entity
+            params:
+              annotation: backstage.io/scaffolder-edit-roles
+        - rule: IS_ENTITY_MULTI_OWNER_WITH_ANNOTATION_ROLE
+          resourceType: catalog-entity
+          params:
+            claims: ["$ownerRefs"]
+            annotation: backstage.io/scaffolder-edit-roles 
