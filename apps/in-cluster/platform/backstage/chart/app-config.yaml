@@ -92,7 +92,7 @@ data:
             components:
               enabled: true
               onlyIngestAnnotatedResources: true
-              customResources:
+              customWorkloadTypes:
                 - group:    'managedservices.thecodingsheikh.io'
                   apiVersion: 'v1alpha1'
                   plural:   'tenants'
