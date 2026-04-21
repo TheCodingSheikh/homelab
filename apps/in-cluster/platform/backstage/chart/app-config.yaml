@@ -84,7 +84,31 @@ data:
             userQuerySize: 500
             groupQuerySize: 200
             maxConcurrency: 1
-            
+        kubernetes:
+          main:
+            annotationPrefix: lab.backstage.io
+            argoIntegration: true
+             createSystemFromNamespace: false
+            components:
+              enabled: true
+              onlyIngestAnnotatedResources: true
+              customResources:
+                - group:    'managedservices.thecodingsheikh.io'
+                  apiVersion: 'v1alpha1'
+                  plural:   'tenants'
+                - group:    'managedservices.thecodingsheikh.io'
+                  apiVersion: 'v1alpha1'
+                  plural:   'postgres'
+                - group:    'argoproj.io'
+                  apiVersion: 'v1alpha1'
+                  plural:   'applications'
+            crds:
+              enabled: true
+              ingestAPIsAsCRDs: false
+              crdLabelSelector:
+                key: lab.backstage.io/catalog
+                value: "true"
+
       locations:
         - type: url
           target: https://${GITHUB_HOST}/thecodingsheikh/software-templates/blob/main/templates.yaml
