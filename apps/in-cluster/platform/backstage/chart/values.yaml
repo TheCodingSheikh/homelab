@@ -16,8 +16,8 @@ controllers:
         env:
           SKIP_INTEGRITY_CHECK: "true"
           MAX_ENTRY_SIZE: "30000000"
-          CATALOG_INDEX_IMAGE: "quay.io/rhdh/plugin-catalog-index:1.9"
-          CATALOG_ENTITIES_EXTRACT_DIR: "/extensions"
+          # CATALOG_INDEX_IMAGE: "quay.io/rhdh/plugin-catalog-index:1.9"
+          # CATALOG_ENTITIES_EXTRACT_DIR: "/extensions"
         resources:
           requests:
             cpu: 250m
@@ -209,15 +209,15 @@ persistence:
         install-dynamic-plugins:
           - path: /dynamic-plugins-root
 
-  extensions-catalog:
-    enabled: true
-    type: emptyDir
-    advancedMounts:
-      main:
-        main:
-          - path: /extensions
-        install-dynamic-plugins:
-          - path: /extensions
+  # extensions-catalog:
+  #   enabled: true
+  #   type: emptyDir
+  #   advancedMounts:
+  #     main:
+  #       main:
+  #         - path: /extensions
+  #       install-dynamic-plugins:
+  #         - path: /extensions
   
   dynamic-plugins:
     enabled: true
