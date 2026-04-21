@@ -88,7 +88,7 @@ data:
           main:
             annotationPrefix: lab.backstage.io
             argoIntegration: true
-             createSystemFromNamespace: false
+            createSystemFromNamespace: false
             components:
               enabled: true
               onlyIngestAnnotatedResources: true
