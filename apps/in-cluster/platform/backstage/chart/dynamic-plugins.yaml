@@ -66,8 +66,8 @@ data:
                   - importName: ScaffolderFieldValidatorExtension
 
       - disabled: false
-        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/thecodingsheikh-backstage-plugin-entity-scaffolder-v0.4.0/thecodingsheikh-backstage-plugin-entity-scaffolder-dynamic-0.4.0.tgz"
-        integrity: sha512-Y7AwItAg5flq9Tvdz3zWgonws14rPllTFHcAjOIYOGreMbP55sOlP/dQIX07iRqK5Q+y2Crh4cLq490Yn0aNIQ==
+        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/thecodingsheikh-backstage-plugin-entity-scaffolder-v0.4.2/thecodingsheikh-backstage-plugin-entity-scaffolder-dynamic-0.4.2.tgz"
+        integrity: sha512-lLVYozem7aZepGAnnllzjDSis1vi4FR8NtgMUUM6X6YCqFe7+8oMdDMaKwzgrrzQw/9jriHT970nUpQyxqAHYg==
         pluginConfig:
           dynamicPlugins:
             frontend:
@@ -107,8 +107,8 @@ data:
                     timeout: { seconds: 600 }
               
       - disabled: false
-        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/thecodingsheikh-backstage-plugin-catalog-backend-module-multi-owner-processor-v1.0.5/thecodingsheikh-backstage-plugin-catalog-backend-module-multi-owner-processor-dynamic-1.0.5.tgz"
-        integrity: sha512-z8KNGHlsbc3AupG+1ppQz59XOyH5anB2s5A/ZtR5TqiUPiQQLWgZqFNImEQT8PKFKidAEqBaJ4j1KLN5Z9vFGA==
+        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/thecodingsheikh-backstage-plugin-catalog-backend-module-multi-owner-processor-v1.0.6/thecodingsheikh-backstage-plugin-catalog-backend-module-multi-owner-processor-dynamic-1.0.6.tgz"
+        integrity: sha512-QiGjgMGPfDVTVDTvUOhCi+RXB7xRrMQuBBi2O8uCiYkLp3WQCzDVvXg/1G4L0O/4wgOooilRJg7ICpPWXRd5Zw==
 
       - disabled: false
         package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/thecodingsheikh-backstage-plugin-multi-owner-v1.0.5/thecodingsheikh-backstage-plugin-multi-owner-dynamic-1.0.5.tgz"
