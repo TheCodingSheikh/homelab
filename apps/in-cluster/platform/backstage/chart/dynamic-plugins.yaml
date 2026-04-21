@@ -38,15 +38,15 @@ data:
         disabled: true
       - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-quickstart
         disabled: true
-      - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-catalog-backend-module-marketplace-dynamic
+      - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-catalog-backend-module-extensions-dynamic
         disabled: true
-      - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-marketplace-backend-dynamic
+      - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-extensions-backend-dynamic
         disabled: false
-      - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-marketplace
+      - package: ./dynamic-plugins/dist/red-hat-developer-hub-backstage-plugin-extensions
         disabled: false
       - package: ./dynamic-plugins/dist/backstage-plugin-scaffolder-backend-module-github-dynamic
         disabled: false
-      - package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-module-utils-dynamic
+      - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/roadiehq-scaffolder-backend-module-utils:bs_1.45.3__4.1.1
         disabled: false
       - package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-module-http-request-dynamic
         disabled: false
