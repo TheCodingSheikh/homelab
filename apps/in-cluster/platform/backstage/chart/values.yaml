@@ -7,7 +7,7 @@ controllers:
       install-dynamic-plugins:
         image:
           repository: quay.io/rhdh-community/rhdh
-          tag: "1.8"
+          tag: "1.9"
         command:
           # - sleep
           # - "3000"
@@ -16,6 +16,8 @@ controllers:
         env:
           SKIP_INTEGRITY_CHECK: "true"
           MAX_ENTRY_SIZE: "30000000"
+          CATALOG_INDEX_IMAGE: "quay.io/rhdh/plugin-catalog-index:1.9"
+          CATALOG_ENTITIES_EXTRACT_DIR: "/extensions"
         resources:
           requests:
             cpu: 250m
@@ -34,7 +36,7 @@ controllers:
           runAsUser: 0
         image:
           repository: quay.io/rhdh-community/rhdh
-          tag: "1.8"        
+          tag: "1.9"
         env:
           NODE_EXTRA_CA_CERTS: /etc/ssl/certs/ca.crt
           ORGANIZATION_NAME: Lab
@@ -206,6 +208,16 @@ persistence:
           - path: /opt/app-root/src/dynamic-plugins-root
         install-dynamic-plugins:
           - path: /dynamic-plugins-root
+
+  extensions-catalog:
+    enabled: true
+    type: emptyDir
+    advancedMounts:
+      main:
+        main:
+          - path: /extensions
+        install-dynamic-plugins:
+          - path: /extensions
   
   dynamic-plugins:
     enabled: true
