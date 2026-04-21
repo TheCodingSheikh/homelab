@@ -30,6 +30,8 @@ controllers:
 
     containers:
       main:
+        securityContext:
+          runAsUser: 0
         image:
           repository: quay.io/rhdh-community/rhdh
           tag: "1.8"        
