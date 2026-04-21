@@ -85,8 +85,8 @@ data:
                           - isMultiOwnerAvailable
 
       - disabled: false
-        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/thecodingsheikh-backstage-plugin-entity-scaffolder-v0.3.1/thecodingsheikh-backstage-plugin-entity-scaffolder-dynamic-0.3.1.tgz"
-        integrity: sha512-1O3hDU+rt9e29P2n2Qoy0kO5DSX0CrWWbf/hRcLjHSXAXGUctCEhlnt6Wqgmb5+vOxryZIvkISDVe7O1N0oClw==
+        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/thecodingsheikh-backstage-plugin-entity-scaffolder-v0.4.0/thecodingsheikh-backstage-plugin-entity-scaffolder-dynamic-0.4.0.tgz"
+        integrity: sha512-Y7AwItAg5flq9Tvdz3zWgonws14rPllTFHcAjOIYOGreMbP55sOlP/dQIX07iRqK5Q+y2Crh4cLq490Yn0aNIQ==
         pluginConfig:
           dynamicPlugins:
             frontend:
