@@ -110,8 +110,8 @@ data:
         integrity: sha512-U+RLFz2Jy+UgMzdrwYiZIOA9hFhFZYKDSmuzvD27xchWZ2QuttaTNM5ahh8kP2Eil/OJ7P5GZV1VNvT8BOXadg==
 
       - disabled: false
-        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/thecodingsheikh-backstage-plugin-catalog-backend-module-kubernetes-v0.1.0/thecodingsheikh-backstage-plugin-catalog-backend-module-kubernetes-dynamic-0.1.0.tgz"
-        integrity: sha512-IOxqUraDtaBa/434XplF77DkBXOQdVt2EYpAycB+Yk8f7O1SYeW6sEXCLONpispU8gDbBwaf62G7A0o4J8TfSA==
+        package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/thecodingsheikh-backstage-plugin-catalog-backend-module-kubernetes-v0.1.1/thecodingsheikh-backstage-plugin-catalog-backend-module-kubernetes-dynamic-0.1.1.tgz"
+        integrity: sha512-9n7rfAa7i34+ThL6Pv0FX9FClJ19r+AaF2IVOpAO/0JDm83e1+bIFB6kM+rKbv/yr/8Ug/h9DYEDUITQ1OTscQ==
         pluginConfig:
           catalog:
             providers:
