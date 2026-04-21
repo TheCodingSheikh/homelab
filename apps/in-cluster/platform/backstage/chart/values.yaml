@@ -9,10 +9,10 @@ controllers:
           repository: quay.io/rhdh-community/rhdh
           tag: "1.8"
         command:
-          - sleep
-          - "3000"
-          # - ./install-dynamic-plugins.sh
-          # - /dynamic-plugins-root
+          # - sleep
+          # - "3000"
+          - ./install-dynamic-plugins.sh
+          - /dynamic-plugins-root
         env:
           SKIP_INTEGRITY_CHECK: "true"
           MAX_ENTRY_SIZE: "30000000"
