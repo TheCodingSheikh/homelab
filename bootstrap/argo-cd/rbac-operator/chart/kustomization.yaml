@@ -7,4 +7,5 @@ helmCharts:
   releaseName: argocd-rbac-operator
   namespace: argo-cd
   version: 0.4.5
+  includeCRDs: true
   valuesFile: values.yaml
