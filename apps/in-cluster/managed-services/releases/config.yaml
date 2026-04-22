@@ -1,3 +1,4 @@
 appName: in-cluster-managed-services-releases
+repoURL: https://github.com/TheCodingSheikh/managed-services.git
+srcPath: releases
 createNamespace: false
-destNamespace: managed-services
