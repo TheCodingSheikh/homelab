@@ -52,7 +52,7 @@ controllers:
           GRAFANA_ENDPOINT: "http://grafana.monitoring:3000"
           GRAFANA_PUBLIC_DOMAIN: "https://grafana.lab.com"
           K8S_CLUSTER_NAME: "lab"
-          K8S_CLUSTER_URL: "https://kubernetes.default:443"
+          K8S_CLUSTER_URL: "https://kubernetes.default.svc.cluster.local"
           VAULT_BASE_URL: "http://vault.vault:8200"
           VAULT_PUBLIC_URL: "https://vault.lab.com"
           VAULT_TOKEN: "hvs.yUjuLq7J7StMFvHZjW2idkyV"

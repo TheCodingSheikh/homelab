@@ -120,14 +120,6 @@ data:
       full: true
     
     kubernetes:
-      clusterLocatorMethods:
-        - type: config
-          clusters:
-            - name: ${K8S_CLUSTER_NAME}
-              url: ${K8S_CLUSTER_URL}
-              authProvider: serviceAccount
-              caFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-              serviceAccountToken: ${K8S_CLUSTER_TOKEN}
       customResources:
         - group:    'managedservices.thecodingsheikh.io'
           apiVersion: 'v1alpha1'
