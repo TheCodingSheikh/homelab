@@ -120,6 +120,14 @@ data:
       full: true
     
     kubernetes:
+      clusterLocatorMethods:
+        - type: config
+          clusters:
+            - name: ${K8S_CLUSTER_NAME}
+              url: ${K8S_CLUSTER_URL}
+              authProvider: serviceAccount
+              caFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+              serviceAccountToken: ${K8S_CLUSTER_TOKEN}
       customResources:
         - group:    'managedservices.thecodingsheikh.io'
           apiVersion: 'v1alpha1'
@@ -131,29 +139,6 @@ data:
           apiVersion: 'v1alpha1'
           plural:   'applications'
 
-    kubernetesIngestor:
-      annotationPrefix: lab.backstage.io
-      defaultOwner: system
-      argoIntegration: true
-      components:
-        customWorkloadTypes:
-          - group:    'managedservices.thecodingsheikh.io'
-            apiVersion: 'v1alpha1'
-            plural:   'tenants'
-            kind:     'Tenant'
-          - group:    'managedservices.thecodingsheikh.io'
-            apiVersion: 'v1alpha1'
-            plural:   'postgres'
-            kind:     'Postgres'
-          - group:    'argoproj.io'
-            apiVersion: 'v1alpha1'
-            plural:   'applications'
-      kro:
-        enabled: true
-        instances:
-          ingestAsResources: false
-        rgds:
-          ingestOnlyAsAPI: false  
     dynamicPlugins:
       frontend:
         red-hat-developer-hub.backstage-plugin-dynamic-home-page:
