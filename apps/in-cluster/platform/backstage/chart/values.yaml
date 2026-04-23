@@ -52,6 +52,8 @@ controllers:
           KEYCLOAK_CLIENT_SECRET: "IZuloslEZZXnYdbyE66Y2vgiBOemGuUe"
           GRAFANA_ENDPOINT: "http://grafana.monitoring:3000"
           GRAFANA_PUBLIC_DOMAIN: "https://grafana.lab.com"
+          ARGOCD_INSTANCE1_URL: "http://argocd-server.argo-cd.svc.cluster.local"
+          ARGOCD_AUTH_TOKEN: "disabled"
           K8S_CLUSTER_NAME: "lab"
           K8S_CLUSTER_URL: "https://kubernetes.default.svc.cluster.local"
           VAULT_BASE_URL: "http://vault.vault:8200"

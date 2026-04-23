@@ -54,6 +54,20 @@ data:
         disabled: false
       - package: ./dynamic-plugins/dist/backstage-community-plugin-rbac
         disabled: true
+
+      - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-argocd-backend:bs_1.45.3__1.0.2
+        disabled: false
+        pluginConfig:
+          argocd:
+            appLocatorMethods:
+              - type: config
+                instances:
+                  - name: lab
+                    url: ${ARGOCD_INSTANCE1_URL}
+                    token: ${ARGOCD_AUTH_TOKEN}
+
+      - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-argocd:bs_1.45.3__2.4.3
+        disabled: false
                     
       - disabled: false
         package: "https://github.com/TheCodingSheikh/backstage-plugins/releases/download/thecodingsheikh-backstage-plugin-scaffolder-field-validator-v1.2.1/thecodingsheikh-backstage-plugin-scaffolder-field-validator-dynamic-1.2.1.tgz"
