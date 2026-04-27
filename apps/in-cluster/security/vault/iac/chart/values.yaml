@@ -26,39 +26,35 @@ components:
           type: "oidc"
           tune:
             - listingVisibility: "unauth"
-  AuthBackend:
-    apiVersion: jwt.vault.upbound.io/v1alpha1
-    refKey: "backendRef"
+  Endpoint:
+    apiVersion: generic.vault.upbound.io/v1alpha1
     list:
-      oidc:
+      oidc-config:
         forProvider:
-          path: "oidc"
-          type: "oidc"
-          defaultRole: "default"
-          oidcDiscoveryUrl: https://sso.lab.com/realms/lab
-          oidcClientId: vault
-          oidcClientSecretSecretRef:
-            key: secret-key
-            name: vault-client-secret
+          path: "auth/oidc/config"
+          disableRead: true
+          dataJsonSecretRef:
+            key: data
+            name: vault-oidc-config
             namespace: vault
-        dependants:
-          AuthBackendRole:
-            apiVersion: jwt.vault.upbound.io/v1alpha1
-            list:
-              default:
-                forProvider:
-                  roleName: "default"
-                  userClaim: "sub"
-                  oidcScopes:
-                    - profile
-                  claimMappings:
-                    preferred_username: "preferred_username"
-                    email: "email"
-                  roleType: "oidc"
-                  allowedRedirectUris:
-                    - https://vault.lab.com/ui/vault/auth/oidc/oidc/callback
-                    - https://vault.lab.com/oidc/oidc/callback
-                  groupsClaim: "vault"
+  AuthBackendRole:
+    apiVersion: jwt.vault.upbound.io/v1alpha1
+    list:
+      oidc-default:
+        forProvider:
+          backend: "oidc"
+          roleName: "default"
+          userClaim: "sub"
+          oidcScopes:
+            - profile
+          claimMappings:
+            preferred_username: "preferred_username"
+            email: "email"
+          roleType: "oidc"
+          allowedRedirectUris:
+            - https://vault.lab.com/ui/vault/auth/oidc/oidc/callback
+            - https://vault.lab.com/oidc/oidc/callback
+          groupsClaim: "vault"
   Group:
     apiVersion: identity.vault.upbound.io/v1alpha1
     refKey: "canonicalIdRef"
