@@ -2,3 +2,10 @@ proxy:
   enabled: true
 certManager:
   generateCertificates: true
+manager:
+  options:
+    users:
+      - kind: Group
+        name: projectcapsule.dev
+      - kind: Group
+        name: system:serviceaccounts:argo-cd
