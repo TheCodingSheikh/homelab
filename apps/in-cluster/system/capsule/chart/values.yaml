@@ -4,8 +4,6 @@ certManager:
   generateCertificates: true
 manager:
   options:
-    users:
-      - kind: Group
-        name: projectcapsule.dev
+    administrators:
       - kind: Group
         name: system:serviceaccounts:argo-cd
