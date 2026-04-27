@@ -90,7 +90,7 @@ data:
             argoIntegration: true
             createSystemFromNamespace: false
             defaultOwner: k8s
-            inheritOwnerFromNamespace: yes
+            inheritOwnerFromNamespace: true
             components:
               enabled: true
               onlyIngestAnnotatedResources: true
