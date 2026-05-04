@@ -224,7 +224,7 @@ components:
                   directAccessGrantsEnabled: true
                   rootUrl: https://openwebui.lab.com
                   validRedirectUris:
-                    - - "*"
+                    - "*"
           ClientScope:
             apiVersion: openidclient.keycloak.crossplane.io/v1alpha1
             refKey: "clientScopeIdRef"
