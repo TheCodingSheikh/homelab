@@ -17,6 +17,14 @@ terminals:
 podAnnotations:
   inject-certs: "enabled"
 
+ingress:
+  enabled: true
+  class: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: lab-issuer
+  host: openwebui.lab.com
+  tls: true
+
 persistence:
   size: 2Gi
 
