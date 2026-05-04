@@ -51,6 +51,12 @@ extraEnvVars:
     value: "https://openwebui.lab.com"
   - name: NODE_EXTRA_CA_CERTS
     value: "/etc/ssl/certs/ca.crt"
+  - name: SSL_CERT_FILE
+    value: "/etc/ssl/certs/ca.crt"
+  - name: REQUESTS_CA_BUNDLE
+    value: "/etc/ssl/certs/ca.crt"
+  - name: CURL_CA_BUNDLE
+    value: "/etc/ssl/certs/ca.crt"
   - name: DATABASE_URL
     valueFrom:
       secretKeyRef:
