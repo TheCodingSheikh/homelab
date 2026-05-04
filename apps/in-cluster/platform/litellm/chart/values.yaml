@@ -72,7 +72,7 @@ proxy_config:
     - model_name: "claude-opus-4-7"             
       litellm_params:
         model: "openai/claude-opus-4-7"
-        api_base: "http://cliproxy.ai:8317"
+        api_base: "http://cliproxy.ai:8317/v1"
         api_key: "secret"
   sso_settings:
     role_mappings:
