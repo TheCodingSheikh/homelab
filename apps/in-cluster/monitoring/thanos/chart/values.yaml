@@ -38,6 +38,8 @@ compactor:
   retentionResolutionRaw: 1d
   retentionResolution5m: 1d
   retentionResolution1h: 1d
+  extraFlags:
+    - --downsampling.disable
   persistence:
     enabled: true
     size: 1Gi
