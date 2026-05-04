@@ -14,7 +14,7 @@ allInOne:
   replicas: 1
   data:
     type: persistentVolumeClaim
-    size: 200Gi
+    size: 10Gi
     accessModes: ["ReadWriteOnce"]
   s3:
     enabled: true
