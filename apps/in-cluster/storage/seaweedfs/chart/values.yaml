@@ -1,0 +1,51 @@
+master:
+  enabled: false
+volume:
+  enabled: false
+filer:
+  enabled: false
+s3:
+  enabled: false
+sftp:
+  enabled: false
+
+allInOne:
+  enabled: true
+  replicas: 1
+  data:
+    type: persistentVolumeClaim
+    size: 200Gi
+    accessModes: ["ReadWriteOnce"]
+  s3:
+    enabled: true
+    enableAuth: true
+    existingConfigSecret: seaweedfs-s3-config
+    createBuckets:
+      - name: thanos
+      - name: loki-chunks
+      - name: loki-ruler
+      - name: loki-admin
+      - name: tempo
+      - name: public
+        anonymousRead: true
+  sftp:
+    enabled: true
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "2"
+      memory: "2Gi"
+
+users:
+  - name: admin
+    admin: true
+  - name: monitoring
+    buckets:
+      public: read
+      thanos: write
+      loki-chunks: write
+      loki-ruler: write
+      loki-admin: write
+      tempo: write

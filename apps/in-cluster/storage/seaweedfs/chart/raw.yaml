@@ -1,0 +1,90 @@
+resources:
+  user-pushsecrets:
+    enabled: true
+    rangeKey: users
+    template: |-
+      apiVersion: external-secrets.io/v1alpha1
+      kind: PushSecret
+      metadata:
+        name: seaweedfs-{{ .name }}-pushsecret
+      spec:
+        deletionPolicy: None
+        updatePolicy: IfNotExists
+        secretStoreRefs:
+          - kind: ClusterSecretStore
+            name: vault-backend
+        selector:
+          generatorRef:
+            apiVersion: generators.external-secrets.io/v1alpha1
+            kind: ClusterGenerator
+            name: global-password-generator
+        data:
+          - match:
+              secretKey: password
+              remoteRef:
+                property: access-key
+                remoteKey: storage/seaweedfs/{{ .name }}
+          - match:
+              secretKey: password
+              remoteRef:
+                property: secret-key
+                remoteKey: storage/seaweedfs/{{ .name }}
+
+  s3-config:
+    enabled: true
+    template: |-
+      apiVersion: external-secrets.io/v1beta1
+      kind: ExternalSecret
+      metadata:
+        name: seaweedfs-s3-config
+      spec:
+        refreshInterval: 1h
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: vault-backend
+        target:
+          name: seaweedfs-s3-config
+          template:
+            engineVersion: v2
+            data:
+              seaweedfs_s3_config: |
+                {
+                  "identities": [
+                  {{- range $i, $u := .Values.users -}}
+                    {{- $actions := list -}}
+                    {{- if $u.actions -}}
+                      {{- $actions = $u.actions -}}
+                    {{- else if $u.admin -}}
+                      {{- $actions = list "Admin" "Read" "Write" "List" "Tagging" -}}
+                    {{- else -}}
+                      {{- range $bucket, $perm := $u.buckets -}}
+                        {{- if eq $perm "read" -}}
+                          {{- $actions = append $actions (printf "Read:%s" $bucket) -}}
+                          {{- $actions = append $actions (printf "List:%s" $bucket) -}}
+                        {{- else if eq $perm "write" -}}
+                          {{- $actions = append $actions (printf "Read:%s" $bucket) -}}
+                          {{- $actions = append $actions (printf "Write:%s" $bucket) -}}
+                          {{- $actions = append $actions (printf "List:%s" $bucket) -}}
+                          {{- $actions = append $actions (printf "Tagging:%s" $bucket) -}}
+                        {{- end -}}
+                      {{- end -}}
+                    {{- end }}
+                    {{ if $i }},{{ end }}{
+                      "name": "{{ $u.name }}",
+                      "credentials": [{"accessKey": "{{`{{`}} .{{ $u.name }}AK {{`}}`}}", "secretKey": "{{`{{`}} .{{ $u.name }}SK {{`}}`}}"}],
+                      "actions": {{ toJson $actions }}
+                    }
+                  {{- end }}
+                  ]
+                }
+        data:
+          {{- range .Values.users }}
+          - secretKey: {{ .name }}AK
+            remoteRef:
+              key: storage/seaweedfs/{{ .name }}
+              property: access-key
+          - secretKey: {{ .name }}SK
+            remoteRef:
+              key: storage/seaweedfs/{{ .name }}
+              property: secret-key
+          {{- end }}
