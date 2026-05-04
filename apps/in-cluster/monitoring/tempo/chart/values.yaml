@@ -11,11 +11,11 @@ tempo:
       backend: s3
       s3:
         bucket: tempo
-        endpoint: s3.lab.com
+        endpoint: seaweedfs-all-in-one.seaweedfs.svc.cluster.local:8333
         region: us-east-1
         access_key: ${S3_ACCESS_KEY}
         secret_key: ${S3_SECRET_KEY}
-        insecure: false
+        insecure: true
         forcepathstyle: true
   metricsGenerator:
     enabled: true

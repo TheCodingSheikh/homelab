@@ -1,0 +1,85 @@
+global:
+  security:
+    allowInsecureImages: true
+
+image:
+  registry: quay.io
+  repository: thanos/thanos
+  tag: v0.39.2
+
+existingObjstoreSecret: thanos-objstore
+
+query:
+  replicaCount: 1
+  resourcesPreset: micro
+  dnsDiscovery:
+    enabled: true
+    sidecarsService: kube-prometheus-stack-thanos-discovery
+    sidecarsNamespace: monitoring
+
+queryFrontend:
+  enabled: true
+  replicaCount: 1
+  resourcesPreset: micro
+  config: |-
+    type: IN-MEMORY
+    config:
+      max_size: 256MB
+      max_size_items: 0
+      validity: 24h
+
+bucketweb:
+  enabled: true
+  resourcesPreset: nano
+
+compactor:
+  enabled: true
+  resourcesPreset: small
+  retentionResolutionRaw: 1d
+  retentionResolution5m: 1d
+  retentionResolution1h: 1d
+  persistence:
+    enabled: true
+    size: 1Gi
+
+storegateway:
+  enabled: true
+  replicaCount: 1
+  resourcesPreset: small
+  persistence:
+    enabled: true
+    size: 1Gi
+
+ruler:
+  enabled: true
+  replicaCount: 1
+  resourcesPreset: micro
+  alertmanagers:
+    - http://kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local:9093
+  config: |-
+    groups:
+      - name: default
+        rules: []
+  persistence:
+    enabled: true
+    size: 1Gi
+
+receive:
+  enabled: true
+  mode: dual-mode
+  replicaCount: 1
+  resourcesPreset: small
+  tsdbRetention: 1d
+  persistence:
+    enabled: true
+    size: 1Gi
+
+receiveDistributor:
+  enabled: true
+  replicaCount: 1
+  resourcesPreset: micro
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true

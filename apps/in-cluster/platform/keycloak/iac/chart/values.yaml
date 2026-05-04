@@ -211,7 +211,20 @@ components:
                   rootUrl: https://kubeflow.lab.com
                   validRedirectUris:
                     - https://kubeflow.lab.com/dex/callback
-
+              openwebui:
+                forProvider:
+                  name: openwebui
+                  clientId: openwebui
+                  clientSecretSecretRef:
+                    key: secret-key
+                    name: openwebui-client
+                    namespace: keycloak
+                  accessType: CONFIDENTIAL
+                  standardFlowEnabled: true
+                  directAccessGrantsEnabled: true
+                  rootUrl: https://openwebui.lab.com
+                  validRedirectUris:
+                    - - "*"
           ClientScope:
             apiVersion: openidclient.keycloak.crossplane.io/v1alpha1
             refKey: "clientScopeIdRef"
