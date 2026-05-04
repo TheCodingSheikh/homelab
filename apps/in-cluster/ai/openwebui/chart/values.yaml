@@ -1,0 +1,43 @@
+tika:
+  enabled: true
+terminals:
+  enabled: true
+
+podAnnotations:
+  inject-certs: "enabled"
+
+persistence:
+  size: 2Gi
+
+ollamaUrls:
+  - "http://qwen3-0-6b-ollama.ai:11434"
+
+openaiBaseApiUrls:
+  - "http://litellm.litellm:4000"
+openaiApiKeys:
+  - "0p3n-w3bu!"
+  - "sk-FfcXHcHHKXwCqgEjOq"
+
+sso:
+  enabled: true
+  enableSignup: true
+  oidc:
+    enabled: true
+    clientId: openwebui
+    clientSecret: "vuVdKVZzNzxuLTspjD6q7zUQ4JXxNoJ3"
+    providerUrl: "https://sso.lab.com/realms/lab/.well-known/openid-configuration"
+    providerName: "Keycloak"
+    scopes: "openid email profile"
+
+extraEnvVars:
+  - name: ENABLE_PERSISTENT_CONFIG
+    value: "False"
+  - name: WEBUI_URL
+    value: "https://openwebui.lab.com"
+  - name: NODE_EXTRA_CA_CERTS
+    value: "/etc/ssl/certs/ca.crt"
+  - name: DATABASE_URL
+    valueFrom:
+      secretKeyRef:
+        name: openwebui-postgres
+        key: uri
