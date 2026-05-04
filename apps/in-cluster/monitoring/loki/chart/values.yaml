@@ -1,12 +1,5 @@
 deploymentMode: SingleBinary
 
-global:
-  extraArgs:
-    - -config.expand-env=true
-  extraEnvFrom:
-    - secretRef:
-        name: loki-s3
-
 loki:
   auth_enabled: false
   commonConfig:
@@ -53,6 +46,11 @@ singleBinary:
   replicas: 1
   persistence:
     size: 2Gi
+  extraArgs:
+    - -config.expand-env=true
+  extraEnvFrom:
+    - secretRef:
+        name: loki-s3
 
 read:
   replicas: 0
