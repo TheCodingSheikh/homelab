@@ -82,7 +82,7 @@ datasources:
       - access: proxy
         name: Loki
         type: loki
-        url: http://loki-gateway.loki.svc.cluster.local
+        url: http://loki-gateway.monitoring.svc.cluster.local
       - name: Alertmanager
         type: alertmanager
         access: proxy

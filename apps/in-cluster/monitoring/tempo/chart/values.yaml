@@ -1,0 +1,42 @@
+tempo:
+  retention: 24h
+  reportingEnabled: false
+  extraArgs:
+    config.expand-env: "true"
+  extraEnvFrom:
+    - secretRef:
+        name: tempo-s3
+  storage:
+    trace:
+      backend: s3
+      s3:
+        bucket: tempo
+        endpoint: s3.lab.com
+        region: us-east-1
+        access_key: ${S3_ACCESS_KEY}
+        secret_key: ${S3_SECRET_KEY}
+        insecure: false
+        forcepathstyle: true
+  metricsGenerator:
+    enabled: true
+    remoteWriteUrl: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write
+    processor:
+      service_graphs: {}
+      span_metrics: {}
+    storage:
+      path: /var/tempo/metrics-wal
+    traces_storage:
+      path: /var/tempo/metrics-traces
+  overrides:
+    defaults:
+      metrics_generator:
+        processors:
+          - service-graphs
+          - span-metrics
+
+persistence:
+  enabled: true
+  size: 10Gi
+
+serviceMonitor:
+  enabled: true

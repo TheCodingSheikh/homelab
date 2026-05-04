@@ -27,6 +27,11 @@ users:
       - gitea
     password:
       type: AlphaNumeric
+  - name: openwebui
+    databases:
+      - openwebui
+    password:
+      type: AlphaNumeric
   # - name: authentik
   #   databases:
   #     - authentik

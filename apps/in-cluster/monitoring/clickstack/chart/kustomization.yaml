@@ -10,7 +10,7 @@ helmCharts:
   repo: https://hyperdxio.github.io/helm-charts
   version: 1.0.0
   includeCRDs: true
-  namespace: clickstack
+  namespace: monitoring
   releaseName: clickstack
   valuesFile: values.yaml
 
