@@ -1,5 +1,16 @@
+ollama:
+  enabled: false
+pipelines:
+  enabled: false
 tika:
   enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
 terminals:
   enabled: true
 
@@ -9,13 +20,9 @@ podAnnotations:
 persistence:
   size: 2Gi
 
-ollamaUrls:
-  - "http://qwen3-0-6b-ollama.ai:11434"
-
 openaiBaseApiUrls:
   - "http://litellm.litellm:4000"
 openaiApiKeys:
-  - "0p3n-w3bu!"
   - "sk-FfcXHcHHKXwCqgEjOq"
 
 sso:
