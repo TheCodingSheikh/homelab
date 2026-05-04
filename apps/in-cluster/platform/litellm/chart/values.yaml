@@ -71,7 +71,7 @@ proxy_config:
         api_base: "http://qwen3-0-6b-ollama.ai:11434"
     - model_name: "claude-opus-4-7"             
       litellm_params:
-        model: "claude-opus-4-7"
+        model: "openai/claude-opus-4-7"
         api_base: "http://cliproxy.ai:8317"
   sso_settings:
     role_mappings:
