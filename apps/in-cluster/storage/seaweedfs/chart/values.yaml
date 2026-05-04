@@ -29,7 +29,7 @@ allInOne:
       - name: public
         anonymousRead: true
   sftp:
-    enabled: true
+    enabled: false
   resources:
     requests:
       cpu: "200m"
