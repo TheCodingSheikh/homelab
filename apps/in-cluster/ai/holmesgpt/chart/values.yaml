@@ -20,9 +20,9 @@ additionalEnvVars:
 
 modelList:
   claude-opus-4-7:
-    model: claude-opus-4-7
-    api_base: http://litellm.litellm:4000
-    api_key: sk-FfcXHcHHKXwCqgEjOq
+    model: openai/claude-opus-4-7
+    api_key: "{{ env.OPENAI_API_KEY }}"
+    api_base: "{{ env.OPENAI_API_BASE }}"
 
 resources:
   requests:
