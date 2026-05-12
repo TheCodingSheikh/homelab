@@ -1,0 +1,131 @@
+replicas: 1
+logLevel: INFO
+
+podAnnotations:
+  inject-certs: "enabled"
+
+additionalEnvVars:
+  - name: MODEL
+    value: "claude-opus-4-7"
+  - name: OPENAI_API_BASE
+    value: "http://litellm.litellm:4000"
+  - name: OPENAI_API_KEY
+    value: "sk-FfcXHcHHKXwCqgEjOq"
+  - name: REQUESTS_CA_BUNDLE
+    value: "/etc/ssl/certs/ca.crt"
+  - name: SSL_CERT_FILE
+    value: "/etc/ssl/certs/ca.crt"
+  - name: CURL_CA_BUNDLE
+    value: "/etc/ssl/certs/ca.crt"
+
+modelList:
+  claude-opus-4-7:
+    model: claude-opus-4-7
+    api_base: http://litellm.litellm:4000
+    api_key: sk-FfcXHcHHKXwCqgEjOq
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 2Gi
+  limits:
+    memory: 4Gi
+
+crdPermissions:
+  argo: true
+  flux: true
+  kafka: true
+  keda: true
+  crossplane: true
+  istio: true
+  gatewayApi: true
+  velero: true
+  externalSecrets: true
+
+toolsets:
+  kubernetes/core:
+    enabled: true
+  kubernetes/logs:
+    enabled: true
+  kubernetes/live-metrics:
+    enabled: true
+  kubernetes/lineage_extras:
+    enabled: true
+  kubernetes/krr:
+    enabled: true
+  kubernetes/popeye:
+    enabled: true
+  kubernetes/kube-bench:
+    enabled: true
+
+  helm/core:
+    enabled: true
+  argocd/core:
+    enabled: true
+
+  prometheus/metrics:
+    enabled: true
+    config:
+      prometheus_url: "http://kube-prometheus-stack-prometheus.monitoring:9090"
+  grafana/loki:
+    enabled: true
+    config:
+      url: "http://loki-gateway.monitoring"
+      grafana_datasource_uid: "loki"
+  grafana/tempo:
+    enabled: true
+    config:
+      url: "http://tempo.monitoring:3200"
+      grafana_datasource_uid: "tempo"
+  grafana/dashboards:
+    enabled: true
+    config:
+      api_url: "http://grafana.monitoring"
+      api_key: "glsa_6boKZPmnkxnSS5m9NCLImoDolg4G9ldM_ee9f5896"
+      external_url: "https://grafana.lab.com"
+
+  internet:
+    enabled: false
+  datetime:
+    enabled: true
+  robusta:
+    enabled: false
+  runbook:
+    enabled: true
+  connectivity_check:
+    enabled: true
+  bash:
+    enabled: true
+    config:
+      builtin_allowlist: "extended"
+
+mcp_servers: {}
+  # grafana:
+  #   description: "Grafana MCP server — query dashboards, datasources, alerts, Loki/Tempo/Prometheus, OnCall, incidents, and Sift investigations through Grafana."
+  #   config:
+  #     url: "http://grafana-mcp.ai:8000/sse"
+  #     mode: "sse"
+  #     icon_url: "https://grafana.com/static/img/menu/grafana2.svg"
+
+mcpAddons:
+  aws:
+    enabled: false
+  mariadb:
+    enabled: false
+  gcp:
+    enabled: false
+  azure:
+    enabled: false
+  github:
+    enabled: false
+  sentry:
+    enabled: false
+  prefect:
+    enabled: false
+  confluenceMcp:
+    enabled: false
+  kubernetesRemediation:
+    enabled: false
+
+operator:
+  enabled: false

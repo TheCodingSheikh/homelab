@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana-mcp
+  namespace: ai
+  labels:
+    app: grafana-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana-mcp
+  template:
+    metadata:
+      labels:
+        app: grafana-mcp
+      annotations:
+        inject-certs: "enabled"
+    spec:
+      containers:
+        - name: mcp-grafana
+          image: grafana/mcp-grafana:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--transport=sse"
+            - "--sse-address=0.0.0.0:8000"
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: GRAFANA_URL
+              value: "http://grafana.monitoring"
+            - name: GRAFANA_SERVICE_ACCOUNT_TOKEN
+              value: "glsa_6boKZPmnkxnSS5m9NCLImoDolg4G9ldM_ee9f5896"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-mcp
+  namespace: ai
+  labels:
+    app: grafana-mcp
+spec:
+  selector:
+    app: grafana-mcp
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
