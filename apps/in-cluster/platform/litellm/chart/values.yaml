@@ -98,6 +98,7 @@ proxy_config:
     # custom_sso: "custom_sso.custom_sso_handler"
   
   litellm_settings:
+    drop_params: true
     # cache: True
     # cache_params:
     #   type: redis
