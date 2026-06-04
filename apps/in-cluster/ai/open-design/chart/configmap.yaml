@@ -39,37 +39,3 @@ data:
             http2_push_preload on;
         }
     }
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: llm-relay
-spec:
-  secretName: llm-relay-tls
-  dnsNames:
-    - llm.lab.com
-  issuerRef:
-    name: selfsigned-issuer
-    kind: ClusterIssuer
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: llm-relay-conf
-data:
-  default.conf: |
-    server {
-        listen 127.0.0.1:443 ssl;
-        server_name llm.lab.com;
-
-        ssl_certificate     /etc/relay-tls/tls.crt;
-        ssl_certificate_key /etc/relay-tls/tls.key;
-
-        location / {
-            proxy_pass http://litellm.litellm:4000;
-            proxy_set_header Host $host;
-            proxy_buffering off;
-            proxy_read_timeout 600s;
-            proxy_send_timeout 600s;
-        }
-    }

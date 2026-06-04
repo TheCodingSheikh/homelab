@@ -1,6 +1,17 @@
 controllers:
   open-design:
     initContainers:
+      install-claude-code:
+        image:
+          repository: node
+          tag: 24-slim
+        command: ["/bin/sh", "-c"]
+        args:
+          - "npm install -g @anthropic-ai/claude-code && cp $(which claude) /shared/bin/claude"
+        volumeMounts:
+          - name: shared-bin
+            mountPath: /shared/bin
+
       proxy-init:
         image:
           repository: nginxinc/nginx-unprivileged
@@ -17,11 +28,6 @@ controllers:
           PROXY_API_TOKEN: "your-token-here"
 
     containers:
-      llm-relay:
-        image:
-          repository: nginx
-          tag: 1.25-alpine
-
       app:
         image:
           repository: vanjayak/open-design
@@ -30,13 +36,17 @@ controllers:
         env:
           NODE_ENV: "production"
           NODE_OPTIONS: "--max-old-space-size=192"
-          NODE_EXTRA_CA_CERTS: /etc/relay-tls/ca.crt
           OD_BIND_HOST: "127.0.0.1"
           OD_PORT: "7456"
           OD_WEB_PORT: "7456"
           PROXY_PORT: "8080"
-          OD_ALLOWED_ORIGINS: "http://localhost:8080,https://design.lab.com,https://llm.lab.com"
+          OD_ALLOWED_ORIGINS: "http://localhost:8080,https://design.lab.com"
           OD_API_TOKEN: "your-token-here"
+          PATH: "/shared/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          ANTHROPIC_BASE_URL: "http://litellm.litellm.svc.cluster.local:4000"
+          ANTHROPIC_AUTH_TOKEN: "sk-FfcXHcHHKXwCqgEjOq"
+          CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY: "1"
+          CLAUDE_CODE_DANGEROUSLY_SKIP_PERMISSIONS: "1"
         probes:
           liveness:
             enabled: true
@@ -94,12 +104,6 @@ controllers:
               timeoutSeconds: 5
               failureThreshold: 3
 
-    pod:
-      hostAliases:
-        - ip: "127.0.0.1"
-          hostnames:
-            - "llm.lab.com"
-
 service:
   app:
     controller: open-design
@@ -125,7 +129,7 @@ ingress:
             service:
               identifier: app
               port: http
-    tls: 
+    tls:
       - hosts:
           - design.lab.com
         secretName: design-tls
@@ -140,12 +144,14 @@ persistence:
         app:
           - path: /app/.od
 
-  tmp:
+  shared-bin:
     type: emptyDir
     advancedMounts:
       open-design:
+        install-claude-code:
+          - path: /shared/bin
         app:
-          - path: /tmp
+          - path: /shared/bin
 
   proxy-config:
     type: emptyDir
@@ -171,22 +177,3 @@ persistence:
       open-design:
         auth-proxy:
           - path: /tmp
-
-  relay-tls:
-    type: secret
-    name: llm-relay-tls
-    advancedMounts:
-      open-design:
-        llm-relay:
-          - path: /etc/relay-tls
-        app:
-          - path: /etc/relay-tls
-            readOnly: true
-
-  relay-conf:
-    type: configMap
-    name: llm-relay-conf
-    advancedMounts:
-      open-design:
-        llm-relay:
-          - path: /etc/nginx/conf.d
