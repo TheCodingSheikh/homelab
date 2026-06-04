@@ -4,13 +4,10 @@ controllers:
       install-claude-code:
         image:
           repository: node
-          tag: 24-slim
+          tag: 24-alpine
         command: ["/bin/sh", "-c"]
         args:
           - "npm install -g @anthropic-ai/claude-code && cp $(which claude) /shared/bin/claude"
-        volumeMounts:
-          - name: shared-bin
-            mountPath: /shared/bin
 
       proxy-init:
         image:
