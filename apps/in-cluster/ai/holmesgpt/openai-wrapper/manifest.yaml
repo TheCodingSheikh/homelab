@@ -1,0 +1,1113 @@
+# HolmesGPT → OpenAI-compatible API wrapper
+# Single-file deploy: ConfigMap + Pod + Service. No image to build.
+#
+#   kubectl apply -f holmes-openai.yaml
+#   kubectl port-forward svc/holmes-openai 8000:8000
+#   # then point any OpenAI client at http://localhost:8000/v1
+#
+# To pick up code changes, kubectl apply then:
+#   kubectl delete pod holmes-openai
+#
+# ───────────────────────────────────────────────────────────────────────────
+# IF YOU SEE "Investigation stopped after N tool calls without a final
+# conclusion": HolmesGPT itself hit its MAX_STEPS limit (default 10) and
+# stopped mid-investigation. The wrapper now surfaces this clearly instead
+# of going silent, but the real fix is on the HolmesGPT side:
+#
+#   kubectl set env deploy/holmesgpt-holmes -n holmesgpt MAX_STEPS=25
+#
+# Or in your Holmes Helm values:
+#   holmes:
+#     additionalEnvVars:
+#       - name: MAX_STEPS
+#         value: "25"
+# ───────────────────────────────────────────────────────────────────────────
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: holmes-openai-code
+  labels:
+    app: holmes-openai
+data:
+  main.py: |
+    """
+    HolmesGPT → OpenAI-compatible API wrapper.
+
+    Exposes:
+      POST /v1/chat/completions   (streaming + non-streaming)
+      GET  /v1/models
+
+    Translates to HolmesGPT's:
+      POST /api/chat              (with stream: true → SSE)
+      GET  /api/model
+
+    Key design choices (see README for full rationale):
+      1. The last `user` message from OpenAI's `messages[]` becomes Holmes' `ask`;
+         prior messages become `conversation_history`.
+      2. Holmes' named SSE events (event: ai_message / start_tool_calling / ...)
+         are diff'd against the running content so we emit only the *new* delta
+         as an OpenAI ChatCompletionChunk.
+      3. Tool activity is surfaced as italic status lines so the user sees
+         "🔧 Running kubectl_describe..." instead of a silent gap during tool calls.
+      4. `approval_required` mid-stream is terminated cleanly with finish_reason=stop
+         plus a visible note — full approval/frontend-tool loops aren't expressible
+         in the OpenAI chat-completions shape.
+      5. Optional `X-Holmes-Fast-Mode: true` request header skips Holmes' TodoWrite
+         planning phase for noticeable latency wins.
+    """
+    from __future__ import annotations
+
+    import json
+    import logging
+    import os
+    import time
+    import uuid
+    from typing import AsyncGenerator, Optional
+
+    import httpx
+    from fastapi import FastAPI, HTTPException, Request
+    from fastapi.responses import JSONResponse, StreamingResponse
+    from pydantic import BaseModel, Field
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # Configuration
+    # ─────────────────────────────────────────────────────────────────────────────
+    HOLMES_URL = os.environ.get("HOLMES_URL", "http://localhost:8080").rstrip("/")
+    HOLMES_API_KEY = os.environ.get("HOLMES_API_KEY", "").strip()
+    # Holmes investigations can run for minutes (many tool calls). Generous defaults.
+    CONNECT_TIMEOUT = float(os.environ.get("HOLMES_CONNECT_TIMEOUT", "10"))
+    READ_TIMEOUT = float(os.environ.get("HOLMES_READ_TIMEOUT", "900"))  # 15 min
+
+    # Where to surface the agent's intermediate reasoning (tool calls, descriptions,
+    # Holmes' `ai_message.reasoning` field, etc):
+    #   - "inline"  (default): rendered as markdown in `delta.content` — works
+    #               with every OpenAI client, looks like a transcript.
+    #   - "channel": rendered in `delta.reasoning_content` so DeepSeek-aware
+    #               clients (Open WebUI, LibreChat, HuggingChat, latest vLLM
+    #               UIs) show it in a collapsible "Thinking…" block. The final
+    #               synthesized answer is the only thing in `delta.content`.
+    # Can also be overridden per-request via `X-Holmes-Reasoning-Mode` header.
+    REASONING_MODE = os.environ.get("HOLMES_REASONING_MODE", "inline").lower().strip()
+    if REASONING_MODE not in ("inline", "channel"):
+        REASONING_MODE = "inline"
+
+    # Display name for the model(s) exposed via /v1/models. The wrapper presents
+    # HolmesGPT's underlying models with a friendly prefix instead of raw LLM
+    # identifiers like "claude-opus-4-7" so the picker shows "HolmesGPT" by
+    # default.
+    #
+    # Rules:
+    #   - If Holmes has exactly ONE model, it's shown as `HOLMES_DISPLAY_PREFIX`
+    #     (e.g. "HolmesGPT").
+    #   - If Holmes has 2+ models, each is shown as `<prefix> - <raw_model_name>`
+    #     (e.g. "HolmesGPT - claude-opus-4-7") so users can pick which one.
+    #
+    # The reverse mapping for chat requests strips the prefix automatically, so
+    # clients can send either the pretty name or the raw Holmes model name.
+    HOLMES_DISPLAY_PREFIX = os.environ.get("HOLMES_DISPLAY_PREFIX", "HolmesGPT").strip() or "HolmesGPT"
+
+    # Debug mode — when set to "1" or "true", logs a one-line summary per chat
+    # request showing the OpenAI input shape and the Holmes payload keys. Useful
+    # for diagnosing "did the system prompt get through?" — set HOLMES_DEBUG=1
+    # on the Pod, send a request, then `kubectl logs deploy/holmes-openai`.
+    DEBUG = os.environ.get("HOLMES_DEBUG", "").lower().strip() in ("1", "true", "yes")
+    if DEBUG:
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+        logging.info("[holmes-openai] DEBUG mode enabled — per-request logging on")
+
+    # Per-model display aliases. JSON object mapping Holmes' raw model names to
+    # the names shown via /v1/models. Aliases take precedence over the prefix
+    # rule — aliased models are shown as the alias verbatim (no prefix attached).
+    # Example:
+    #   HOLMES_MODEL_ALIASES='{"claude-opus-4-7": "Smart Mode", "claude-sonnet-4-5": "Fast Mode"}'
+    # Produces:
+    #   /v1/models → [{"id": "Smart Mode"}, {"id": "Fast Mode"}, ...]
+    # Chat requests with `model: "Smart Mode"` get translated back to
+    # `claude-opus-4-7` before being sent to Holmes.
+    def _parse_aliases(raw: str) -> dict[str, str]:
+        raw = (raw or "").strip()
+        if not raw:
+            return {}
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError as e:
+            logging.warning("HOLMES_MODEL_ALIASES is not valid JSON (%s) — ignoring", e)
+            return {}
+        if not isinstance(parsed, dict):
+            logging.warning("HOLMES_MODEL_ALIASES must be a JSON object, got %s — ignoring",
+                            type(parsed).__name__)
+            return {}
+        # Coerce values to strings, drop empties, trim whitespace.
+        cleaned: dict[str, str] = {}
+        for k, v in parsed.items():
+            if not isinstance(k, str) or not isinstance(v, str):
+                logging.warning("HOLMES_MODEL_ALIASES skipping non-string entry: %r=%r", k, v)
+                continue
+            k, v = k.strip(), v.strip()
+            if not k or not v:
+                continue
+            cleaned[k] = v
+        # Detect alias collisions (two raw models mapped to the same display name).
+        # Reverse mapping would be ambiguous; warn and keep the first occurrence.
+        seen_aliases: dict[str, str] = {}
+        deduped: dict[str, str] = {}
+        for raw_name, alias in cleaned.items():
+            if alias in seen_aliases:
+                logging.warning(
+                    "HOLMES_MODEL_ALIASES alias collision: both %r and %r map to %r — "
+                    "keeping the first; chat requests using this alias will route to %r",
+                    seen_aliases[alias], raw_name, alias, seen_aliases[alias],
+                )
+                continue
+            seen_aliases[alias] = raw_name
+            deduped[raw_name] = alias
+        return deduped
+
+
+    HOLMES_MODEL_ALIASES = _parse_aliases(os.environ.get("HOLMES_MODEL_ALIASES", ""))
+    # Pre-build the reverse map for chat-side lookups (O(1) instead of O(n) per request).
+    HOLMES_ALIAS_REVERSE = {alias: raw for raw, alias in HOLMES_MODEL_ALIASES.items()}
+
+    app = FastAPI(title="HolmesGPT OpenAI Adapter")
+
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # Model name display/reverse mapping
+    #
+    # Holmes wants raw model keys from its `modelList` (e.g. "claude-opus-4-7").
+    # Clients see friendly names through /v1/models, built from these rules:
+    #
+    #   1. If a raw model is in HOLMES_MODEL_ALIASES, its DISPLAY SUFFIX is the
+    #      alias. Otherwise the suffix is the raw model name itself.
+    #   2. The full display name is "<HOLMES_DISPLAY_PREFIX> - <suffix>".
+    #   3. SPECIAL CASE — when Holmes has exactly one model AND it has no alias,
+    #      we drop the " - <raw>" suffix and show just the bare prefix
+    #      (e.g. "HolmesGPT"). This keeps the picker clean for the common case
+    #      where there's nothing to disambiguate. An aliased single model still
+    #      shows "<prefix> - <alias>" — the user explicitly chose to name it.
+    #
+    # Examples (with prefix="Holmes", aliases={"claude-opus-4-7":"Smart Mode"}):
+    #
+    #   Holmes' modelList                Display in /v1/models
+    #   ─────────────────────────────    ───────────────────────────
+    #   ["claude-opus-4-7"]              ["Holmes - Smart Mode"]
+    #   ["claude-haiku"]                 ["Holmes"]  (single, unaliased)
+    #   ["claude-opus-4-7", "robusta"]   ["Holmes - Smart Mode", "Holmes - robusta"]
+    #
+    # Reverse mapping (chat requests): clients can send any of:
+    #   - "Holmes - Smart Mode"  → strip prefix → "Smart Mode" → alias → raw
+    #   - "Smart Mode"           → direct alias lookup → raw
+    #   - "Holmes - claude-opus-4-7" → strip prefix → raw passthrough
+    #   - "claude-opus-4-7"      → raw passthrough
+    #   - "Holmes" (bare)        → None (let Holmes pick its default)
+    # ─────────────────────────────────────────────────────────────────────────────
+    def to_display_name(raw_model: str, is_single: bool) -> str:
+        """Holmes's raw model name → friendly display name shown via /v1/models."""
+        alias = HOLMES_MODEL_ALIASES.get(raw_model)
+        # Single-model + unaliased: show just the bare prefix (no suffix needed
+        # since there's nothing to disambiguate). An aliased single model still
+        # gets the suffix — the alias is the user's deliberate label, surface it.
+        if is_single and not alias:
+            return HOLMES_DISPLAY_PREFIX
+        suffix = alias if alias else raw_model
+        return f"{HOLMES_DISPLAY_PREFIX} - {suffix}"
+
+
+    def to_holmes_model(client_model: str) -> Optional[str]:
+        """Friendly display name (or raw name) → Holmes model key.
+
+        Returns the model name to send to Holmes. None means "no model specified"
+        — let Holmes pick its default. Accepts:
+          - `<prefix> - <alias>`            → strip prefix → alias lookup → raw
+          - `<alias>`                       → direct alias lookup → raw
+          - `<prefix>`                      → None (use Holmes default)
+          - `<prefix> - <raw>`              → strip prefix, return <raw>
+          - `<raw>`                         → return as-is (passthrough)
+          - empty / "holmes" placeholder    → None
+        """
+        if not client_model:
+            return None
+        name = client_model.strip()
+
+        # 1. "Holmes - Smart Mode" — strip prefix first, then resolve.
+        sep = f"{HOLMES_DISPLAY_PREFIX} - "
+        if name.startswith(sep):
+            stripped = name[len(sep):].strip()
+            if not stripped:
+                return None
+            # The stripped piece could be either an alias or a raw model name.
+            if stripped in HOLMES_ALIAS_REVERSE:
+                return HOLMES_ALIAS_REVERSE[stripped]
+            return stripped  # raw name passthrough
+
+        # 2. Bare alias without prefix (e.g. someone hardcoded "Smart Mode").
+        if name in HOLMES_ALIAS_REVERSE:
+            return HOLMES_ALIAS_REVERSE[name]
+
+        # 3. Bare prefix / placeholder → use Holmes default.
+        if name.lower() in {"holmes", HOLMES_DISPLAY_PREFIX.lower()}:
+            return None
+
+        # 4. Raw name — pass through unchanged.
+        return name
+
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # OpenAI request/response models — only the fields we care about.
+    # Extra fields are accepted and silently ignored, matching OpenAI's behavior.
+    # ─────────────────────────────────────────────────────────────────────────────
+    class ChatMessage(BaseModel):
+        role: str
+        content: str | list | None = None
+        name: Optional[str] = None
+
+        class Config:
+            extra = "allow"
+
+
+    class ChatCompletionRequest(BaseModel):
+        model: str = "holmes"
+        messages: list[ChatMessage]
+        stream: bool = False
+        temperature: Optional[float] = None  # accepted, ignored (Holmes uses modelList)
+        # Holmes-specific passthroughs (optional)
+        response_format: Optional[dict] = None
+
+        class Config:
+            extra = "allow"
+
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # Translation: OpenAI messages → Holmes (ask, conversation_history, images)
+    # ─────────────────────────────────────────────────────────────────────────────
+    def _content_to_text_and_images(content) -> tuple[str, list]:
+        """OpenAI content can be a string OR a list of parts (text + image_url).
+        Holmes wants plain text in `ask` and images in a separate field."""
+        if content is None:
+            return "", []
+        if isinstance(content, str):
+            return content, []
+
+        text_parts, images = [], []
+        for part in content:
+            if not isinstance(part, dict):
+                continue
+            if part.get("type") == "text":
+                text_parts.append(part.get("text", ""))
+            elif part.get("type") == "image_url":
+                url = part.get("image_url", {})
+                if isinstance(url, dict):
+                    images.append(url.get("url", ""))
+                elif isinstance(url, str):
+                    images.append(url)
+        return "\n".join(p for p in text_parts if p), images
+
+
+    def openai_to_holmes(req: ChatCompletionRequest) -> dict:
+        """
+        Map an OpenAI chat-completions request onto Holmes' /api/chat payload.
+
+        Holmes' /api/chat wants:
+          - ask: the LATEST user question (string)
+          - conversation_history: prior turns. If you want to customize the
+            system prompt, put your system message as `conversation_history[0]`
+            with role="system" — this is what the official HTTP API docs show.
+          - images: image URLs / data URIs (extracted from the last user message)
+
+        Important note on Holmes' system-prompt handling (verified empirically):
+        The Python SDK has a `system_prompt_additions` field that APPENDS to
+        Holmes' built-in prompt. The HTTP /api/chat endpoint does NOT — its
+        ChatRequest model just doesn't have that field. The only way to inject
+        custom instructions via HTTP is conversation_history[0]. Sending a system
+        message there REPLACES Holmes' built-in prompt, so the client is
+        responsible for the whole thing (identity, behavior, etc.). The tradeoff:
+        you lose Holmes' baseline tool-use guidance unless you re-include it,
+        BUT — Holmes' tool descriptions and runbook injection happen via tool
+        descriptions and runbook context, not via the system prompt itself, so
+        in practice the agent still works well with a custom system message.
+        """
+        if not req.messages:
+            raise HTTPException(400, "messages[] is required and must be non-empty")
+
+        # Find the last user message — that's the "ask".
+        last_user_idx = None
+        for i in range(len(req.messages) - 1, -1, -1):
+            if req.messages[i].role == "user":
+                last_user_idx = i
+                break
+        if last_user_idx is None:
+            raise HTTPException(400, "messages[] must contain at least one user message")
+
+        ask, images = _content_to_text_and_images(req.messages[last_user_idx].content)
+
+        # Collect ALL messages before the last user message into Holmes'
+        # conversation_history. System messages stay at their original position
+        # (typically index 0). Holmes requires conversation_history[0] to be
+        # role=system if any history is provided.
+        history: list[dict] = []
+        has_system = False
+        for m in req.messages[:last_user_idx]:
+            text, _ = _content_to_text_and_images(m.content)
+            if not text:
+                continue
+            history.append({"role": m.role, "content": text})
+            if m.role == "system":
+                has_system = True
+
+        # If history exists but lacks a system message, synthesize an empty
+        # one at index 0 so Holmes' schema validates. (Holmes will then use
+        # its built-in prompt.)
+        if history and not has_system:
+            history.insert(0, {"role": "system", "content": ""})
+
+        payload: dict = {"ask": ask, "stream": req.stream}
+        if history:
+            payload["conversation_history"] = history
+        if images:
+            payload["images"] = images
+        # Translate friendly name → raw Holmes model. Accepts pretty names like
+        # "HolmesGPT - claude-opus-4-7", raw names like "claude-opus-4-7", or
+        # the bare prefix "HolmesGPT" (which means "let Holmes pick").
+        holmes_model = to_holmes_model(req.model)
+        if holmes_model:
+            payload["model"] = holmes_model
+        if req.response_format:
+            payload["response_format"] = req.response_format
+        return payload
+
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # OpenAI chunk builders
+    # ─────────────────────────────────────────────────────────────────────────────
+    def _chunk(
+        cid: str,
+        model: str,
+        *,
+        role=None,
+        content=None,
+        reasoning=None,
+        finish=None,
+    ) -> str:
+        """Build one OpenAI chat.completion.chunk SSE frame.
+
+        `reasoning` populates `delta.reasoning_content` — a DeepSeek-pioneered
+        extension to the OpenAI streaming format that lets clients render
+        chain-of-thought in a collapsible "Thinking…" block separate from the
+        final answer. Clients that don't recognize the field ignore it
+        silently (extra delta fields are spec-compatible).
+        """
+        delta: dict = {}
+        if role:
+            delta["role"] = role
+        if content:
+            delta["content"] = content
+        if reasoning:
+            # DeepSeek API uses `reasoning_content`; vLLM has historically used
+            # both `reasoning_content` (legacy) and `reasoning` (current).
+            # `reasoning_content` is the more widely supported in clients
+            # (Open WebUI, LibreChat, HuggingChat, etc), so we use that.
+            delta["reasoning_content"] = reasoning
+        obj = {
+            "id": cid,
+            "object": "chat.completion.chunk",
+            "created": int(time.time()),
+            "model": model,
+            "choices": [{"index": 0, "delta": delta, "finish_reason": finish}],
+        }
+        return f"data: {json.dumps(obj, ensure_ascii=False)}\n\n"
+
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # Holmes SSE parsing
+    #
+    # Holmes emits standard SSE with NAMED events:
+    #   event: ai_message
+    #   data: {"content": "...", "metadata": {...}}
+    #
+    # We accumulate `data:` lines until a blank line, then dispatch on `event:`.
+    # ─────────────────────────────────────────────────────────────────────────────
+    async def _iter_holmes_events(
+        response: httpx.Response,
+    ) -> AsyncGenerator[tuple[str, dict], None]:
+        event_name: Optional[str] = None
+        data_buf: list[str] = []
+        async for raw in response.aiter_lines():
+            # aiter_lines strips the line terminator but preserves blank lines as ""
+            if raw == "":
+                if event_name or data_buf:
+                    payload_str = "\n".join(data_buf)
+                    try:
+                        payload = json.loads(payload_str) if payload_str else {}
+                    except json.JSONDecodeError:
+                        payload = {"_raw": payload_str}
+                    yield (event_name or "message", payload)
+                event_name, data_buf = None, []
+                continue
+            if raw.startswith(":"):
+                continue  # SSE comment / heartbeat
+            if raw.startswith("event:"):
+                event_name = raw[6:].strip()
+            elif raw.startswith("data:"):
+                # Per SSE spec, strip exactly one leading space if present
+                chunk = raw[5:]
+                if chunk.startswith(" "):
+                    chunk = chunk[1:]
+                data_buf.append(chunk)
+        # Flush any trailing event without a closing blank line
+        if event_name or data_buf:
+            payload_str = "\n".join(data_buf)
+            try:
+                payload = json.loads(payload_str) if payload_str else {}
+            except json.JSONDecodeError:
+                payload = {"_raw": payload_str}
+            yield (event_name or "message", payload)
+
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # Rendering helpers — make tool/error output safe for markdown renderers.
+    #
+    # Why this matters: tool errors from HolmesGPT often contain entire bash
+    # scripts with $(…), backticks, underscores, and special chars. If we wrap
+    # them in italics (_..._) the renderer will:
+    #   - interpret $(…) as LaTeX math (the ugly cursive in the screenshot)
+    #   - eat underscores inside identifiers as more italics
+    #   - break on backticks
+    # Code fences (```) are the only safe envelope.
+    # ─────────────────────────────────────────────────────────────────────────────
+    _MAX_ERR_LEN = 800  # truncate giant bash dumps
+
+
+    def _render_tool_call(tool_name: str) -> str:
+        """One-line status for a tool starting. Plain backticks, no italics —
+        underscores in tool names like `kubernetes_jq_query` were getting eaten
+        by the markdown renderer when wrapped in `_..._`."""
+        return f"\n\n`🔧 {tool_name}`\n"
+
+
+    def _render_tool_description(description: str) -> str:
+        """Shown UNDER the tool name once `tool_calling_result` arrives, so the
+        user sees not just THAT a tool ran but WHAT it actually did. Holmes' tool
+        description fields can contain bash, jq, PromQL — wrap in inline code so
+        markdown doesn't mangle them. Truncated to keep the chat readable."""
+        description = (description or "").strip()
+        if not description:
+            return ""
+        # Keep it short: a one-line description is glanceable; a multi-line one
+        # becomes a wall of text across many tool calls.
+        if "\n" in description:
+            description = description.split("\n", 1)[0] + "…"
+        if len(description) > 140:
+            description = description[:137] + "…"
+        return f"  ↳ `{description}`\n"
+
+
+    def _render_thinking_pulse() -> str:
+        """A single subtle indicator emitted RIGHT AFTER a tool result, before
+        the LLM produces its next reasoning message. Since OpenAI streaming is
+        append-only (no erasing), this stays in the transcript — but it's
+        visually quiet and naturally gets dwarfed by the next message. Without
+        it, the user stares at a frozen-looking chat for 5–10 seconds between
+        every tool call."""
+        return "\n_⏱ analyzing result…_\n"
+
+
+    def _render_reasoning(reasoning: str, mode: str = "inline") -> str:
+        """Surface Holmes' `ai_message.reasoning` field — the model's own
+        explanation of why it took this step.
+
+        In `inline` mode, render as a blockquote so it's visually distinct from
+        the agent's user-facing text. In `channel` mode, reasoning_content is
+        ALREADY in a visually distinct collapsible block, so the blockquote
+        prefix becomes redundant — render plain text instead."""
+        reasoning = (reasoning or "").strip()
+        if not reasoning:
+            return ""
+        if mode == "channel":
+            return f"\n{reasoning}\n"
+        quoted = "\n".join(f"> {line}" for line in reasoning.split("\n"))
+        return f"\n{quoted}\n"
+
+
+    def _render_tool_error(tool_name: str, err: str) -> str:
+        """Render a tool error safely. Long bash scripts go in code fences so
+        the markdown renderer treats them literally."""
+        err = (err or "unknown error").strip()
+        truncated = ""
+        if len(err) > _MAX_ERR_LEN:
+            err = err[:_MAX_ERR_LEN]
+            truncated = f"\n… (truncated, {_MAX_ERR_LEN}+ chars)"
+        # Multi-line errors → code fence. Short single-line → inline backticks.
+        if "\n" in err or len(err) > 100:
+            return f"\n⚠️ `{tool_name}` failed:\n```\n{err}{truncated}\n```\n"
+        return f"⚠️ `{tool_name}` failed: `{err}`\n"
+
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # The stream translator — the heart of this wrapper.
+    #
+    # Holmes' event model (confirmed from the docs and server source):
+    #   - Each `ai_message` is a DISCRETE message in the agent loop. Holmes
+    #     emits them BETWEEN tool-call rounds — they are NOT cumulative deltas.
+    #     So we just forward each one with a separator, no diffing.
+    #   - `start_tool_calling` + `tool_calling_result` come in pairs. We collapse
+    #     them: show "🔧 tool_name" up front, then only add an explicit result
+    #     line if the tool errored. Successful tools stay quiet — the LLM will
+    #     summarize them in the next ai_message.
+    #   - `ai_answer_end` is the final event. Its `analysis` field is the
+    #     canonical full answer. If we somehow missed ai_message content
+    #     (Holmes occasionally skips them on tight loops), this is our backstop.
+    #   - A keep-alive comment is sent on `token_count` so long agent loops
+    #     don't look frozen to the user.
+    # ─────────────────────────────────────────────────────────────────────────────
+    async def translate_stream(
+        holmes_payload: dict,
+        cid: str,
+        model: str,
+        headers: dict,
+        mode: str = "inline",
+    ) -> AsyncGenerator[str, None]:
+        """Translate Holmes' named SSE events into OpenAI ChatCompletionChunk deltas.
+
+        `mode` controls where intermediate output goes:
+          - "inline": everything in `delta.content` as markdown (compat default).
+          - "channel": agent reasoning + tool trace in `delta.reasoning_content`,
+                       final answer in `delta.content`. DeepSeek-style.
+        """
+
+        # Opening role chunk — OpenAI clients expect this first.
+        yield _chunk(cid, model, role="assistant")
+
+        # Track everything we've actually shown the user, so `ai_answer_end`
+        # can be a backstop without duplicating already-emitted text.
+        seen_messages: list[str] = []
+        answer_end_seen = False
+        # Track what kind of event we saw last. If `ai_answer_end` arrives right
+        # after a `start_tool_calling` (instead of an `ai_message`), the agent
+        # stopped mid-investigation — most likely because Holmes hit its
+        # MAX_STEPS limit. We surface that to the user instead of going silent.
+        last_event_type: Optional[str] = None
+        tool_calls_made = 0
+        last_tool_name: Optional[str] = None
+
+        # Two emit helpers, routed by `mode`:
+        #   - emit_thinking(): tool calls, descriptions, reasoning blockquotes,
+        #     thinking pulses, errors — everything that's NOT the final answer.
+        #   - emit_content():  the final synthesized answer, which always lives
+        #     in delta.content regardless of mode (so basic clients still see
+        #     SOMETHING usable even if they don't render reasoning_content).
+        #
+        # In "inline" mode both go to delta.content (renders as a markdown
+        # transcript). In "channel" mode emit_thinking writes to
+        # delta.reasoning_content, which DeepSeek-aware clients show as a
+        # collapsible "Thinking…" block.
+        async def emit_thinking(text: str) -> str:
+            if not text:
+                return ""
+            if mode == "channel":
+                return _chunk(cid, model, reasoning=text)
+            return _chunk(cid, model, content=text)
+
+        async def emit_content(text: str) -> str:
+            if not text:
+                return ""
+            return _chunk(cid, model, content=text)
+
+        # Legacy alias — most call sites are intermediate output.
+        emit = emit_thinking
+
+        timeout = httpx.Timeout(READ_TIMEOUT, connect=CONNECT_TIMEOUT)
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                async with client.stream(
+                    "POST",
+                    f"{HOLMES_URL}/api/chat",
+                    json=holmes_payload,
+                    headers=headers,
+                ) as resp:
+                    if resp.status_code != 200:
+                        err_body = (await resp.aread()).decode("utf-8", errors="replace")
+                        yield await emit(
+                            f"\n\nHolmesGPT returned HTTP {resp.status_code}:\n```\n{err_body[:800]}\n```\n"
+                        )
+                        yield _chunk(cid, model, finish="stop")
+                        yield "data: [DONE]\n\n"
+                        return
+
+                    async for event_type, payload in _iter_holmes_events(resp):
+
+                        if event_type == "ai_message":
+                            # Each ai_message is a DISCRETE message (not a delta).
+                            # Just emit it with a separator between messages.
+                            #
+                            # Holmes also includes a `reasoning` field on each
+                            # ai_message — the model's own explanation of WHY
+                            # it's about to do what it does. Surfacing this as
+                            # a muted blockquote gives the user a window into
+                            # the agent's thinking without dominating the chat.
+                            content = (payload.get("content") or "").strip() if isinstance(payload, dict) else ""
+                            reasoning = (payload.get("reasoning") or "").strip() if isinstance(payload, dict) else ""
+                            if content or reasoning:
+                                separator = "\n\n" if seen_messages else ""
+                                parts = []
+                                if reasoning:
+                                    parts.append(_render_reasoning(reasoning, mode=mode))
+                                if content:
+                                    parts.append(content)
+                                    seen_messages.append(content)
+                                yield await emit(separator + "".join(parts))
+                            last_event_type = "ai_message"
+
+                        elif event_type == "start_tool_calling":
+                            tool = payload.get("tool_name", "tool")
+                            tool_calls_made += 1
+                            last_tool_name = tool
+                            yield await emit(_render_tool_call(tool))
+                            last_event_type = "start_tool_calling"
+
+                        elif event_type == "tool_calling_result":
+                            # Three things happen here:
+                            #   1. Surface the tool's description (the actual
+                            #      command/query that ran) so the user can see
+                            #      WHAT was queried, not just THAT a tool ran.
+                            #   2. If the tool errored, render the error in a
+                            #      safe code-fenced block.
+                            #   3. Emit a "thinking…" pulse so the chat shows
+                            #      activity during the 5–10s gap before the
+                            #      LLM produces its next reasoning message.
+                            result = payload.get("result") or {}
+                            tool = payload.get("name") or last_tool_name or "tool"
+                            description = payload.get("description") or ""
+
+                            # 1. Tool description (always, when available)
+                            if description:
+                                yield await emit(_render_tool_description(description))
+
+                            # 2. Error surfacing
+                            if isinstance(result, dict) and result.get("status") == "error":
+                                err = result.get("error") or result.get("data") or "unknown error"
+                                if not isinstance(err, str):
+                                    err = json.dumps(err)[:_MAX_ERR_LEN]
+                                yield await emit(_render_tool_error(tool, err))
+                            else:
+                                # 3. Successful tool → show a thinking pulse so
+                                # the user knows we're now back to the LLM.
+                                yield await emit(_render_thinking_pulse())
+
+                            last_event_type = "tool_calling_result"
+
+                        elif event_type == "token_count":
+                            # Heartbeat — also reassures the user the agent is
+                            # alive during long tool-call loops. SSE comment
+                            # (starts with `:`) is ignored by OpenAI clients
+                            # but keeps the connection visibly active and
+                            # flushes any intermediate proxy buffers.
+                            yield ": keepalive\n\n"
+                            # Don't update last_event_type — this is meta.
+
+                        elif event_type == "conversation_history_compaction_start":
+                            yield await emit("\n_📦 Compacting conversation history…_\n")
+
+                        elif event_type == "approval_required":
+                            # Mid-stream pause for tool approval / frontend tools.
+                            # Not expressible in OpenAI chat-completions; end cleanly.
+                            pending = (payload.get("pending_approvals") or []) + \
+                                      (payload.get("pending_frontend_tool_calls") or [])
+                            names = ", ".join(p.get("tool_name", "?") for p in pending) or "tool calls"
+                            yield await emit(
+                                f"\n\n_⏸ Stream paused — HolmesGPT needs approval for {names}. "
+                                f"Approval flows aren't supported via the OpenAI-compatible "
+                                f"endpoint; use Holmes' native /api/chat to handle this._"
+                            )
+                            yield _chunk(cid, model, finish="stop")
+                            yield "data: [DONE]\n\n"
+                            return
+
+                        elif event_type == "error":
+                            msg = payload.get("description") or payload.get("msg") or "unknown error"
+                            yield await emit(f"\n\n❌ HolmesGPT error: `{msg}`")
+                            yield _chunk(cid, model, finish="stop")
+                            yield "data: [DONE]\n\n"
+                            return
+
+                        elif event_type == "ai_answer_end":
+                            # `ai_answer_end` is the canonical final event. Its
+                            # `analysis` field is HolmesGPT's full synthesized
+                            # answer. BUT — and this is the bug we kept hitting —
+                            # Holmes sometimes emits ai_answer_end with an empty
+                            # `analysis` when the agent hit its MAX_STEPS limit
+                            # mid-investigation. Detection rule: if the last
+                            # event before this was a tool call (not an
+                            # ai_message), the agent stopped mid-thought.
+                            #
+                            # Mode note: from here on, output goes via
+                            # `emit_content` (not emit_thinking). In "channel"
+                            # mode this is the visible transition from
+                            # reasoning_content → content — i.e. the moment the
+                            # collapsible Thinking block closes and the final
+                            # answer appears.
+                            analysis = (payload.get("analysis") or "").strip() if isinstance(payload, dict) else ""
+
+                            stopped_mid_investigation = (
+                                last_event_type in ("start_tool_calling", "tool_calling_result")
+                                and not analysis
+                            )
+
+                            if stopped_mid_investigation:
+                                yield await emit_content(
+                                    f"\n\n---\n\n"
+                                    f"_⚠️ Investigation stopped after {tool_calls_made} tool calls "
+                                    f"without a final conclusion (last tool: `{last_tool_name}`)._\n\n"
+                                    f"_This usually means HolmesGPT hit its `MAX_STEPS` limit "
+                                    f"(default 10). To allow longer investigations, set "
+                                    f"`MAX_STEPS=20` (or higher) on the HolmesGPT deployment. "
+                                    f"You can also just send another message — Holmes will pick "
+                                    f"up where it left off using the conversation history._"
+                                )
+                            elif analysis:
+                                joined = "\n\n".join(seen_messages).strip()
+                                if not joined:
+                                    # No interim messages — analysis IS the answer.
+                                    yield await emit_content(analysis)
+                                elif analysis == joined or (seen_messages and analysis == seen_messages[-1].strip()):
+                                    # Exact duplicate of what we already showed.
+                                    # In inline mode that means skip. In channel
+                                    # mode the interim messages went to reasoning,
+                                    # so we still need to emit the answer to content.
+                                    if mode == "channel":
+                                        yield await emit_content(analysis)
+                                elif joined and analysis.startswith(joined):
+                                    # Analysis extends the running transcript.
+                                    # Inline mode: emit just the new tail.
+                                    # Channel mode: emit the whole analysis as
+                                    # final content (transcript is in reasoning).
+                                    if mode == "channel":
+                                        yield await emit_content(analysis)
+                                    else:
+                                        tail = analysis[len(joined):].strip()
+                                        if tail:
+                                            yield await emit_content("\n\n" + tail)
+                                elif seen_messages and analysis.startswith(seen_messages[-1].strip()):
+                                    if mode == "channel":
+                                        yield await emit_content(analysis)
+                                    else:
+                                        tail = analysis[len(seen_messages[-1].strip()):].strip()
+                                        if tail:
+                                            yield await emit_content("\n\n" + tail)
+                                else:
+                                    # Analysis is a fresh synthesis — DON'T drop
+                                    # it. Render it as the final answer.
+                                    # Inline: with a separator. Channel: clean.
+                                    if mode == "channel":
+                                        yield await emit_content(analysis)
+                                    else:
+                                        separator = "\n\n---\n\n" if seen_messages else ""
+                                        yield await emit_content(separator + analysis)
+
+                            elif not seen_messages:
+                                # No analysis AND no ai_messages ever arrived.
+                                # Holmes gave up entirely with nothing to show.
+                                err = (payload.get("error") or "").strip() if isinstance(payload, dict) else ""
+                                metadata = payload.get("metadata") or {} if isinstance(payload, dict) else {}
+                                tokens = (metadata.get("usage") or {}).get("total_tokens")
+                                detail = f"`{err}`" if err else (
+                                    f"(used {tokens} tokens)" if tokens else "no further details"
+                                )
+                                yield await emit_content(
+                                    f"\n_⚠️ HolmesGPT finished without producing an answer — "
+                                    f"{detail}. Try rephrasing the question, or check "
+                                    f"`kubectl logs deploy/holmesgpt-holmes`._"
+                                )
+
+                            answer_end_seen = True
+                            yield _chunk(cid, model, finish="stop")
+                            yield "data: [DONE]\n\n"
+                            return
+
+                    # Stream from Holmes ended WITHOUT ai_answer_end. This is
+                    # the case the user hit in the screenshots — Holmes died
+                    # or the connection dropped mid-investigation. Close cleanly
+                    # so the OpenAI client doesn't hang forever, and tell the
+                    # user something happened.
+                    if not answer_end_seen:
+                        yield await emit(
+                            "\n\n_⚠️ HolmesGPT stream ended unexpectedly before "
+                            "producing a final answer. The investigation may have "
+                            "timed out, hit a tool-call loop, or the Holmes pod "
+                            "may have crashed. Try a simpler question or check "
+                            "`kubectl logs deploy/holmesgpt-holmes`._"
+                        )
+                    yield _chunk(cid, model, finish="stop")
+                    yield "data: [DONE]\n\n"
+
+        except httpx.ReadTimeout:
+            yield await emit(
+                f"\n\n_⚠️ HolmesGPT didn't respond within {READ_TIMEOUT}s. "
+                f"The investigation likely got stuck in a tool-call loop. "
+                f"Raise `HOLMES_READ_TIMEOUT` if your investigations are legitimately long._"
+            )
+            yield _chunk(cid, model, finish="stop")
+            yield "data: [DONE]\n\n"
+
+        except httpx.RequestError as e:
+            yield await emit(f"\n\n_Network error talking to HolmesGPT: `{e}`_")
+            yield _chunk(cid, model, finish="stop")
+            yield "data: [DONE]\n\n"
+
+
+    # ─────────────────────────────────────────────────────────────────────────────
+    # Routes
+    # ─────────────────────────────────────────────────────────────────────────────
+    def _holmes_headers(request: Request) -> dict:
+        """Forward auth + pass-through headers to Holmes."""
+        headers = {"Content-Type": "application/json", "Accept": "text/event-stream"}
+        if HOLMES_API_KEY:
+            headers["Authorization"] = f"Bearer {HOLMES_API_KEY}"
+        # Forward any X-* headers (Holmes uses these for toolset auth pass-through)
+        for k, v in request.headers.items():
+            kl = k.lower()
+            if kl.startswith("x-") and kl not in {"x-api-key"}:
+                headers[k] = v
+        # Holmes-specific opt-in: fast mode skips TodoWrite planning
+        if request.headers.get("x-holmes-fast-mode", "").lower() == "true":
+            # behavior_controls goes in the BODY, not headers — picked up downstream.
+            headers["__holmes_fast_mode"] = "1"
+        return headers
+
+
+    @app.post("/v1/chat/completions")
+    async def chat_completions(req: ChatCompletionRequest, request: Request):
+        payload = openai_to_holmes(req)
+        headers = _holmes_headers(request)
+
+        # Apply fast mode if requested via header (move from sentinel to body)
+        if headers.pop("__holmes_fast_mode", None):
+            payload["behavior_controls"] = {
+                "todowrite_instructions": False,
+                "todowrite_reminder": False,
+            }
+
+        cid = f"chatcmpl-{uuid.uuid4().hex}"
+        model_name = req.model or "holmes"
+
+        # Debug logging — when HOLMES_DEBUG=1 (or "true"), log a summary of what
+        # the client sent and what we forwarded to Holmes. Critical for diagnosing
+        # "did the system prompt get through?" without dumping full payloads
+        # containing user data.
+        if DEBUG:
+            client_roles = [m.role for m in req.messages]
+            client_has_system = any(m.role == "system" for m in req.messages)
+            client_system_lens = [len(m.content or "") if isinstance(m.content, str) else -1
+                                  for m in req.messages if m.role == "system"]
+            forwarded_keys = sorted(payload.keys())
+            history = payload.get("conversation_history") or []
+            history_roles = [m.get("role") for m in history]
+            system_in_history = [m.get("content", "")[:120] + "…"
+                                 if len(m.get("content", "")) > 120 else m.get("content", "")
+                                 for m in history if m.get("role") == "system"]
+            logging.info(
+                "[holmes-openai] %s client_msg_roles=%s client_system_msgs=%s client_system_lens=%s "
+                "forwarded_keys=%s history_roles=%s system_msg_in_history=%r",
+                cid, client_roles, client_has_system, client_system_lens,
+                forwarded_keys, history_roles, system_in_history,
+            )
+
+        # Resolve reasoning mode: per-request header overrides the global env.
+        requested_mode = request.headers.get("x-holmes-reasoning-mode", "").lower().strip()
+        mode = requested_mode if requested_mode in ("inline", "channel") else REASONING_MODE
+
+        # ── Streaming ────────────────────────────────────────────────────────────
+        if req.stream:
+            return StreamingResponse(
+                translate_stream(payload, cid, model_name, headers, mode=mode),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no",  # disable nginx buffering
+                },
+            )
+
+        # ── Non-streaming: one shot, build a full ChatCompletion ─────────────────
+        timeout = httpx.Timeout(READ_TIMEOUT, connect=CONNECT_TIMEOUT)
+        payload["stream"] = False
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            try:
+                r = await client.post(
+                    f"{HOLMES_URL}/api/chat", json=payload, headers=headers
+                )
+            except httpx.RequestError as e:
+                raise HTTPException(502, f"HolmesGPT unreachable: {e}")
+        if r.status_code != 200:
+            raise HTTPException(r.status_code, f"HolmesGPT: {r.text[:500]}")
+
+        data = r.json()
+        answer = data.get("analysis", "") or ""
+        # Holmes returns its detailed token metadata in `metadata.usage` for non-stream.
+        usage = (data.get("metadata") or {}).get("usage") or {}
+        return JSONResponse({
+            "id": cid,
+            "object": "chat.completion",
+            "created": int(time.time()),
+            "model": model_name,
+            "choices": [{
+                "index": 0,
+                "message": {"role": "assistant", "content": answer},
+                "finish_reason": "stop",
+            }],
+            "usage": {
+                "prompt_tokens": usage.get("prompt_tokens", 0),
+                "completion_tokens": usage.get("completion_tokens", 0),
+                "total_tokens": usage.get("total_tokens", 0),
+            },
+        })
+
+
+    @app.get("/v1/models")
+    async def list_models(request: Request):
+        headers = _holmes_headers(request)
+        async with httpx.AsyncClient(timeout=10) as client:
+            try:
+                r = await client.get(f"{HOLMES_URL}/api/model", headers=headers)
+            except httpx.RequestError as e:
+                raise HTTPException(502, f"HolmesGPT unreachable: {e}")
+        if r.status_code != 200:
+            raise HTTPException(r.status_code, f"HolmesGPT: {r.text[:500]}")
+
+        raw = r.json().get("model_name", [])
+        # Holmes returns this as either a list or a JSON-string of a list — handle both.
+        if isinstance(raw, str):
+            try:
+                raw = json.loads(raw)
+            except json.JSONDecodeError:
+                raw = [raw]
+
+        # Apply the friendly-name mapping:
+        #   1 model  → "HolmesGPT"
+        #   N models → "HolmesGPT - <raw_name>" (so users can pick which one)
+        is_single = len(raw) == 1
+        return {
+            "object": "list",
+            "data": [
+                {
+                    "id": to_display_name(m, is_single),
+                    "object": "model",
+                    "created": 0,
+                    "owned_by": "holmesgpt",
+                }
+                for m in raw
+            ],
+        }
+
+
+    @app.get("/health")
+    async def health():
+        return {"status": "ok", "holmes_url": HOLMES_URL}
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: holmes-openai
+  labels:
+    app: holmes-openai
+spec:
+  restartPolicy: Always
+  nodeName: k3d-lab-agent-2
+  containers:
+    - name: app
+      image: python:3.12-slim
+      env:
+        - name: HOLMES_URL
+          value: "http://holmesgpt-holmes"
+        # Uncomment if HolmesGPT requires auth:
+        # - name: HOLMES_API_KEY
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: holmes-secrets
+        #       key: api-key
+        - name: HOLMES_READ_TIMEOUT
+          value: "900"
+        # Reasoning rendering: "inline" puts the whole agent trace in
+        # delta.content as markdown (works with every OpenAI client).
+        # "channel" splits it: trace goes to delta.reasoning_content (so
+        # DeepSeek-aware clients like Open WebUI show a collapsible
+        # Thinking block), final answer in delta.content.
+        # Per-request override: X-Holmes-Reasoning-Mode: channel
+        - name: HOLMES_REASONING_MODE
+          value: "channel"
+        # Display name for HolmesGPT in /v1/models. If Holmes has one model,
+        # it's shown as just this prefix (e.g. "HolmesGPT"). If multiple, each
+        # is shown as "<prefix> - <raw_model_name>" so users can pick.
+        - name: HOLMES_DISPLAY_PREFIX
+          value: "HolmesGPT"
+        # Opt-in: log a one-line summary per chat request showing what came
+        # in (roles, system message presence) vs what got forwarded to Holmes.
+        # Critical for diagnosing "did my system prompt make it through?"
+        - name: HOLMES_DEBUG
+          value: "1"
+        # Per-model display aliases. JSON object mapping Holmes' raw model
+        # names → friendly display names. Aliased models bypass the prefix
+        # rule and are shown as the alias verbatim. Chat requests using an
+        # alias are translated back to the raw name before reaching Holmes.
+        # Example: '{"claude-opus-4-7":"Smart Mode","claude-sonnet-4-5":"Fast Mode"}'
+        # - name: HOLMES_MODEL_ALIASES
+        #   value: '{}'
+        - name: PIP_DISABLE_PIP_VERSION_CHECK
+          value: "1"
+        - name: PIP_ROOT_USER_ACTION
+          value: "ignore"
+      ports:
+        - name: http
+          containerPort: 8000
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          set -e
+          pip install --no-cache-dir --quiet \
+            'fastapi>=0.110' 'uvicorn[standard]>=0.27' 'httpx>=0.27' 'pydantic>=2.5'
+          exec uvicorn main:app --host 0.0.0.0 --port 8000 \
+            --app-dir /app --no-access-log
+      volumeMounts:
+        - name: code
+          mountPath: /app
+      readinessProbe:
+        httpGet:
+          path: /health
+          port: 8000
+        initialDelaySeconds: 15
+        periodSeconds: 5
+        failureThreshold: 30
+      livenessProbe:
+        httpGet:
+          path: /health
+          port: 8000
+        initialDelaySeconds: 60
+        periodSeconds: 30
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+  volumes:
+    - name: code
+      configMap:
+        name: holmes-openai-code
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: holmes-openai
+  labels:
+    app: holmes-openai
+spec:
+  selector:
+    app: holmes-openai
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000

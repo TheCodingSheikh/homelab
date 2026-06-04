@@ -1,0 +1,192 @@
+controllers:
+  open-design:
+    initContainers:
+      proxy-init:
+        image:
+          repository: nginxinc/nginx-unprivileged
+          tag: 1.25-alpine-slim
+        command: ["/bin/sh", "-c"]
+        args:
+          - "envsubst '$PROXY_PORT $OD_BIND_HOST $OD_WEB_PORT $PROXY_API_TOKEN'
+            < /etc/nginx/templates/default.conf.template
+            > /etc/nginx/conf.d/default.conf"
+        env:
+          PROXY_PORT: "8080"
+          OD_BIND_HOST: "127.0.0.1"
+          OD_WEB_PORT: "7456"
+          PROXY_API_TOKEN: "your-token-here"
+
+    containers:
+      llm-relay:
+        image:
+          repository: nginx
+          tag: 1.25-alpine
+
+      app:
+        image:
+          repository: vanjayak/open-design
+          tag: latest
+          pullPolicy: IfNotPresent
+        env:
+          NODE_ENV: "production"
+          NODE_OPTIONS: "--max-old-space-size=192"
+          NODE_EXTRA_CA_CERTS: /etc/relay-tls/ca.crt
+          OD_BIND_HOST: "127.0.0.1"
+          OD_PORT: "7456"
+          OD_WEB_PORT: "7456"
+          PROXY_PORT: "8080"
+          OD_ALLOWED_ORIGINS: "http://localhost:8080,https://design.lab.com,https://llm.lab.com"
+          OD_API_TOKEN: "your-token-here"
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command: ["wget", "-qO-", "http://127.0.0.1:7456/api/health"]
+              initialDelaySeconds: 20
+              periodSeconds: 30
+              timeoutSeconds: 5
+              failureThreshold: 3
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command: ["wget", "-qO-", "http://127.0.0.1:7456/api/health"]
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              timeoutSeconds: 5
+              failureThreshold: 3
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 1024Mi
+          requests:
+            cpu: 200m
+            memory: 256Mi
+
+      auth-proxy:
+        image:
+          repository: nginxinc/nginx-unprivileged
+          tag: 1.25-alpine-slim
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /nginx-health
+                port: 8080
+              initialDelaySeconds: 20
+              periodSeconds: 30
+              timeoutSeconds: 5
+              failureThreshold: 3
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /api/health
+                port: 8080
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              timeoutSeconds: 5
+              failureThreshold: 3
+
+    pod:
+      hostAliases:
+        - ip: "127.0.0.1"
+          hostnames:
+            - "llm.lab.com"
+
+service:
+  app:
+    controller: open-design
+    ports:
+      http:
+        port: 8080
+        targetPort: 8080
+
+ingress:
+  app:
+    enabled: true
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-buffering: "off"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+      cert-manager.io/cluster-issuer: lab-issuer
+    hosts:
+      - host: design.lab.com
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: app
+              port: http
+    tls: 
+      - hosts:
+          - design.lab.com
+        secretName: design-tls
+
+persistence:
+  data:
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 10Gi
+    advancedMounts:
+      open-design:
+        app:
+          - path: /app/.od
+
+  tmp:
+    type: emptyDir
+    advancedMounts:
+      open-design:
+        app:
+          - path: /tmp
+
+  proxy-config:
+    type: emptyDir
+    advancedMounts:
+      open-design:
+        proxy-init:
+          - path: /etc/nginx/conf.d
+        auth-proxy:
+          - path: /etc/nginx/conf.d
+            readOnly: true
+
+  proxy-template:
+    type: configMap
+    name: open-design-proxy
+    advancedMounts:
+      open-design:
+        proxy-init:
+          - path: /etc/nginx/templates
+
+  proxy-tmp:
+    type: emptyDir
+    advancedMounts:
+      open-design:
+        auth-proxy:
+          - path: /tmp
+
+  relay-tls:
+    type: secret
+    name: llm-relay-tls
+    advancedMounts:
+      open-design:
+        llm-relay:
+          - path: /etc/relay-tls
+        app:
+          - path: /etc/relay-tls
+            readOnly: true
+
+  relay-conf:
+    type: configMap
+    name: llm-relay-conf
+    advancedMounts:
+      open-design:
+        llm-relay:
+          - path: /etc/nginx/conf.d

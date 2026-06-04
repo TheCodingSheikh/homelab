@@ -1,0 +1,512 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: holmes-openai-adapter
+  labels:
+    app: holmes-openai
+data:
+  app.py: |
+    """
+    Holmes <-> OpenAI Chat Completions adapter.
+
+    Translates OpenAI Chat Completions requests into HolmesGPT's /api/chat,
+    streaming Holmes' agentic loop (tool calls + reasoning) as `reasoning_content`
+    and the final answer as `content`.
+    """
+    from __future__ import annotations
+
+    import json
+    import logging
+    import os
+    import time
+    import uuid
+    from collections.abc import AsyncGenerator
+    from contextlib import asynccontextmanager
+    from typing import Any
+
+    import httpx
+    from fastapi import Depends, FastAPI, HTTPException, status
+    from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+    from fastapi_openai_compat import (
+        ChatCompletion,
+        Choice,
+        CompletionResult,
+        Message,
+        MessageParam,
+        create_chat_completion_router,
+    )
+
+    HOLMES_URL = os.environ.get(
+        "HOLMES_URL",
+        "http://holmesgpt-holmes.holmesgpt.svc.cluster.local:80",
+    ).rstrip("/")
+    ADAPTER_API_KEY = os.environ["ADAPTER_API_KEY"]
+    UPSTREAM_TIMEOUT_SECONDS = int(os.environ.get("UPSTREAM_TIMEOUT_SECONDS", "600"))
+    SHOW_TOOL_EVENTS = os.environ.get("SHOW_TOOL_EVENTS", "true").lower() == "true"
+    ADAPTER_MODEL_NAME = os.environ.get("ADAPTER_MODEL_NAME", "holmes")
+    FALLBACK_SYSTEM_MESSAGE = os.environ.get(
+        "FALLBACK_SYSTEM_MESSAGE",
+        "You are HolmesGPT, an SRE assistant.",
+    )
+    LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
+
+    logging.basicConfig(
+        level=LOG_LEVEL,
+        format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    )
+    log = logging.getLogger("holmes-openai-adapter")
+
+    _client = httpx.AsyncClient(
+        timeout=httpx.Timeout(UPSTREAM_TIMEOUT_SECONDS, connect=10.0),
+        limits=httpx.Limits(max_connections=64, max_keepalive_connections=16),
+    )
+
+
+    # --- Auth ------------------------------------------------------------------ #
+
+    bearer = HTTPBearer(auto_error=False)
+
+
+    async def require_api_key(
+        creds: HTTPAuthorizationCredentials | None = Depends(bearer),
+    ) -> None:
+        if creds is None or creds.credentials != ADAPTER_API_KEY:
+            raise HTTPException(
+                status.HTTP_401_UNAUTHORIZED,
+                "Invalid or missing API key",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+
+    # --- Message translation --------------------------------------------------- #
+
+
+    def _extract_text(content: Any) -> str:
+        """Plain text from either a string or an OpenAI multimodal content array."""
+        if isinstance(content, str):
+            return content
+        if not isinstance(content, list):
+            return str(content)
+        parts = [
+            p.get("text", "")
+            for p in content
+            if isinstance(p, dict) and p.get("type") == "text"
+        ]
+        return "\n".join(parts).strip()
+
+
+    def _extract_images(content: Any) -> list[Any]:
+        """image_url parts from a multimodal content array."""
+        if not isinstance(content, list):
+            return []
+        images: list[Any] = []
+        for part in content:
+            if not (isinstance(part, dict) and part.get("type") == "image_url"):
+                continue
+            img = part.get("image_url") or {}
+            url = img.get("url") if isinstance(img, dict) else None
+            if not url:
+                continue
+            if isinstance(img, dict) and img.get("detail"):
+                images.append({"url": url, "detail": img["detail"]})
+            else:
+                images.append(url)
+        return images
+
+
+    def _build_holmes_payload(
+        messages: list[MessageParam], body: dict[str, Any]
+    ) -> dict[str, Any]:
+        if not messages:
+            raise HTTPException(400, "messages must not be empty")
+
+        last_user_idx = next(
+            (i for i in range(len(messages) - 1, -1, -1)
+            if messages[i].get("role") == "user"),
+            None,
+        )
+        if last_user_idx is None:
+            raise HTTPException(400, "no user message found in messages")
+
+        last_user_content = messages[last_user_idx].get("content", "")
+        ask = _extract_text(last_user_content)
+        images = _extract_images(last_user_content)
+        if not ask and not images:
+            raise HTTPException(400, "last user message has no content")
+
+        history: list[dict[str, Any]] = [
+            {"role": m.get("role", "user"), "content": _extract_text(m.get("content", ""))}
+            for i, m in enumerate(messages) if i != last_user_idx
+        ]
+        # Holmes requires history (when sent) to start with a system message.
+        if history and history[0].get("role") != "system":
+            history.insert(0, {"role": "system", "content": FALLBACK_SYSTEM_MESSAGE})
+
+        payload: dict[str, Any] = {"ask": ask}
+        if history:
+            payload["conversation_history"] = history
+        if images:
+            payload["images"] = images
+        if body.get("response_format"):
+            payload["response_format"] = body["response_format"]
+
+        meta = body.get("metadata") or {}
+        if isinstance(meta, dict):
+            if meta.get("holmes_enable_tool_approval") is True:
+                payload["enable_tool_approval"] = True
+            extra = meta.get("holmes_additional_system_prompt")
+            if isinstance(extra, str) and extra:
+                payload["additional_system_prompt"] = extra
+        return payload
+
+
+    # --- OpenAI response builders --------------------------------------------- #
+
+
+    def _map_usage(metadata: dict[str, Any] | None) -> dict[str, int] | None:
+        if not isinstance(metadata, dict):
+            return None
+        usage = metadata.get("usage")
+        if not isinstance(usage, dict):
+            return None
+        return {
+            "prompt_tokens": int(usage.get("prompt_tokens") or 0),
+            "completion_tokens": int(usage.get("completion_tokens") or 0),
+            "total_tokens": int(usage.get("total_tokens") or 0),
+        }
+
+
+    def _format_tool_summary(tool_calls: list[dict[str, Any]]) -> str:
+        if not tool_calls:
+            return ""
+        lines = []
+        for tc in tool_calls:
+            name = tc.get("tool_name") or tc.get("name") or "tool"
+            result = tc.get("result") or {}
+            rstatus = result.get("status", "ok") if isinstance(result, dict) else "ok"
+            desc = tc.get("description") or ""
+            line = f"🔧 {name} ({rstatus})"
+            if desc:
+                line += f" — {desc}"
+            lines.append(line)
+        return "\n".join(lines)
+
+
+    def _build_chat_completion(
+        model: str,
+        text: str,
+        reasoning: str | None = None,
+        usage: dict[str, int] | None = None,
+    ) -> ChatCompletion:
+        msg_kwargs: dict[str, Any] = {"role": "assistant", "content": text}
+        if reasoning:
+            msg_kwargs["reasoning_content"] = reasoning
+        completion: dict[str, Any] = {
+            "id": f"chatcmpl-{uuid.uuid4().hex}",
+            "object": "chat.completion",
+            "created": int(time.time()),
+            "model": model,
+            "choices": [Choice(index=0, message=Message(**msg_kwargs), finish_reason="stop")],
+        }
+        if usage:
+            completion["usage"] = usage
+        return ChatCompletion(**completion)
+
+
+    def _reasoning_chunk(model: str, completion_id: str, text: str) -> ChatCompletion:
+        return ChatCompletion(
+            id=completion_id,
+            object="chat.completion.chunk",
+            created=int(time.time()),
+            model=model,
+            choices=[Choice(index=0, delta={"role": "assistant", "reasoning_content": text})],
+        )
+
+
+    # --- Holmes calls ---------------------------------------------------------- #
+
+
+    async def list_models() -> list[str]:
+        return [ADAPTER_MODEL_NAME]
+
+
+    async def _run_non_streaming(
+        model: str, messages: list[MessageParam], body: dict[str, Any]
+    ) -> ChatCompletion:
+        payload = _build_holmes_payload(messages, body)
+        log.info("Holmes /api/chat ask_len=%d", len(payload["ask"]))
+        try:
+            r = await _client.post(f"{HOLMES_URL}/api/chat", json=payload)
+            r.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            log.error("Holmes %s: %s", e.response.status_code, e.response.text[:500])
+            raise HTTPException(502, f"Holmes upstream error: {e.response.status_code}")
+        except httpx.HTTPError as e:
+            log.error("Holmes connection error: %s", e)
+            raise HTTPException(504, f"Holmes upstream timeout/connection: {e}")
+
+        data = r.json()
+        reasoning = (
+            _format_tool_summary(data.get("tool_calls") or []) or None
+            if SHOW_TOOL_EVENTS
+            else None
+        )
+        return _build_chat_completion(
+            model,
+            data.get("analysis") or "",
+            reasoning=reasoning,
+            usage=_map_usage(data.get("metadata")),
+        )
+
+
+    async def _stream_holmes_sse(
+        payload: dict[str, Any],
+    ) -> AsyncGenerator[tuple[str, dict[str, Any]], None]:
+        streaming_payload = {**payload, "stream": True}
+        async with _client.stream("POST", f"{HOLMES_URL}/api/chat", json=streaming_payload) as r:
+            if r.status_code >= 400:
+                body_bytes = await r.aread()
+                raise HTTPException(
+                    502, f"Holmes streaming error {r.status_code}: {body_bytes[:300]!r}"
+                )
+            event_name = "message"
+            data_lines: list[str] = []
+            async for raw_line in r.aiter_lines():
+                if raw_line == "":
+                    if data_lines:
+                        try:
+                            obj = json.loads("\n".join(data_lines))
+                        except json.JSONDecodeError:
+                            obj = {"raw": "\n".join(data_lines)}
+                        yield event_name, obj
+                    event_name, data_lines = "message", []
+                    continue
+                if raw_line.startswith(":"):
+                    continue
+                if raw_line.startswith("event:"):
+                    event_name = raw_line[6:].strip()
+                elif raw_line.startswith("data:"):
+                    data_lines.append(raw_line[5:].lstrip())
+
+
+    async def _run_streaming(
+        model: str, messages: list[MessageParam], body: dict[str, Any]
+    ) -> AsyncGenerator[Any, None]:
+        payload = _build_holmes_payload(messages, body)
+        completion_id = f"chatcmpl-{uuid.uuid4().hex}"
+        log.info("Holmes /api/chat (stream) ask_len=%d", len(payload["ask"]))
+
+        final_emitted = False
+
+        try:
+            async for event, data in _stream_holmes_sse(payload):
+                if event == "start_tool_calling" and SHOW_TOOL_EVENTS:
+                    desc = data.get("description") or data.get("tool_name", "tool")
+                    yield _reasoning_chunk(model, completion_id, f"🔧 {desc}\n")
+
+                elif event == "tool_calling_result" and SHOW_TOOL_EVENTS:
+                    result = data.get("result") or {}
+                    rstatus = result.get("status", "ok") if isinstance(result, dict) else "ok"
+                    desc = data.get("description") or data.get("tool_name", "tool")
+                    if rstatus == "error" and isinstance(result, dict):
+                        err = (((result.get("error") or "").splitlines()) or ["unknown error"])[0][:160]
+                        yield _reasoning_chunk(model, completion_id, f"⚠️ {desc} — {err}\n")
+                    else:
+                        yield _reasoning_chunk(model, completion_id, f"✅ {desc}\n")
+
+                elif event == "ai_message":
+                    # Always treat ai_message as reasoning. The actual final answer
+                    # is delivered via ai_answer_end below. This keeps the "thinking"
+                    # block and the answer cleanly separated in the UI.
+                    reasoning = data.get("reasoning")
+                    if reasoning and SHOW_TOOL_EVENTS:
+                        yield _reasoning_chunk(model, completion_id, f"💭 {reasoning.strip()}\n")
+
+                elif event == "conversation_history_compacted" and SHOW_TOOL_EVENTS:
+                    yield _reasoning_chunk(
+                        model, completion_id, "🗜️ Conversation compacted to fit context\n"
+                    )
+
+                elif event == "approval_required":
+                    pending = data.get("pending_approvals") or []
+                    names = ", ".join(p.get("tool_name", "?") for p in pending)
+                    yield (
+                        f"\n\n⏸️ **Approval required** for: {names}.\n"
+                        f"Re-run with destructive tools disabled or use the Holmes UI."
+                    )
+                    final_emitted = True
+                    return
+
+                elif event == "error":
+                    msg = data.get("description") or data.get("msg") or "unknown error"
+                    yield f"\n\n❌ **Holmes error:** {msg}"
+                    final_emitted = True
+                    return
+
+                elif event == "ai_answer_end":
+                    final_text = data.get("analysis") or ""
+                    if final_text:
+                        yield final_text  # plain str → delta.content (real answer)
+                    final_emitted = True
+                    return
+
+            if not final_emitted:
+                yield "\n\n⚠️ Holmes ended the stream without producing a final answer."
+        except HTTPException:
+            raise
+        except Exception as e:
+            log.exception("Streaming failure")
+            yield f"\n\n❌ **Adapter error:** {e}"
+
+
+    async def run_completion(
+        model: str, messages: list[MessageParam], body: dict[str, Any]
+    ) -> CompletionResult:
+        if body.get("stream", False):
+            return _run_streaming(model, messages, body)
+        return await _run_non_streaming(model, messages, body)
+
+
+    # --- App ------------------------------------------------------------------- #
+
+
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        yield
+        await _client.aclose()
+
+
+    app = FastAPI(
+        title="Holmes OpenAI Adapter",
+        version="1.5.1",
+        description="OpenAI Chat Completions facade for HolmesGPT.",
+        lifespan=lifespan,
+    )
+
+
+    @app.get("/healthz")
+    async def healthz() -> dict[str, str]:
+        return {"status": "ok"}
+
+
+    @app.get("/readyz")
+    async def readyz() -> dict[str, Any]:
+        try:
+            r = await _client.get(f"{HOLMES_URL}/api/model", timeout=5.0)
+            r.raise_for_status()
+            return {"status": "ready", "holmes": "ok"}
+        except Exception as e:
+            raise HTTPException(503, f"Holmes not reachable: {e}")
+
+
+    app.include_router(
+        create_chat_completion_router(
+            list_models=list_models,
+            run_completion=run_completion,
+            owned_by="holmesgpt",
+            tags=["chat"],
+        ),
+        dependencies=[Depends(require_api_key)],
+    )
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: holmes-openai-adapter
+  labels:
+    app: holmes-openai-adapter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: holmes-openai-adapter
+  template:
+    metadata:
+      labels:
+        app: holmes-openai-adapter
+    spec:
+      nodeName: k3d-lab-agent-2
+      containers:
+        - name: app
+          image: python:3.12-slim
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: HOLMES_URL
+              value: "http://holmesgpt-holmes"
+            - name: ADAPTER_API_KEY
+              value: "holmes"
+            - name: UPSTREAM_TIMEOUT_SECONDS
+              value: "600"
+            - name: SHOW_TOOL_EVENTS
+              value: "true"
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: ADAPTER_MODEL_NAME
+              value: "NCAI-SRE"
+            - name: FALLBACK_SYSTEM_MESSAGE
+              value: "You are NCAI Agent, an SRE assistant."
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - |
+              set -e
+              pip install --root-user-action=ignore \
+              fastapi-openai-compat==1.1.0 \
+              uvicorn[standard]==0.32.1 \
+              httpx==0.28.1 \
+              pydantic==2.10.4
+              cd /code
+              exec uvicorn app:app \
+                --host 0.0.0.0 --port 8000 \
+                --proxy-headers --forwarded-allow-ips '*' \
+                --timeout-keep-alive 75
+          ports:
+            - name: http
+              containerPort: 8000
+          volumeMounts:
+            - name: code
+              mountPath: /code
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: code
+          configMap:
+            name: holmes-openai-adapter
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: holmes-openai-adapter
+spec:
+  selector:
+    app: holmes-openai-adapter
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
