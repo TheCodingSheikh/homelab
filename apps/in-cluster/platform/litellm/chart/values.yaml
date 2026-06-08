@@ -71,13 +71,13 @@ proxy_config:
         api_base: "http://qwen3-0-6b-ollama.ai:11434"
     - model_name: "claude-opus-4-8"             
       litellm_params:
-        model: "openai/claude-opus-4-8"
-        api_base: "http://cliproxy.ai:8317/v1"
+        model: "anthropic/claude-opus-4-8"
+        api_base: "http://cliproxy.ai:8317"
         api_key: "secret"
     - model_name: "claude-sonnet-4-6"             
       litellm_params:
-        model: "openai/claude-sonnet-4-6"
-        api_base: "http://cliproxy.ai:8317/v1"
+        model: "anthropic/claude-sonnet-4-6"
+        api_base: "http://cliproxy.ai:8317"
         api_key: "secret"
   sso_settings:
     role_mappings:
