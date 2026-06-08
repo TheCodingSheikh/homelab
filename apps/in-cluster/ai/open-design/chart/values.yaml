@@ -52,7 +52,7 @@ controllers:
           ANTHROPIC_DEFAULT_SONNET_MODEL: claude-opus-4-8
           ANTHROPIC_DEFAULT_OPUS_MODEL: claude-opus-4-8
           ANTHROPIC_DEFAULT_HAIKU_MODEL: claude-opus-4-8
-          ANTHROPIC_AUTH_TOKEN: <YOUR_ANTHROPIC_AUTH_TOKEN>   # swap in your real token
+          ANTHROPIC_AUTH_TOKEN: sk-8JjNrMbcp5
           ANTHROPIC_BASE_URL: http://litellm.litellm.svc.cluster.local:4000
         probes:
           liveness:
