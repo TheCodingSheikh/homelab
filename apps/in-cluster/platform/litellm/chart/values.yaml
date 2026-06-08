@@ -142,3 +142,15 @@ ingress:
    - secretName: litellm-tls
      hosts:
        - llm.lab.com
+
+db:
+  useExisting: true
+  database: litellm
+  secret:
+    name: litellm-secret
+    usernameKey: user
+    passwordKey: password
+    endpointKey: host
+
+masterkeySecretName: "litellm-masterkey"
+masterkeySecretKey: "masterkey"

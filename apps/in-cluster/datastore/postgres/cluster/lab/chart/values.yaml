@@ -32,6 +32,11 @@ users:
       - openwebui
     password:
       type: AlphaNumeric
+  - name: litellm
+    databases:
+      - litellm
+    password:
+      type: AlphaNumeric
   # - name: authentik
   #   databases:
   #     - authentik
