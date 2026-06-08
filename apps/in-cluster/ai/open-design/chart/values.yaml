@@ -12,10 +12,12 @@ controllers:
         image:
           repository: node
           tag: 24-alpine
+        securityContext:
+          runAsUser: 0
+          runAsGroup: 0
         command: ["/bin/sh", "-c"]
         args:
-          - "npm install -g @anthropic-ai/claude-code && cp $(which claude) /shared/bin/claude"
-
+          - "npm install -g @anthropic-ai/claude-code && cp $(which claude) /shared/bin/claude && chmod 755 /shared/bin/claude"
       proxy-init:
         image:
           repository: nginxinc/nginx-unprivileged
@@ -73,13 +75,6 @@ controllers:
               periodSeconds: 10
               timeoutSeconds: 5
               failureThreshold: 3
-        resources:
-          limits:
-            cpu: 1000m
-            memory: 1024Mi
-          requests:
-            cpu: 200m
-            memory: 256Mi
 
       auth-proxy:
         image:
