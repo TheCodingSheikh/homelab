@@ -4,7 +4,7 @@ kind: Kustomization
 helmCharts:
 - name: litellm-helm
   repo: oci://docker.litellm.ai/berriai
-  version: 0.1.832
+  version: 1.88.0
   valuesFile: values.yaml
   releaseName: litellm
   namespace: litellm
