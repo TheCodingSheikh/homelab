@@ -1,3 +1,9 @@
+defaultPodOptions:
+  securityContext:
+    runAsUser: 0
+    runAsGroup: 0
+    fsGroup: 0
+
 controllers:
   open-design:
     initContainers:
@@ -40,10 +46,11 @@ controllers:
           OD_ALLOWED_ORIGINS: "http://localhost:8080,https://design.lab.com"
           OD_API_TOKEN: "your-token-here"
           PATH: "/shared/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-          ANTHROPIC_BASE_URL: "http://litellm.litellm.svc.cluster.local:4000"
-          ANTHROPIC_AUTH_TOKEN: "sk-FfcXHcHHKXwCqgEjOq"
-          CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY: "1"
-          CLAUDE_CODE_DANGEROUSLY_SKIP_PERMISSIONS: "1"
+          ANTHROPIC_DEFAULT_SONNET_MODEL: claude-opus-4-8
+          ANTHROPIC_DEFAULT_OPUS_MODEL: claude-opus-4-8
+          ANTHROPIC_DEFAULT_HAIKU_MODEL: claude-opus-4-8
+          ANTHROPIC_AUTH_TOKEN: <YOUR_ANTHROPIC_AUTH_TOKEN>   # swap in your real token
+          ANTHROPIC_BASE_URL: http://litellm.litellm.svc.cluster.local:4000
         probes:
           liveness:
             enabled: true
