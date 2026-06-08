@@ -145,6 +145,7 @@ ingress:
 
 db:
   useExisting: true
+  deployStandalone: false
   database: litellm
   secret:
     name: litellm-secret
