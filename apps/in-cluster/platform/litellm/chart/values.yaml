@@ -132,6 +132,7 @@ ingress:
     nginx.ingress.kubernetes.io/proxy-send-timeout: "900"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "900"
     nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "16k"
   hosts:
     - host: llm.lab.com
       paths:
