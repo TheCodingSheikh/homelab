@@ -4,7 +4,7 @@ command:
   - /bin/bash
   - -c
   - |
-    PKG=$(python -c 'import os, litellm; print(os.path.dirname(litellm.__file__))')
+    PKG=$(cd /tmp && python -c 'import os, litellm; print(os.path.dirname(litellm.__file__))')
     sed -i '/def is_premium(self) -> bool:/a\        return True' "$PKG/proxy/auth/litellm_license.py"
     sed -i 's/premium_user: bool = _license_check.is_premium()/premium_user: bool = True/g; s/premium_user = _license_check.is_premium()/premium_user = True/g' "$PKG/proxy/proxy_server.py"
     find "$PKG" -name "*.pyc" -delete 2>/dev/null; find "$PKG" -name __pycache__ -exec rm -rf {} + 2>/dev/null
@@ -31,7 +31,7 @@ envVars:
   DISABLE_SCHEMA_UPDATE: "true"
   LITELLM_SALT_KEY: "sk-1234"
   USE_PRISMA_MIGRATE: "True"
-
+  SSL_CERT_FILE: /etc/ssl/certs/ca.crt
 image:
   pullPolicy: IfNotPresent
 
