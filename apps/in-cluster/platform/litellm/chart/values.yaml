@@ -32,6 +32,8 @@ envVars:
   LITELLM_SALT_KEY: "sk-1234"
   USE_PRISMA_MIGRATE: "True"
   SSL_CERT_FILE: /etc/ssl/certs/ca.crt
+  AUTO_REDIRECT_UI_LOGIN_TO_SSO: "true"
+
 image:
   pullPolicy: IfNotPresent
 
