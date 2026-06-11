@@ -19,8 +19,7 @@ resources:
 #           configMap:
 #             name: litellm-config
 
-# configMapGenerator:
-# - name: litellm-config
-#   behavior: merge
-#   files:
-#     - custom_sso.py
+configMapGenerator:
+- name: litellm-concurrency-limiter
+  files:
+    - model_concurrency_limiter.py

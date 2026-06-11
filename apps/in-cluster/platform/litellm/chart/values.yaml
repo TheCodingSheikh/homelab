@@ -40,26 +40,31 @@ image:
 podAnnotations:
   inject-certs: "enabled"
 
-# volumeMounts:
-#   - name: patch-scripts
-#     mountPath: /patches
+volumeMounts:
+  # - name: patch-scripts
+  #   mountPath: /patches
+    - mountPath: /etc/litellm/model_concurrency_limiter.py
+      name: litellm-concurrency-limiter
+      subPath: model_concurrency_limiter.py
 
-# volumes:
-#   - name: patch-scripts
-#     configMap:
-#       name: litellm-org-rate-limit-patch
-#       defaultMode: 0755
-
+volumes:
+  # - name: patch-scripts
+  #   configMap:
+  #     name: litellm-org-rate-limit-patch
+  #     defaultMode: 0755
+  - configMap:
+      name: litellm-concurrency-limiter
+    name: litellm-concurrency-limiter
 redis:
   enabled: false
 
-# resources:
-#   limits:
-#     cpu: "4"
-#     memory: "8Gi"
-#   requests:
-#     cpu: "4"
-#     memory: "8Gi"
+resources:
+  limits:
+    cpu: "4"
+    memory: "8Gi"
+  requests:
+    cpu: "4"
+    memory: "8Gi"
 
 separateHealthApp: true
 
@@ -77,6 +82,7 @@ proxy_config:
         model: "anthropic/claude-opus-4-8"
         api_base: "http://cliproxy.ai:8317"
         api_key: "secret"
+        # max_parallel_requests: 1
     - model_name: "claude-sonnet-4-6"             
       litellm_params:
         model: "anthropic/claude-sonnet-4-6"
@@ -107,6 +113,7 @@ proxy_config:
   
   litellm_settings:
     request_timeout: 600
+    callbacks: model_concurrency_limiter.limiter_instance
     drop_params: true
     # cache: True
     # cache_params:
