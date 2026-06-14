@@ -1,3 +1,2 @@
 createNamespace: false
 destNamespace: ai
-autoSync: false
