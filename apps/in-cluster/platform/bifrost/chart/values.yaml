@@ -1,13 +1,6 @@
-# Bifrost — production values for the homelab.
-# Chart docs / full schema: https://docs.getbifrost.ai/deployment-guides/helm
-# Upstream default values (for reference/diffing):
-#   https://github.com/maximhq/bifrost/blob/main/helm-charts/bifrost/values.yaml
-# Only non-default overrides are listed below.
-
-replicaCount: 2
+replicaCount: 1
 
 image:
-  # Check for newer releases: https://hub.docker.com/r/maximhq/bifrost/tags
   tag: v1.6.2
 
 ingress:
@@ -17,7 +10,6 @@ ingress:
     cert-manager.io/cluster-issuer: lab-issuer
     gethomepage.dev/enabled: "true"
     gethomepage.dev/name: "Bifrost"
-    # Streaming (SSE) responses need buffering disabled, same as litellm.
     nginx.ingress.kubernetes.io/proxy-buffering: "off"
     nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
     nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
@@ -35,21 +27,13 @@ ingress:
       hosts:
         - bifrost.lab.com
 
-# Surge-only rollout: never drop below full capacity during a deploy.
 strategy:
   type: RollingUpdate
-  rollingUpdate:
-    maxSurge: 100%
-    maxUnavailable: 0%
 
 bifrost:
-  # Chart injects BIFROST_ENCRYPTION_KEY from this secret (auto-generated and
-  # stored in Vault via chart/pushsecret.yaml + chart/externalsecret.yaml).
   encryptionKeySecret:
     name: bifrost-encryption-key
 
-  # Dashboard / API admin auth. Credentials are auto-generated and stored in
-  # Vault the same way as the encryption key (see pushsecret.yaml).
   authConfig:
     isEnabled: true
     existingSecret: bifrost-admin-credentials
@@ -59,8 +43,6 @@ bifrost:
       - "https://bifrost.lab.com"
     logRetentionDays: 90
 
-  # Same backends already configured in apps/in-cluster/platform/litellm:
-  # cliproxy (Claude, Anthropic-compatible) and the local Ollama qwen3 model.
   providers:
     anthropic:
       keys:
