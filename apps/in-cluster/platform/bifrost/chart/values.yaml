@@ -1,0 +1,107 @@
+# Bifrost — production values for the homelab.
+# Chart docs / full schema: https://docs.getbifrost.ai/deployment-guides/helm
+# Upstream default values (for reference/diffing):
+#   https://github.com/maximhq/bifrost/blob/main/helm-charts/bifrost/values.yaml
+# Only non-default overrides are listed below.
+
+replicaCount: 2
+
+image:
+  # Check for newer releases: https://hub.docker.com/r/maximhq/bifrost/tags
+  tag: v1.6.2
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: lab-issuer
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Bifrost"
+    # Streaming (SSE) responses need buffering disabled, same as litellm.
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "75"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "900"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "900"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+  hosts:
+    - host: bifrost.lab.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: bifrost-tls
+      hosts:
+        - bifrost.lab.com
+
+# Surge-only rollout: never drop below full capacity during a deploy.
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 100%
+    maxUnavailable: 0%
+
+bifrost:
+  # Chart injects BIFROST_ENCRYPTION_KEY from this secret (auto-generated and
+  # stored in Vault via chart/pushsecret.yaml + chart/externalsecret.yaml).
+  encryptionKeySecret:
+    name: bifrost-encryption-key
+
+  # Dashboard / API admin auth. Credentials are auto-generated and stored in
+  # Vault the same way as the encryption key (see pushsecret.yaml).
+  authConfig:
+    isEnabled: true
+    existingSecret: bifrost-admin-credentials
+
+  client:
+    allowedOrigins:
+      - "https://bifrost.lab.com"
+    logRetentionDays: 90
+
+  # Same backends already configured in apps/in-cluster/platform/litellm:
+  # cliproxy (Claude, Anthropic-compatible) and the local Ollama qwen3 model.
+  providers:
+    anthropic:
+      keys:
+        - name: cliproxy
+          value: "secret"
+          weight: 1
+      network_config:
+        base_url: "http://cliproxy.ai:8317"
+    ollama:
+      keys:
+        - name: qwen3
+          value: ""
+          models: ["qwen3:0.6b"]
+          weight: 1
+          ollama_key_config:
+            url: "http://qwen3-0-6b-ollama.ai:11434"
+
+  # OSS-tier plugins: request metrics, request/response logging, and basic
+  # governance (virtual keys / budgets / rate limits). None require an
+  # enterprise license.
+  plugins:
+    telemetry:
+      enabled: true
+    logging:
+      enabled: true
+    governance:
+      enabled: true
+
+# Backed by the existing CrunchyData Postgres cluster (`lab`) in this repo
+# instead of an in-cluster/SQLite database — scales horizontally without PVC
+# multi-attach issues.
+storage:
+  mode: postgres
+  persistence:
+    enabled: false
+
+postgresql:
+  external:
+    enabled: true
+    host: lab-primary.postgres-cluster.svc.cluster.local
+    # Populated by chart/externalsecret.yaml from datastore/postgres/lab/bifrost.
+    # sslMode left at chart default (disable) — the Postgres cluster's pg_hba
+    # doesn't enforce TLS.
+    existingSecret: bifrost-postgres

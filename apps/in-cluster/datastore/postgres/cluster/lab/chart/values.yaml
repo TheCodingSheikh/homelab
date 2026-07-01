@@ -37,6 +37,11 @@ users:
       - litellm
     password:
       type: AlphaNumeric
+  - name: bifrost
+    databases:
+      - bifrost
+    password:
+      type: AlphaNumeric
   # - name: authentik
   #   databases:
   #     - authentik
