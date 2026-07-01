@@ -4,5 +4,5 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - lab
-  - backstage
+  # - backstage
   - crunchy-userinit-controller
