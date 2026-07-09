@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - externalsecret.yaml
+  - pushsecret.yaml
+
+helmCharts:
+  - name: terralist
+    repo: oci://ghcr.io/terralist/helm-charts
+    version: 0.8.1
+    releaseName: terralist
+    namespace: terralist
+    valuesFile: values.yaml

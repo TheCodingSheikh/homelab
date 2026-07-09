@@ -225,6 +225,20 @@ components:
                   rootUrl: https://openwebui.lab.com
                   validRedirectUris:
                     - "*"
+              terralist:
+                forProvider:
+                  name: terralist
+                  clientId: terralist
+                  clientSecretSecretRef:
+                    key: secret-key
+                    name: terralist-client
+                    namespace: keycloak
+                  accessType: CONFIDENTIAL
+                  standardFlowEnabled: true
+                  directAccessGrantsEnabled: true
+                  rootUrl: https://terralist.lab.com
+                  validRedirectUris:
+                    - https://terralist.lab.com/v1/api/auth/redirect
           ClientScope:
             apiVersion: openidclient.keycloak.crossplane.io/v1alpha1
             refKey: "clientScopeIdRef"
