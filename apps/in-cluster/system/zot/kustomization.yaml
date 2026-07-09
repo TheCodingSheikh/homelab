@@ -3,4 +3,3 @@ kind: Kustomization
 
 resources:
   - chart
-  - helm-charts-oci-proxy
