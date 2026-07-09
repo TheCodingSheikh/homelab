@@ -1,0 +1,52 @@
+
+crd:
+  create: true
+
+rbac:
+  create: true
+  createServiceAccount: true
+  crdAccessMode: cluster
+
+controller:
+  replicas: 1
+
+dashboard:
+  replicas: 1
+
+  containerBuilderKind: kaniko
+  monitorDockerDeamon:
+    enabled: false
+
+  kaniko:
+    insecurePushRegistry: true
+    insecurePullRegistry: true
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: lab-issuer
+      gethomepage.dev/enabled: "true"
+      gethomepage.dev/name: "Nuclio"
+      gethomepage.dev/description: "Serverless Functions Platform"
+      gethomepage.dev/group: "Platform"
+    path: /
+    hosts:
+      - fn.lab.com
+    tls:
+      - secretName: nuclio-tls
+        hosts:
+          - fn.lab.com
+
+autoscaler:
+  enabled: true
+  replicas: 1
+dlx:
+  enabled: true
+  replicas: 1
+registry:
+  pushPullUrl: zot.zot.svc.cluster.local:5000
+platform:
+  kube:
+    defaultServiceType: ClusterIP
+    defaultHTTPIngressClassName: nginx
