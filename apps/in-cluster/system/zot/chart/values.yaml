@@ -46,43 +46,5 @@ configFiles:
         "mgmt": {
           "enable": true
         },
-        "sync": {
-          "enable": true,
-          "registries": [
-            {
-              "urls": ["https://k8s.gcr.io"],
-              "content": [
-                {
-                  "prefix": "**", 
-                  "destination": "/k8s.gcr.io"
-                }
-              ],
-              "onDemand": true,
-              "tlsVerify": true
-            },
-            {
-              "urls": ["https://docker.io/library"],
-              "content": [
-                {
-                  "prefix": "**", 
-                  "destination": "/docker.io/library"
-                }
-              ],
-              "onDemand": true,
-              "tlsVerify": true
-            },
-            {
-              "urls": ["http://helm-charts-oci-proxy:9000/"],
-              "content": [
-                {
-                  "prefix": "**", 
-                  "destination": "/helm"
-                }
-              ],
-              "onDemand": true,
-              "tlsVerify": false
-            }
-          ]
-        }
       }
     }

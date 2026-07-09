@@ -4,8 +4,9 @@ kind: Kustomization
 helmCharts:
 - name: zot
   repo: http://zotregistry.dev/helm-charts
-  version: 0.1.79
+  version: 0.1.121
   includeCRDs: true
   namespace: zot
   releaseName: zot
   valuesFile: values.yaml
+  skipTests: true
