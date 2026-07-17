@@ -1,0 +1,45 @@
+resources:
+  client-pushsecrets:
+    enabled: true
+    rangeKey: components.Realm.list.lab.dependants.Client.list
+    template: |-
+      apiVersion: external-secrets.io/v1alpha1
+      kind: PushSecret
+      metadata:
+        name: {{ .key }}-client-pushsecret
+      spec:
+        deletionPolicy: None
+        updatePolicy: IfNotExists
+        secretStoreRefs:
+          - kind: ClusterSecretStore
+            name: vault-backend
+        selector:
+          generatorRef:
+            apiVersion: generators.external-secrets.io/v1alpha1
+            kind: ClusterGenerator
+            name: strong-password-generator
+        data:
+          - match:
+              secretKey: password
+              remoteRef:
+                property: secret-key
+                remoteKey: platform/keycloak/clients/{{ .key }}
+  client-externalsecrets:
+    enabled: true
+    rangeKey: components.Realm.list.lab.dependants.Client.list
+    template: |-
+      apiVersion: external-secrets.io/v1beta1
+      kind: ExternalSecret
+      metadata:
+        name: {{ .key }}-client-externalsecret
+      spec:
+        secretStoreRef:
+          kind: ClusterSecretStore
+          name: vault-backend
+        target:
+          name: {{ .key }}-client
+        data:
+          - secretKey: secret-key
+            remoteRef:
+              key: platform/keycloak/clients/{{ .key }}
+              property: secret-key

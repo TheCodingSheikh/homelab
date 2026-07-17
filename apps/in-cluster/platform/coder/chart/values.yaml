@@ -1,0 +1,60 @@
+coder:
+  podAnnotations:
+    inject-certs: "enabled"
+
+  env:
+    - name: CODER_ACCESS_URL
+      value: https://coder.lab.com
+    - name: CODER_WILDCARD_ACCESS_URL
+      value: "*.coder.lab.com"
+    - name: CODER_PG_CONNECTION_URL
+      valueFrom:
+        secretKeyRef:
+          name: coder-secret
+          key: pg-connection-url
+    - name: CODER_OIDC_ISSUER_URL
+      value: https://sso.lab.com/realms/lab
+    - name: CODER_OIDC_CLIENT_ID
+      value: coder
+    - name: CODER_OIDC_CLIENT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: coder-secret
+          key: oidc-client-secret
+    - name: CODER_OIDC_SIGN_IN_TEXT
+      value: Sign in with Keycloak
+    - name: CODER_OIDC_GROUP_FIELD
+      value: groups
+    - name: CODER_DISABLE_PASSWORD_AUTH
+      value: "false"
+    - name: CODER_SECURE_AUTH_COOKIE
+      value: "true"
+    - name: CODER_TELEMETRY_ENABLE
+      value: "false"
+    - name: CODER_PROMETHEUS_ENABLE
+      value: "true"
+    - name: CODER_PROMETHEUS_ADDRESS
+      value: 0.0.0.0:2112
+
+  replicaCount: 1
+
+  service:
+    type: ClusterIP
+
+  ingress:
+    enable: true
+    className: nginx
+    host: coder.lab.com
+    wildcardHost: "*.coder.lab.com"
+    annotations:
+      cert-manager.io/cluster-issuer: lab-issuer
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+      gethomepage.dev/enabled: "true"
+      gethomepage.dev/name: "Coder"
+      gethomepage.dev/description: "Cloud Development Environments"
+      gethomepage.dev/group: "Platform"
+    tls:
+      enable: true
+      secretName: coder-tls
+      wildcardSecretName: coder-wildcard-tls

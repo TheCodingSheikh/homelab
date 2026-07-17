@@ -42,6 +42,11 @@ users:
       - bifrost
     password:
       type: AlphaNumeric
+  - name: coder
+    databases:
+      - coder
+    password:
+      type: AlphaNumeric
   # - name: authentik
   #   databases:
   #     - authentik

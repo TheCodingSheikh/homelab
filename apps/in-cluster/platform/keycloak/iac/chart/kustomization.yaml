@@ -9,3 +9,11 @@ helmCharts:
   namespace: vault
   releaseName: vault-iac
   valuesFile: values.yaml
+- name: raw
+  repo: https://thecodingsheikh.github.io/helm-charts
+  version: 1.0.1
+  releaseName: keycloak-iac-raw
+  namespace: keycloak
+  valuesFile: values.yaml
+  additionalValuesFiles:
+  - raw.yaml

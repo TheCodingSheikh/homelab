@@ -239,6 +239,34 @@ components:
                   rootUrl: https://terralist.lab.com
                   validRedirectUris:
                     - https://terralist.lab.com/v1/api/auth/redirect
+              coder:
+                forProvider:
+                  name: Coder
+                  clientId: coder
+                  clientSecretSecretRef:
+                    key: secret-key
+                    name: coder-client
+                    namespace: keycloak
+                  accessType: CONFIDENTIAL
+                  standardFlowEnabled: true
+                  directAccessGrantsEnabled: true
+                  rootUrl: https://coder.lab.com
+                  validRedirectUris:
+                    - https://coder.lab.com/api/v2/users/oidc/callback
+                dependants:
+                  ClientDefaultScopes:
+                    list:
+                      coder:
+                        forProvider:
+                          defaultScopes:
+                            - groups
+                            # Mandatory
+                            - acr
+                            - basic
+                            - email
+                            - profile
+                            - roles
+                            - web-origins
           ClientScope:
             apiVersion: openidclient.keycloak.crossplane.io/v1alpha1
             refKey: "clientScopeIdRef"
