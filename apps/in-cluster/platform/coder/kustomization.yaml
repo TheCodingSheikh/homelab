@@ -5,3 +5,5 @@ namespace: coder
 
 resources:
   - chart
+  - templates
+  - templates-push

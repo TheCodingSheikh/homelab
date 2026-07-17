@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - externalsecret.yaml
+  - pushsecret.yaml
   - servicemonitor.yaml
 
 helmCharts:
