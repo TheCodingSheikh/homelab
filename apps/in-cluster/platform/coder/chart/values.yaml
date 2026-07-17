@@ -35,6 +35,8 @@ coder:
       value: "true"
     - name: CODER_PROMETHEUS_ADDRESS
       value: 0.0.0.0:2112
+    - name: TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE
+      value: "true"
 
   replicaCount: 1
 
