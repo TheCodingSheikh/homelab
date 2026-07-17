@@ -24,7 +24,7 @@ data "coder_parameter" "home_disk" {
 
 variable "use_kubeconfig" {
   type        = bool
-  default     = true
+  default     = false
   description = <<-EOF
   Use host kubeconfig? (true/false)
   Set this to false if the Coder host is itself running as a Pod on the same
@@ -39,6 +39,7 @@ provider "coder" {}
 variable "namespace" {
   type        = string
   description = "The namespace to create workspaces in (must exist prior to creating workspaces)"
+  default     = "coder"
 }
 
 variable "create_tun" {
@@ -56,21 +57,25 @@ variable "create_fuse" {
 variable "max_cpus" {
   type        = string
   description = "Max number of CPUs the workspace may use (e.g. 2)."
+  default     = "4"
 }
 
 variable "min_cpus" {
   type        = string
   description = "Minimum number of CPUs the workspace may use (e.g. .1)."
+  default     = "1"
 }
 
 variable "max_memory" {
   type        = string
   description = "Maximum amount of memory to allocate the workspace (in GB)."
+  default     = "8"
 }
 
 variable "min_memory" {
   type        = string
   description = "Minimum amount of memory to allocate the workspace (in GB)."
+  default     = "2"
 }
 
 provider "kubernetes" {

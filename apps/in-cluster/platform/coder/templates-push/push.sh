@@ -20,17 +20,23 @@ fi
 
 WORK=/tmp/templates
 mkdir -p "$WORK"
-for f in /templates-src/*.tf; do
+for f in /templates-src/*; do
   [ -e "$f" ] || continue
-  tpl="$(basename "$f" .tf)"
+  key="$(basename "$f")"
+  case "$key" in
+    *.vars.yaml) tpl="${key%.vars.yaml}" out="vars.yaml" ;;
+    *.lock.hcl) tpl="${key%.lock.hcl}" out=".terraform.lock.hcl" ;;
+    *.tf) tpl="${key%.tf}" out="main.tf" ;;
+    *) continue ;;
+  esac
   mkdir -p "$WORK/$tpl"
-  cp "$f" "$WORK/$tpl/main.tf"
+  cp "$f" "$WORK/$tpl/$out"
 done
 
 for dir in "$WORK"/*/; do
   [ -d "$dir" ] || continue
   name="$(basename "$dir")"
-  version="v$(cat "$dir"/* | sha256sum | cut -c1-8)"
+  version="v$(cat /templates-src/"$name".* | sha256sum | cut -c1-8)"
 
   versions="$(coder templates versions list "$name" 2>/dev/null || true)"
 
@@ -41,6 +47,8 @@ for dir in "$WORK"/*/; do
     coder templates versions promote --template "$name" --template-version "$version"
   else
     echo "$name: pushing $version"
-    coder templates push "$name" --directory "$dir" --name "$version" --yes
+    vars_flag=""
+    [ -f "$dir/vars.yaml" ] && vars_flag="--variables-file $dir/vars.yaml"
+    coder templates push "$name" --directory "$dir" --name "$version" $vars_flag --yes
   fi
 done
