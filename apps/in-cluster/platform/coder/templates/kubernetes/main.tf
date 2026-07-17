@@ -36,9 +36,13 @@ data "coder_parameter" "cpu" {
   name         = "cpu"
   display_name = "CPU"
   description  = "The number of CPU cores"
-  default      = "2"
+  default      = "none"
   icon         = "/icon/memory.svg"
   mutable      = true
+  option {
+    name  = "None"
+    value = "none"
+  }
   option {
     name  = "2 Cores"
     value = "2"
@@ -61,9 +65,13 @@ data "coder_parameter" "memory" {
   name         = "memory"
   display_name = "Memory"
   description  = "The amount of memory in GB"
-  default      = "2"
+  default      = "none"
   icon         = "/icon/memory.svg"
   mutable      = true
+  option {
+    name  = "None"
+    value = "none"
+  }
   option {
     name  = "2 GB"
     value = "2"
@@ -194,7 +202,7 @@ resource "coder_app" "code-server" {
 
 resource "kubernetes_persistent_volume_claim_v1" "home" {
   metadata {
-    name      = "coder-${data.coder_workspace.me.id}-home"
+    name      = "coder-${lower(data.coder_workspace_owner.me.name)}-${lower(data.coder_workspace.me.name)}-home"
     namespace = var.namespace
     labels = {
       "app.kubernetes.io/name"     = "coder-pvc"
@@ -229,7 +237,7 @@ resource "kubernetes_deployment_v1" "main" {
   ]
   wait_for_rollout = false
   metadata {
-    name      = "coder-${data.coder_workspace.me.id}"
+    name      = "coder-${lower(data.coder_workspace_owner.me.name)}-${lower(data.coder_workspace.me.name)}"
     namespace = var.namespace
     labels = {
       "app.kubernetes.io/name"     = "coder-workspace"
@@ -276,6 +284,9 @@ resource "kubernetes_deployment_v1" "main" {
           "com.coder.user.id"          = data.coder_workspace_owner.me.id
           "com.coder.user.username"    = data.coder_workspace_owner.me.name
         }
+        annotations = {
+          "inject-certs" = "enabled"
+        }
       }
       spec {
         security_context {
@@ -296,14 +307,17 @@ resource "kubernetes_deployment_v1" "main" {
             name  = "CODER_AGENT_TOKEN"
             value = coder_agent.main.token
           }
-          resources {
-            requests = {
-              "cpu"    = "250m"
-              "memory" = "512Mi"
-            }
-            limits = {
-              "cpu"    = "${data.coder_parameter.cpu.value}"
-              "memory" = "${data.coder_parameter.memory.value}Gi"
+          dynamic "resources" {
+            for_each = data.coder_parameter.cpu.value != "none" || data.coder_parameter.memory.value != "none" ? [1] : []
+            content {
+              requests = merge(
+                data.coder_parameter.cpu.value != "none" ? { "cpu" = "250m" } : {},
+                data.coder_parameter.memory.value != "none" ? { "memory" = "512Mi" } : {},
+              )
+              limits = merge(
+                data.coder_parameter.cpu.value != "none" ? { "cpu" = data.coder_parameter.cpu.value } : {},
+                data.coder_parameter.memory.value != "none" ? { "memory" = "${data.coder_parameter.memory.value}Gi" } : {},
+              )
             }
           }
           volume_mount {

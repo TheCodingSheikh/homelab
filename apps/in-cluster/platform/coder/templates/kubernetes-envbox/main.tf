@@ -56,26 +56,26 @@ variable "create_fuse" {
 
 variable "max_cpus" {
   type        = string
-  description = "Max number of CPUs the workspace may use (e.g. 2)."
-  default     = "4"
+  description = "Max number of CPUs the workspace may use (e.g. 2). Leave empty for no limit."
+  default     = ""
 }
 
 variable "min_cpus" {
   type        = string
-  description = "Minimum number of CPUs the workspace may use (e.g. .1)."
-  default     = "1"
+  description = "Minimum number of CPUs the workspace may use (e.g. .1). Leave empty for no request."
+  default     = ""
 }
 
 variable "max_memory" {
   type        = string
-  description = "Maximum amount of memory to allocate the workspace (in GB)."
-  default     = "8"
+  description = "Maximum amount of memory to allocate the workspace (in GB). Leave empty for no limit."
+  default     = ""
 }
 
 variable "min_memory" {
   type        = string
-  description = "Minimum amount of memory to allocate the workspace (in GB)."
-  default     = "2"
+  description = "Minimum amount of memory to allocate the workspace (in GB). Leave empty for no request."
+  default     = ""
 }
 
 provider "kubernetes" {
@@ -147,6 +147,9 @@ resource "kubernetes_pod_v1" "main" {
   metadata {
     name      = "coder-${lower(data.coder_workspace_owner.me.name)}-${lower(data.coder_workspace.me.name)}"
     namespace = var.namespace
+    annotations = {
+      "inject-certs" = "enabled"
+    }
   }
 
   spec {
@@ -163,15 +166,17 @@ resource "kubernetes_pod_v1" "main" {
         privileged = true
       }
 
-      resources {
-        requests = {
-          "cpu" : "${var.min_cpus}"
-          "memory" : "${var.min_memory}G"
-        }
-
-        limits = {
-          "cpu" : "${var.max_cpus}"
-          "memory" : "${var.max_memory}G"
+      dynamic "resources" {
+        for_each = var.min_cpus != "" || var.max_cpus != "" || var.min_memory != "" || var.max_memory != "" ? [1] : []
+        content {
+          requests = merge(
+            var.min_cpus != "" ? { "cpu" = var.min_cpus } : {},
+            var.min_memory != "" ? { "memory" = "${var.min_memory}G" } : {},
+          )
+          limits = merge(
+            var.max_cpus != "" ? { "cpu" = var.max_cpus } : {},
+            var.max_memory != "" ? { "memory" = "${var.max_memory}G" } : {},
+          )
         }
       }
 
