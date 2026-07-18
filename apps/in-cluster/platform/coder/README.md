@@ -33,20 +33,12 @@ already trusts the lab CA (kyverno `inject-certs`).
 The mirror is served by an **nginx sidecar** in the terralist pod from the
 `terralist-files` PVC, exposed at `terralist.lab.com/files`.
 
-### Populate / refresh the mirror
+### Populate the mirror — drop the files, that's it
 
-**Option A — in-cluster (uses the cluster's egress).** The `terralist-mirror-gen`
-Job runs `terraform providers mirror` into the PVC. Trigger it by **syncing the
-terralist app in Argo** (it's a Sync hook), or:
+Nothing in the cluster reaches the internet. You generate the mirror on a
+connected machine and drop it onto the fileserver PVC.
 
-```sh
-kubectl -n terralist create job --from=... # or just re-sync terralist in Argo
-```
-
-To change which providers/versions are mirrored, edit
-`terralist/mirror/job.yaml` (the `required_providers` block) and re-sync.
-
-**Option B — fully offline.** On a connected machine:
+On a connected machine:
 
 ```sh
 mkdir mirror && cd mirror
@@ -61,14 +53,16 @@ EOF
 terraform providers mirror -platform=linux_arm64 -platform=linux_amd64 ./out
 ```
 
-Then drop `./out/*` into the mirror on the fileserver PVC:
+Drop `./out/*` into the mirror on the fileserver PVC (this is the whole flow):
 
 ```sh
 POD=$(kubectl -n terralist get pod -l app.kubernetes.io/name=terralist -o jsonpath='{.items[0].metadata.name}')
-kubectl -n terralist cp ./out "$POD:/srv/mirror" -c fileserver
+kubectl -n terralist exec "$POD" -c fileserver -- mkdir -p /srv/mirror
+kubectl -n terralist cp ./out/. "$POD:/srv/mirror" -c fileserver
 ```
 
-Browse what's mirrored at `https://terralist.lab.com/files/`.
+That's it — coder picks providers up on the next build. Browse what's there at
+`https://terralist.lab.com/files/`.
 
 ---
 
