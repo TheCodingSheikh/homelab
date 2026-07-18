@@ -6,8 +6,10 @@ Workspaces have **no runtime internet dependency**:
   `codercom/code-server` image) — never downloaded from `code-server.dev`.
 - **Editor extensions** come from the in-cluster **code-marketplace**
   (`marketplace.lab.com`) — the workspace `EXTENSIONS_GALLERY` points there.
-- **Terraform providers** come from a **network mirror** served by terralist
-  (`terralist.lab.com/files/mirror/`). No GPG signing, no registry API.
+- **Terraform providers** come from a **network mirror** served by the
+  in-cluster S3 (`s3.lab.com/public/terraform/`). No GPG signing, no registry API.
+- **Terraform modules** come from the same S3 as plain **tarballs**
+  (`s3.lab.com/public/terraform/modules/`). No registry, no egress.
 
 The cluster is **arm64**.
 
@@ -20,7 +22,7 @@ Coder's server-side terraform is pointed at a network mirror via
 
 ```hcl
 provider_installation {
-  network_mirror { url = "https://terralist.lab.com/files/mirror/" }
+  network_mirror { url = "https://s3.lab.com/public/terraform/" }
 }
 ```
 
@@ -30,76 +32,75 @@ mirror protocol needs no GPG signatures; integrity is the plain hashes that
 `terraform providers mirror` generates. HTTPS is zero-setup: the coder pod
 already trusts the lab CA (kyverno `inject-certs`).
 
-The mirror is served by an **nginx sidecar** in the terralist pod from the
-`terralist-files` PVC, exposed at `terralist.lab.com/files`.
+The mirror is object storage — the SeaweedFS S3 (`storage/seaweedfs`), exposed
+at `s3.lab.com` and served from the anonymous-read `public` bucket.
 
-### Populate the mirror — drop the files, that's it
+### Populate the mirror — build once, upload once
 
 Nothing in the cluster reaches the internet. You generate the mirror on a
-connected machine and drop it onto the fileserver PVC.
-
-On a connected machine:
-
-```sh
-mkdir mirror && cd mirror
-cat > providers.tf <<'EOF'
-terraform {
-  required_providers {
-    coder      = { source = "coder/coder" }
-    kubernetes = { source = "hashicorp/kubernetes" }
-  }
-}
-EOF
-terraform providers mirror -platform=linux_arm64 -platform=linux_amd64 ./out
-```
-
-Drop `./out/*` into the mirror on the fileserver PVC (this is the whole flow):
+connected machine and push it to S3. `scripts/terraform/mirror.sh` does both:
+it reads `providers.txt` + `modules.txt`, runs `terraform providers mirror` and
+packages the modules into `out/`, then offers to `mc mirror` the tree to S3.
 
 ```sh
-POD=$(kubectl -n terralist get pod -l app.kubernetes.io/name=terralist -o jsonpath='{.items[0].metadata.name}')
-kubectl -n terralist exec "$POD" -c fileserver -- mkdir -p /srv/mirror
-kubectl -n terralist cp ./out/. "$POD:/srv/mirror" -c fileserver
+cd scripts/terraform
+# edit providers.txt / modules.txt to taste, then:
+./mirror.sh
+# when prompted:
+#   S3 endpoint : https://s3.lab.com
+#   Bucket name : public/terraform      <- note the prefix
+#   Access key / Secret key : the seaweedfs admin creds
 ```
 
-That's it — coder picks providers up on the next build. Browse what's there at
-`https://terralist.lab.com/files/`.
+The `public/terraform` prefix is what makes the objects line up with the
+`network_mirror` URL above (`.../public/terraform/registry.terraform.io/...`).
+That's it — coder picks providers up on the next build.
 
 ---
 
 ## Terraform modules (plain tarballs — no registry)
 
 Modules don't need a registry or signing either — terraform fetches a tarball by
-URL (go-getter). Serve them from the same fileserver.
+URL (go-getter). They're served from the same `public/terraform/modules/` on S3.
 
-1. Package the module:
+`scripts/terraform/mirror.sh` already packages every entry in `modules.txt`
+(both `registry.coder.com/...` sources, resolved via `terraform get`, and
+`github.com/...` sources) into `out/modules/<name>-<ver>.zip` and uploads them
+alongside the providers. To add one, append it to `modules.txt` and re-run.
 
-   ```sh
-   tar czf mymod.tar.gz -C ./mymod .
-   ```
+Reference it from a template by URL — no `version` (that's registry-only):
 
-2. Drop it onto the fileserver PVC (under `modules/`):
+```hcl
+module "mymod" {
+  source = "https://s3.lab.com/public/terraform/modules/mymod-1.2.3.zip"
+}
+```
 
-   ```sh
-   POD=$(kubectl -n terralist get pod -l app.kubernetes.io/name=terralist -o jsonpath='{.items[0].metadata.name}')
-   kubectl -n terralist exec "$POD" -c fileserver -- mkdir -p /srv/modules
-   kubectl -n terralist cp ./mymod.tar.gz "$POD:/srv/modules/mymod.tar.gz" -c fileserver
-   ```
-
-3. Reference it from a template:
-
-   ```hcl
-   module "mymod" {
-     source = "https://terralist.lab.com/files/modules/mymod.tar.gz"
-   }
-   ```
-
-   For a subdirectory inside the archive, append `//subdir` (e.g.
-   `.../bundle.tar.gz//mymod`). HTTPS is zero-setup — the coder pod trusts the
-   lab CA.
+The `kubernetes-envbox` template pulls `code-server` (v1.5.2) this way. For a
+subdirectory inside the archive, append `//subdir`. HTTPS is zero-setup — the
+coder pod trusts the lab CA.
 
 Alternatively, vendor a module straight into the template directory and use a
 relative `source = "./mymod"` (requires pushing the module files alongside the
 template).
+
+### Airgap note — modules that download at runtime
+
+Fetching a module from S3 only removes the *build-time* registry dependency. A
+module's script may still reach the internet when the workspace boots:
+
+- **`code-server`** runs in `offline = true` mode. The binary is seeded into the
+  workspace by an init-container (copied from the `codercom/code-server` image,
+  same trick as the `kubernetes` template) and handed to the inner envbox
+  container via `CODER_MOUNTS` — so the module launches it instead of curling
+  `code-server.dev`. Zero runtime egress.
+- **`jetbrains`** was removed. It calls `data.services.jetbrains.com` at *plan*
+  time (breaking the airgapped push) and pulls IDE backends from
+  `download.jetbrains.com` at runtime. Supporting it needs an internal JetBrains
+  mirror (`releases_base_link` / `download_base_link` overrides) — not set up.
+
+Both templates are otherwise self-contained: providers via the S3 mirror,
+extensions via `marketplace.lab.com`, images via the cluster registry.
 
 ---
 

@@ -6,6 +6,18 @@ filer:
   enabled: false
 s3:
   enabled: false
+  ingress:
+    enabled: true
+    className: nginx
+    host:
+      - s3.lab.com
+    annotations:
+      cert-manager.io/cluster-issuer: lab-issuer
+      nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    tls:
+      - secretName: seaweedfs-s3-tls
+        hosts:
+          - s3.lab.com
 sftp:
   enabled: false
 

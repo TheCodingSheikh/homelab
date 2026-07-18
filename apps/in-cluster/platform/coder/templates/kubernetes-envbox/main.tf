@@ -12,7 +12,7 @@ terraform {
 data "coder_parameter" "home_disk" {
   name        = "Disk Size"
   description = "How large should the disk storing the home directory be?"
-  icon        = "https://cdn-icons-png.flaticon.com/512/2344/2344147.png"
+  icon        = "/emojis/1f4be.png"
   type        = "number"
   default     = 10
   mutable     = true
@@ -86,9 +86,25 @@ provider "kubernetes" {
 data "coder_workspace" "me" {}
 data "coder_workspace_owner" "me" {}
 
+locals {
+  extensions_gallery = jsonencode({
+    serviceUrl          = "https://marketplace.lab.com/api"
+    itemUrl             = "https://marketplace.lab.com/item"
+    resourceUrlTemplate = "https://marketplace.lab.com/files/{publisher}/{name}/{version}/{path}"
+  })
+}
+
 resource "coder_agent" "main" {
-  os             = "linux"
-  arch           = "amd64"
+  os   = "linux"
+  arch = "amd64"
+
+  env = {
+    # in-cluster code-marketplace instead of Open VSX (airgapped)
+    EXTENSIONS_GALLERY = local.extensions_gallery
+    # kyverno-injected lab CA so code-server trusts internal HTTPS
+    NODE_EXTRA_CA_CERTS = "/etc/ssl/certs/ca.crt"
+  }
+
   startup_script = <<EOT
     #!/bin/bash
     # home folder can be empty, so copying default bash settings
@@ -103,26 +119,16 @@ resource "coder_agent" "main" {
   EOT
 }
 
-# See https://registry.coder.com/modules/coder/code-server
+# code-server module in offline mode: it never downloads (no code-server.dev
+# egress). The binary is seeded into the inner container at install_prefix by
+# the init-container below and mounted in via CODER_MOUNTS.
 module "code-server" {
-  count  = data.coder_workspace.me.start_count
-  source = "registry.coder.com/coder/code-server/coder"
-
-  # This ensures that the latest non-breaking version of the module gets downloaded, you can also pin the module version to prevent breaking changes in production.
-  version = "~> 1.0"
-
-  agent_id = coder_agent.main.id
-  order    = 1
-}
-
-# See https://registry.coder.com/modules/coder/jetbrains
-module "jetbrains" {
-  count      = data.coder_workspace.me.start_count
-  source     = "registry.coder.com/coder/jetbrains/coder"
-  version    = "~> 1.0"
-  agent_id   = coder_agent.main.id
-  agent_name = "main"
-  folder     = "/home/coder"
+  count          = data.coder_workspace.me.start_count
+  source         = "https://s3.lab.com/public/terraform/modules/code-server-1.5.2.zip"
+  agent_id       = coder_agent.main.id
+  order          = 1
+  offline        = true
+  install_prefix = "/coder-tools/code-server"
 }
 
 resource "kubernetes_persistent_volume_claim_v1" "home" {
@@ -154,6 +160,23 @@ resource "kubernetes_pod_v1" "main" {
 
   spec {
     restart_policy = "Never"
+
+    # Seeds code-server from its image into a shared volume; the code-server
+    # module (offline) then runs this copy instead of downloading. Mounted into
+    # the inner container via CODER_MOUNTS.
+    init_container {
+      name    = "init-code-server"
+      image   = "codercom/code-server:latest"
+      command = ["sh", "-c", "cp -a /usr/lib/code-server /coder-tools/code-server"]
+      security_context {
+        run_as_user     = "0"
+        run_as_non_root = false
+      }
+      volume_mount {
+        mount_path = "/coder-tools"
+        name       = "coder-tools"
+      }
+    }
 
     container {
       name = "dev"
@@ -214,7 +237,7 @@ resource "kubernetes_pod_v1" "main" {
 
       env {
         name  = "CODER_MOUNTS"
-        value = "/home/coder:/home/coder"
+        value = "/home/coder:/home/coder,/coder-tools:/coder-tools"
       }
 
       env {
@@ -295,6 +318,11 @@ resource "kubernetes_pod_v1" "main" {
         mount_path = "/lib/modules"
         name       = "lib-modules"
       }
+
+      volume_mount {
+        mount_path = "/coder-tools"
+        name       = "coder-tools"
+      }
     }
 
     volume {
@@ -307,6 +335,11 @@ resource "kubernetes_pod_v1" "main" {
 
     volume {
       name = "sysbox"
+      empty_dir {}
+    }
+
+    volume {
+      name = "coder-tools"
       empty_dir {}
     }
 

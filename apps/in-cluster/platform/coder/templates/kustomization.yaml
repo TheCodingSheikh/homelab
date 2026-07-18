@@ -5,7 +5,4 @@ configMapGenerator:
   - name: coder-templates
     files:
       - kubernetes.tf=kubernetes/main.tf
-      # kubernetes-envbox re-added once its modules are served from terralist
-      # (it still points at the external registry.coder.com, so it can't be
-      # pushed in an airgapped cluster yet).
-      # - kubernetes-envbox.tf=kubernetes-envbox/main.tf
+      - kubernetes-envbox.tf=kubernetes-envbox/main.tf

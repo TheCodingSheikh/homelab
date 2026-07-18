@@ -1,1 +1,2 @@
 registry.coder.com/coder/claude-code/coder 5.2.0
+registry.coder.com/coder/code-server/coder 1.5.2

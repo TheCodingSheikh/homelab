@@ -35,6 +35,10 @@ coder:
       value: "true"
     - name: CODER_PROMETHEUS_ADDRESS
       value: 0.0.0.0:2112
+    - name: CODER_DERP_SERVER_ENABLE
+      value: "true"
+    - name: CODER_DERP_SERVER_STUN_ADDRESSES
+      value: "disable"
     - name: TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE
       value: "true"
     - name: TF_CLI_CONFIG_FILE
