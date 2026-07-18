@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 OUT="$(pwd)/out"
-PLATFORMS="linux_amd64"
+PLATFORMS="linux_arm64"
 mkdir -p "$OUT"
 
 # ---------- providers ----------

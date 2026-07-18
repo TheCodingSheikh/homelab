@@ -96,7 +96,7 @@ locals {
 
 resource "coder_agent" "main" {
   os   = "linux"
-  arch = "amd64"
+  arch = "arm64"
 
   env = {
     # in-cluster code-marketplace instead of Open VSX (airgapped)

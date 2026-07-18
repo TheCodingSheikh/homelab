@@ -1,2 +1,3 @@
 coder/coder 2.18.0
 hashicorp/kubernetes 3.2.1
+hashicorp/http 3.0.0
