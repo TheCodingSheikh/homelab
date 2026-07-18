@@ -72,6 +72,43 @@ Browse what's mirrored at `https://terralist.lab.com/files/`.
 
 ---
 
+## Terraform modules (plain tarballs — no registry)
+
+Modules don't need a registry or signing either — terraform fetches a tarball by
+URL (go-getter). Serve them from the same fileserver.
+
+1. Package the module:
+
+   ```sh
+   tar czf mymod.tar.gz -C ./mymod .
+   ```
+
+2. Drop it onto the fileserver PVC (under `modules/`):
+
+   ```sh
+   POD=$(kubectl -n terralist get pod -l app.kubernetes.io/name=terralist -o jsonpath='{.items[0].metadata.name}')
+   kubectl -n terralist exec "$POD" -c fileserver -- mkdir -p /srv/modules
+   kubectl -n terralist cp ./mymod.tar.gz "$POD:/srv/modules/mymod.tar.gz" -c fileserver
+   ```
+
+3. Reference it from a template:
+
+   ```hcl
+   module "mymod" {
+     source = "https://terralist.lab.com/files/modules/mymod.tar.gz"
+   }
+   ```
+
+   For a subdirectory inside the archive, append `//subdir` (e.g.
+   `.../bundle.tar.gz//mymod`). HTTPS is zero-setup — the coder pod trusts the
+   lab CA.
+
+Alternatively, vendor a module straight into the template directory and use a
+relative `source = "./mymod"` (requires pushing the module files alongside the
+template).
+
+---
+
 ## code-marketplace (VS Code extension gallery)
 
 Runs in the `coder` namespace, served at `https://marketplace.lab.com`.
