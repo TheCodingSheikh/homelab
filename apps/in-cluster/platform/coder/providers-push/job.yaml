@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: coder-providers-push
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: push
+          image: alpine:3.20
+          command: ["/bin/sh", "-c"]
+          args:
+            - "apk add --no-cache curl jq gnupg python3 >/dev/null && sh /scripts/upload.sh"
+          env:
+            - name: TERRALIST_API
+              value: http://terralist.terralist.svc.cluster.local:5758
+            - name: MASTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: coder-terralist
+                  key: master-api-key
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          volumeMounts:
+            - name: script
+              mountPath: /scripts
+              readOnly: true
+      volumes:
+        - name: script
+          configMap:
+            name: coder-providers-push-script

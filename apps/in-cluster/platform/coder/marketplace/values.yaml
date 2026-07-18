@@ -1,7 +1,3 @@
-# Self-hosted VS Code extension gallery (coder/code-marketplace) — the airgapped
-# Open VSX replacement. code-server workspaces point EXTENSIONS_GALLERY here and
-# install extensions from inside the cluster. Extensions live on a PVC; populate
-# it with `code-marketplace add <vsix>` (or `kubectl exec`) as needed.
 defaultPodOptions:
   securityContext:
     runAsNonRoot: true

@@ -1,10 +1,10 @@
 terraform {
   required_providers {
     coder = {
-      source = "coder/coder"
+      source = "terralist.lab.com/coder/coder"
     }
     kubernetes = {
-      source = "hashicorp/kubernetes"
+      source = "terralist.lab.com/hashicorp/kubernetes"
     }
   }
 }
@@ -113,9 +113,6 @@ data "coder_workspace" "me" {}
 data "coder_workspace_owner" "me" {}
 
 locals {
-  # Self-hosted extension gallery (coder/code-marketplace). code-server reads
-  # this so users can browse/install extensions from inside the cluster — no
-  # extensions are pre-installed; the workspace just points at the gallery.
   extensions_gallery = jsonencode({
     serviceUrl          = "https://marketplace.lab.com/api"
     itemUrl             = "https://marketplace.lab.com/item"
@@ -125,13 +122,8 @@ locals {
 
 resource "coder_agent" "main" {
   os   = "linux"
-  arch = "amd64"
+  arch = "arm64"
 
-  # No internet at build or run time:
-  #   * code-server is seeded into /coder-tools by an init container (from the
-  #     codercom/code-server image) — never downloaded from code-server.dev.
-  #   * EXTENSIONS_GALLERY points the editor at the in-cluster marketplace.
-  #   * NODE_EXTRA_CA_CERTS trusts the kyverno-injected lab CA for HTTPS.
   env = {
     EXTENSIONS_GALLERY  = local.extensions_gallery
     NODE_EXTRA_CA_CERTS = "/etc/ssl/certs/ca.crt"
@@ -139,8 +131,6 @@ resource "coder_agent" "main" {
 
   startup_script = <<-EOT
     set -e
-
-    # Start code-server (seeded binary, no download).
     /coder-tools/code-server/bin/code-server --auth none \
       --port 13337 --bind-addr 127.0.0.1:13337 >/tmp/code-server.log 2>&1 &
   EOT
@@ -335,9 +325,6 @@ resource "kubernetes_deployment_v1" "main" {
           }
         }
 
-        # Seeds a self-contained code-server (bundled node) into the shared
-        # coder-tools volume so the workspace never downloads it from the
-        # internet. Replaces the old `curl code-server.dev/install.sh`.
         init_container {
           name    = "init-code-server"
           image   = "codercom/code-server:latest"
@@ -409,7 +396,6 @@ resource "kubernetes_deployment_v1" "main" {
           empty_dir {}
         }
 
-        # Holds the code-server install seeded by the init container (offline).
         volume {
           name = "coder-tools"
           empty_dir {}

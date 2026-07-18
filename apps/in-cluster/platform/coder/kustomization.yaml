@@ -6,5 +6,6 @@ namespace: coder
 resources:
   - chart
   - marketplace
+  - providers-push
   - templates
   - templates-push
