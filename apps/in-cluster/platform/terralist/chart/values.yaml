@@ -21,6 +21,12 @@ controllers:
           TERRALIST_PROVIDERS_STORAGE_RESOLVER: "local"
           TERRALIST_LOCAL_STORE: "/data"
 
+          # --- Airgapped consumption: Coder's server-side terraform pulls providers
+          # and modules from this registry with no credentials. Reads are public;
+          # writes (uploads) still require an API key (see RBAC below). ---
+          TERRALIST_MODULES_ANONYMOUS_READ: "true"
+          TERRALIST_PROVIDERS_ANONYMOUS_READ: "true"
+
           # --- OAuth via Keycloak (realm: lab); oi-host does OIDC discovery ---
           TERRALIST_OAUTH_PROVIDER: "oidc"
           TERRALIST_OI_CLIENT_ID: "terralist"
@@ -38,6 +44,14 @@ controllers:
                 name: terralist-secret
                 key: oidc-client-secret
           TERRALIST_TOKEN_SIGNING_SECRET:
+            valueFrom:
+              secretKeyRef:
+                name: terralist-secret
+                key: token-signing-secret
+          # The "local" storage resolver signs its own file-download JWTs with a
+          # SEPARATE secret (flag: local-token-signing-secret). Without it the
+          # resolver refuses to start: "a secret for signing tokens is required".
+          TERRALIST_LOCAL_TOKEN_SIGNING_SECRET:
             valueFrom:
               secretKeyRef:
                 name: terralist-secret
