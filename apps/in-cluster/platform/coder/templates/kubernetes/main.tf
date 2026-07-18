@@ -10,9 +10,6 @@ terraform {
 }
 
 provider "coder" {
-  # Agent traffic (binary download, agent connection) goes over the in-cluster
-  # service instead of the external HTTPS access URL, avoiding the internal CA
-  url = "http://coder.coder.svc.cluster.local"
 }
 
 variable "use_kubeconfig" {
@@ -298,6 +295,27 @@ resource "kubernetes_deployment_v1" "main" {
           run_as_non_root = true
         }
 
+        # Installs the kyverno-injected lab CA (/etc/ssl/certs/ca.crt) into the
+        # system trust store the proper way, then hands the generated store to
+        # the workspace container via the ssl-certs volume
+        init_container {
+          name  = "init-ca-certificates"
+          image = "codercom/enterprise-base:ubuntu"
+          command = ["sh", "-c", join(" && ", [
+            "cp /etc/ssl/certs/ca.crt /usr/local/share/ca-certificates/lab.crt",
+            "update-ca-certificates",
+            "cp -a /etc/ssl/certs/. /certs/",
+          ])]
+          security_context {
+            run_as_user     = "0"
+            run_as_non_root = false
+          }
+          volume_mount {
+            mount_path = "/certs"
+            name       = "ssl-certs"
+          }
+        }
+
         container {
           name              = "dev"
           image             = "codercom/enterprise-base:ubuntu"
@@ -328,6 +346,12 @@ resource "kubernetes_deployment_v1" "main" {
             name       = "home"
             read_only  = false
           }
+
+          volume_mount {
+            mount_path = "/etc/ssl/certs"
+            name       = "ssl-certs"
+            read_only  = true
+          }
         }
 
         volume {
@@ -336,6 +360,11 @@ resource "kubernetes_deployment_v1" "main" {
             claim_name = kubernetes_persistent_volume_claim_v1.home.metadata.0.name
             read_only  = false
           }
+        }
+
+        volume {
+          name = "ssl-certs"
+          empty_dir {}
         }
 
         affinity {

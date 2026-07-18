@@ -34,11 +34,7 @@ variable "use_kubeconfig" {
   EOF
 }
 
-provider "coder" {
-  # Agent traffic (binary download, agent connection) goes over the in-cluster
-  # service instead of the external HTTPS access URL, avoiding the internal CA
-  url = "http://coder.coder.svc.cluster.local"
-}
+provider "coder" {}
 
 variable "namespace" {
   type        = string
@@ -192,6 +188,13 @@ resource "kubernetes_pod_v1" "main" {
       env {
         name  = "CODER_AGENT_URL"
         value = data.coder_workspace.me.access_url
+      }
+
+      env {
+        # kyverno-injected lab CA; envbox installs it into the inner container
+        # trust store and uses it for control-plane/registry connections
+        name  = "CODER_EXTRA_CERTS_PATH"
+        value = "/etc/ssl/certs/ca.crt"
       }
 
       env {
