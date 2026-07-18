@@ -1,6 +1,8 @@
----
 controllers:
   main:
+    pod:
+      annotations:
+        inject-certs: "enabled"
     containers:
       app:
         image:
