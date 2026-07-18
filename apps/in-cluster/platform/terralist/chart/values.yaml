@@ -53,6 +53,20 @@ controllers:
               secretKeyRef:
                 name: terralist-secret
                 key: master-api-key
+      fileserver:
+        image:
+          repository: nginx
+          tag: 1.27-alpine
+
+service:
+  main:
+    ports:
+      http:
+        port: 5758
+        targetPort: http
+      files:
+        port: 8080
+        targetPort: 8080
 
 configMaps:
   rbac:
@@ -72,6 +86,19 @@ persistence:
     globalMounts:
       - path: /rbac
         readOnly: true
+  files:
+    existingClaim: terralist-files
+    advancedMounts:
+      main:
+        fileserver:
+          - path: /srv
+  fileserver-config:
+    type: configMap
+    name: terralist-fileserver-nginx
+    advancedMounts:
+      main:
+        fileserver:
+          - path: /etc/nginx/conf.d
 
 ingress:
   main:
