@@ -113,16 +113,14 @@ data "coder_workspace" "me" {}
 data "coder_workspace_owner" "me" {}
 
 locals {
-  # Self-hosted extension gallery (coder/code-marketplace). code-server's
-  # --install-extension reads this to pull .vsix from inside the cluster.
+  # Self-hosted extension gallery (coder/code-marketplace). code-server reads
+  # this so users can browse/install extensions from inside the cluster — no
+  # extensions are pre-installed; the workspace just points at the gallery.
   extensions_gallery = jsonencode({
     serviceUrl          = "https://marketplace.lab.com/api"
     itemUrl             = "https://marketplace.lab.com/item"
     resourceUrlTemplate = "https://marketplace.lab.com/files/{publisher}/{name}/{version}/{path}"
   })
-
-  # Extensions installed on first boot from the marketplace above.
-  workspace_extensions = ["redhat.vscode-yaml", "esbenp.prettier-vscode"]
 }
 
 resource "coder_agent" "main" {
@@ -132,7 +130,7 @@ resource "coder_agent" "main" {
   # No internet at build or run time:
   #   * code-server is seeded into /coder-tools by an init container (from the
   #     codercom/code-server image) — never downloaded from code-server.dev.
-  #   * Extensions come from the in-cluster marketplace via EXTENSIONS_GALLERY.
+  #   * EXTENSIONS_GALLERY points the editor at the in-cluster marketplace.
   #   * NODE_EXTRA_CA_CERTS trusts the kyverno-injected lab CA for HTTPS.
   env = {
     EXTENSIONS_GALLERY  = local.extensions_gallery
@@ -142,20 +140,9 @@ resource "coder_agent" "main" {
   startup_script = <<-EOT
     set -e
 
-    CODE_SERVER="/coder-tools/code-server/bin/code-server"
-    EXT_DIR="$HOME/.local/share/code-server/extensions"
-    mkdir -p "$EXT_DIR"
-
-    # Install extensions from the self-hosted marketplace (offline).
-    for ext in ${join(" ", local.workspace_extensions)}; do
-      echo "Installing extension $ext from the internal marketplace..."
-      "$CODE_SERVER" --extensions-dir "$EXT_DIR" --force --install-extension "$ext" \
-        || echo "WARNING: could not install $ext (continuing)"
-    done
-
     # Start code-server (seeded binary, no download).
-    "$CODE_SERVER" --auth none --port 13337 --bind-addr 127.0.0.1:13337 \
-      --extensions-dir "$EXT_DIR" >/tmp/code-server.log 2>&1 &
+    /coder-tools/code-server/bin/code-server --auth none \
+      --port 13337 --bind-addr 127.0.0.1:13337 >/tmp/code-server.log 2>&1 &
   EOT
 
   # The following metadata blocks are optional. They are used to display

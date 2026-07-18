@@ -37,33 +37,6 @@ coder:
       value: 0.0.0.0:2112
     - name: TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE
       value: "true"
-    # Airgapped provider resolution: point server-side terraform at the
-    # filesystem mirror (/providers, populated by the provider-mirror Job).
-    # No template changes needed — every registry.terraform.io provider is
-    # served locally. See provider-mirror/terraformrc.yaml.
-    - name: TF_CLI_CONFIG_FILE
-      value: /home/coder/.terraformrc
-
-  volumes:
-    - name: tf-providers
-      persistentVolumeClaim:
-        claimName: coder-tf-providers
-        readOnly: true
-    - name: terraformrc
-      configMap:
-        name: coder-terraformrc
-        items:
-          - key: terraformrc
-            path: .terraformrc
-
-  volumeMounts:
-    - name: tf-providers
-      mountPath: /providers
-      readOnly: true
-    - name: terraformrc
-      mountPath: /home/coder/.terraformrc
-      subPath: .terraformrc
-      readOnly: true
 
   replicaCount: 1
 

@@ -8,10 +8,3 @@ helmCharts:
     releaseName: code-marketplace
     namespace: coder
     valuesFile: values.yaml
-
-configMapGenerator:
-  - name: code-marketplace-seed-script
-    files:
-      - seed.sh
-    options:
-      disableNameSuffixHash: true
