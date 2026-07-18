@@ -1,0 +1,1 @@
+registry.coder.com/coder/claude-code/coder 5.2.0

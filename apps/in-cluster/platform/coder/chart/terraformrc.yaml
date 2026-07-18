@@ -6,6 +6,6 @@ data:
   terraformrc: |
     provider_installation {
       network_mirror {
-        url = "https://terralist.lab.com/files/mirror/"
+        url = "https://s3.lab.com/public/terraform/"
       }
     }

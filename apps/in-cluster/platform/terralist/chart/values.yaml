@@ -44,10 +44,6 @@ controllers:
               secretKeyRef:
                 name: terralist-secret
                 key: cookie-secret
-      fileserver:
-        image:
-          repository: nginx
-          tag: 1.27-alpine
 
 service:
   main:
@@ -65,19 +61,6 @@ configMaps:
     data:
       policy.csv: |
         g, abdo@lab.com, role:admin
-  fileserver:
-    enabled: true
-    data:
-      default.conf: |
-        server {
-          listen 8080;
-          server_name _;
-          root /srv;
-          autoindex on;
-          location / {
-            try_files $uri $uri/ =404;
-          }
-        }
 
 persistence:
   data:
@@ -90,21 +73,6 @@ persistence:
     globalMounts:
       - path: /rbac
         readOnly: true
-  files:
-    type: persistentVolumeClaim
-    accessMode: ReadWriteOnce
-    size: 5Gi
-    advancedMounts:
-      main:
-        fileserver:
-          - path: /srv
-  fileserver-config:
-    type: configMap
-    identifier: fileserver
-    advancedMounts:
-      main:
-        fileserver:
-          - path: /etc/nginx/conf.d
 
 ingress:
   main:
@@ -124,24 +92,6 @@ ingress:
             service:
               identifier: main
               port: http
-    tls:
-      - secretName: terralist-tls
-        hosts:
-          - terralist.lab.com
-  files:
-    enabled: true
-    className: nginx
-    annotations:
-      nginx.ingress.kubernetes.io/proxy-body-size: "0"
-      nginx.ingress.kubernetes.io/rewrite-target: /$2
-    hosts:
-      - host: terralist.lab.com
-        paths:
-          - path: /files(/|$)(.*)
-            pathType: ImplementationSpecific
-            service:
-              identifier: main
-              port: files
     tls:
       - secretName: terralist-tls
         hosts:
