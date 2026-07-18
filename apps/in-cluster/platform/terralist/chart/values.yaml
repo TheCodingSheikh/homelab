@@ -19,6 +19,7 @@ controllers:
 
           TERRALIST_MODULES_ANONYMOUS_READ: "true"
           TERRALIST_PROVIDERS_ANONYMOUS_READ: "true"
+          TERRALIST_FETCH_ALLOW_PRIVATE_ADDRESSES: "true"
 
           TERRALIST_OAUTH_PROVIDER: "oidc"
           TERRALIST_OI_CLIENT_ID: "terralist"
