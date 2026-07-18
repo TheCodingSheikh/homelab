@@ -6,38 +6,27 @@ controllers:
     containers:
       app:
         image:
-          # Chart appVersion ships v0.8.0, which has NO server-side access control.
-          # v0.10.x adds the RBAC enforcer (rbac-default-role + policy file) used below.
           tag: v0.10.6
         env:
-          # --- Server ---
           TERRALIST_URL: "https://terralist.lab.com"
           TERRALIST_LOG_LEVEL: "info"
 
-          # --- Persistence: SQLite DB + local artifact store, both on the /data PVC ---
           TERRALIST_DATABASE_BACKEND: "sqlite"
           TERRALIST_SQLITE_PATH: "/data/terralist.db"
           TERRALIST_MODULES_STORAGE_RESOLVER: "local"
           TERRALIST_PROVIDERS_STORAGE_RESOLVER: "local"
           TERRALIST_LOCAL_STORE: "/data"
 
-          # --- Airgapped consumption: Coder's server-side terraform pulls providers
-          # and modules from this registry with no credentials. Reads are public;
-          # writes (uploads) still require an API key (see RBAC below). ---
           TERRALIST_MODULES_ANONYMOUS_READ: "true"
           TERRALIST_PROVIDERS_ANONYMOUS_READ: "true"
 
-          # --- OAuth via Keycloak (realm: lab); oi-host does OIDC discovery ---
           TERRALIST_OAUTH_PROVIDER: "oidc"
           TERRALIST_OI_CLIENT_ID: "terralist"
           TERRALIST_OI_HOST: "https://sso.lab.com/realms/lab"
 
-          # --- RBAC: deny everyone by default, grant only mapped users (see configMap) ---
-          # Unmapped authenticated users fall back to role:anonymous (no grants) -> denied.
           TERRALIST_RBAC_DEFAULT_ROLE: "anonymous"
           TERRALIST_RBAC_POLICY_PATH: "/rbac/policy.csv"
 
-          # --- Secrets synced from Vault into the terralist-secret Secret ---
           TERRALIST_OI_CLIENT_SECRET:
             valueFrom:
               secretKeyRef:
@@ -48,9 +37,6 @@ controllers:
               secretKeyRef:
                 name: terralist-secret
                 key: token-signing-secret
-          # The "local" storage resolver signs its own file-download JWTs with a
-          # SEPARATE secret (flag: local-token-signing-secret). Without it the
-          # resolver refuses to start: "a secret for signing tokens is required".
           TERRALIST_LOCAL_TOKEN_SIGNING_SECRET:
             valueFrom:
               secretKeyRef:
@@ -61,6 +47,11 @@ controllers:
               secretKeyRef:
                 name: terralist-secret
                 key: cookie-secret
+          TERRALIST_MASTER_API_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: terralist-secret
+                key: master-api-key
 
 configMaps:
   rbac:
@@ -71,7 +62,6 @@ configMaps:
 
 persistence:
   data:
-    # single replica + SQLite -> ReadWriteOnce is sufficient
     accessMode: ReadWriteOnce
     size: 10Gi
   rbac:
