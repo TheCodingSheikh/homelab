@@ -37,10 +37,6 @@ coder:
       value: 0.0.0.0:2112
     - name: TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE
       value: "true"
-    - name: CODER_BLOCK_DIRECT
-      value: "true"
-    - name: CODER_DERP_FORCE_WEBSOCKETS
-      value: "true"
 
   replicaCount: 1
 
