@@ -17,10 +17,6 @@ controllers:
           TERRALIST_PROVIDERS_STORAGE_RESOLVER: "local"
           TERRALIST_LOCAL_STORE: "/data"
 
-          TERRALIST_MODULES_ANONYMOUS_READ: "true"
-          TERRALIST_PROVIDERS_ANONYMOUS_READ: "true"
-          TERRALIST_FETCH_ALLOW_PRIVATE_ADDRESSES: "true"
-
           TERRALIST_OAUTH_PROVIDER: "oidc"
           TERRALIST_OI_CLIENT_ID: "terralist"
           TERRALIST_OI_HOST: "https://sso.lab.com/realms/lab"
@@ -48,11 +44,6 @@ controllers:
               secretKeyRef:
                 name: terralist-secret
                 key: cookie-secret
-          TERRALIST_MASTER_API_KEY:
-            valueFrom:
-              secretKeyRef:
-                name: terralist-secret
-                key: master-api-key
       fileserver:
         image:
           repository: nginx
@@ -74,6 +65,19 @@ configMaps:
     data:
       policy.csv: |
         g, abdo@lab.com, role:admin
+  fileserver:
+    enabled: true
+    data:
+      default.conf: |
+        server {
+          listen 8080;
+          server_name _;
+          root /srv;
+          autoindex on;
+          location / {
+            try_files $uri $uri/ =404;
+          }
+        }
 
 persistence:
   data:
@@ -87,14 +91,16 @@ persistence:
       - path: /rbac
         readOnly: true
   files:
-    existingClaim: terralist-files
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 5Gi
     advancedMounts:
       main:
         fileserver:
           - path: /srv
   fileserver-config:
     type: configMap
-    name: terralist-fileserver-nginx
+    identifier: fileserver
     advancedMounts:
       main:
         fileserver:
@@ -118,6 +124,24 @@ ingress:
             service:
               identifier: main
               port: http
+    tls:
+      - secretName: terralist-tls
+        hosts:
+          - terralist.lab.com
+  files:
+    enabled: true
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: "0"
+      nginx.ingress.kubernetes.io/rewrite-target: /$2
+    hosts:
+      - host: terralist.lab.com
+        paths:
+          - path: /files(/|$)(.*)
+            pathType: ImplementationSpecific
+            service:
+              identifier: main
+              port: files
     tls:
       - secretName: terralist-tls
         hosts:

@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: terralist-mirror-gen
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: mirror
+          image: ghcr.io/coder/coder:v2.34.6
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              export HOME=/tmp
+              mkdir -p /tmp/cfg /srv/mirror
+              cat > /tmp/cfg/main.tf <<'TF'
+              terraform {
+                required_providers {
+                  coder      = { source = "coder/coder" }
+                  kubernetes = { source = "hashicorp/kubernetes" }
+                }
+              }
+              TF
+              cd /tmp/cfg
+              terraform providers mirror -platform=linux_arm64 -platform=linux_amd64 /srv/mirror
+              echo "mirror ready:"; find /srv/mirror -name '*.zip' | sort
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 1Gi
+          volumeMounts:
+            - name: files
+              mountPath: /srv
+      volumes:
+        - name: files
+          persistentVolumeClaim:
+            claimName: terralist-files

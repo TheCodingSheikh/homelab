@@ -37,6 +37,22 @@ coder:
       value: 0.0.0.0:2112
     - name: TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE
       value: "true"
+    - name: TF_CLI_CONFIG_FILE
+      value: /home/coder/.terraformrc
+
+  volumes:
+    - name: terraformrc
+      configMap:
+        name: coder-terraformrc
+        items:
+          - key: terraformrc
+            path: .terraformrc
+
+  volumeMounts:
+    - name: terraformrc
+      mountPath: /home/coder/.terraformrc
+      subPath: .terraformrc
+      readOnly: true
 
   replicaCount: 1
 

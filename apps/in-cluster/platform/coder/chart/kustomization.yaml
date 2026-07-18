@@ -5,6 +5,7 @@ resources:
   - externalsecret.yaml
   - pushsecret.yaml
   - servicemonitor.yaml
+  - terraformrc.yaml
 
 helmCharts:
   - name: coder

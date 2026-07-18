@@ -1,10 +1,10 @@
 terraform {
   required_providers {
     coder = {
-      source = "terralist.lab.com/coder/coder"
+      source = "coder/coder"
     }
     kubernetes = {
-      source = "terralist.lab.com/hashicorp/kubernetes"
+      source = "hashicorp/kubernetes"
     }
   }
 }

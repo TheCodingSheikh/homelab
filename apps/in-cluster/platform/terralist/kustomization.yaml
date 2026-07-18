@@ -5,5 +5,4 @@ namespace: terralist
 
 resources:
   - chart
-  - fileserver
-  - register
+  - mirror
