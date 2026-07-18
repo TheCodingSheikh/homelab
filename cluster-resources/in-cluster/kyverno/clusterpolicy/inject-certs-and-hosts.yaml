@@ -49,6 +49,8 @@ spec:
             - kubeflow.lab.com
             - llm.lab.com
             - coder.lab.com
+            - terralist.lab.com
+            - marketplace.lab.com
             ip: 10.43.74.217
           volumes:
           - name: etc-ssl-certs

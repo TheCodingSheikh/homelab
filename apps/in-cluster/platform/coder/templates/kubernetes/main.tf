@@ -112,18 +112,50 @@ provider "kubernetes" {
 data "coder_workspace" "me" {}
 data "coder_workspace_owner" "me" {}
 
+locals {
+  # Self-hosted extension gallery (coder/code-marketplace). code-server's
+  # --install-extension reads this to pull .vsix from inside the cluster.
+  extensions_gallery = jsonencode({
+    serviceUrl          = "https://marketplace.lab.com/api"
+    itemUrl             = "https://marketplace.lab.com/item"
+    resourceUrlTemplate = "https://marketplace.lab.com/files/{publisher}/{name}/{version}/{path}"
+  })
+
+  # Extensions installed on first boot from the marketplace above.
+  workspace_extensions = ["redhat.vscode-yaml", "esbenp.prettier-vscode"]
+}
+
 resource "coder_agent" "main" {
-  os             = "linux"
-  arch           = "amd64"
+  os   = "linux"
+  arch = "amd64"
+
+  # No internet at build or run time:
+  #   * code-server is seeded into /coder-tools by an init container (from the
+  #     codercom/code-server image) — never downloaded from code-server.dev.
+  #   * Extensions come from the in-cluster marketplace via EXTENSIONS_GALLERY.
+  #   * NODE_EXTRA_CA_CERTS trusts the kyverno-injected lab CA for HTTPS.
+  env = {
+    EXTENSIONS_GALLERY  = local.extensions_gallery
+    NODE_EXTRA_CA_CERTS = "/etc/ssl/certs/ca.crt"
+  }
+
   startup_script = <<-EOT
     set -e
 
-    # Install the latest code-server.
-    # Append "--version x.x.x" to install a specific version of code-server.
-    curl -fsSL https://code-server.dev/install.sh | sh -s -- --method=standalone --prefix=/tmp/code-server
+    CODE_SERVER="/coder-tools/code-server/bin/code-server"
+    EXT_DIR="$HOME/.local/share/code-server/extensions"
+    mkdir -p "$EXT_DIR"
 
-    # Start code-server in the background.
-    /tmp/code-server/bin/code-server --auth none --port 13337 >/tmp/code-server.log 2>&1 &
+    # Install extensions from the self-hosted marketplace (offline).
+    for ext in ${join(" ", local.workspace_extensions)}; do
+      echo "Installing extension $ext from the internal marketplace..."
+      "$CODE_SERVER" --extensions-dir "$EXT_DIR" --force --install-extension "$ext" \
+        || echo "WARNING: could not install $ext (continuing)"
+    done
+
+    # Start code-server (seeded binary, no download).
+    "$CODE_SERVER" --auth none --port 13337 --bind-addr 127.0.0.1:13337 \
+      --extensions-dir "$EXT_DIR" >/tmp/code-server.log 2>&1 &
   EOT
 
   # The following metadata blocks are optional. They are used to display
@@ -316,6 +348,23 @@ resource "kubernetes_deployment_v1" "main" {
           }
         }
 
+        # Seeds a self-contained code-server (bundled node) into the shared
+        # coder-tools volume so the workspace never downloads it from the
+        # internet. Replaces the old `curl code-server.dev/install.sh`.
+        init_container {
+          name    = "init-code-server"
+          image   = "codercom/code-server:latest"
+          command = ["sh", "-c", "cp -a /usr/lib/code-server /coder-tools/code-server"]
+          security_context {
+            run_as_user     = "0"
+            run_as_non_root = false
+          }
+          volume_mount {
+            mount_path = "/coder-tools"
+            name       = "coder-tools"
+          }
+        }
+
         container {
           name              = "dev"
           image             = "codercom/enterprise-base:ubuntu"
@@ -352,6 +401,12 @@ resource "kubernetes_deployment_v1" "main" {
             name       = "ssl-certs"
             read_only  = true
           }
+
+          volume_mount {
+            mount_path = "/coder-tools"
+            name       = "coder-tools"
+            read_only  = true
+          }
         }
 
         volume {
@@ -364,6 +419,12 @@ resource "kubernetes_deployment_v1" "main" {
 
         volume {
           name = "ssl-certs"
+          empty_dir {}
+        }
+
+        # Holds the code-server install seeded by the init container (offline).
+        volume {
+          name = "coder-tools"
           empty_dir {}
         }
 

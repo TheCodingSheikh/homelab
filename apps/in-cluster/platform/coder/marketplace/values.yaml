@@ -1,0 +1,115 @@
+# Self-hosted VS Code extension gallery (coder/code-marketplace) — the airgapped
+# Open VSX replacement. code-server workspaces point EXTENSIONS_GALLERY here and
+# install extensions from inside the cluster. Extensions live on a PVC, seeded
+# once by an init container (offline-safe: skipped when the PVC is non-empty).
+defaultPodOptions:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+
+controllers:
+  code-marketplace:
+    pod:
+      annotations:
+        inject-certs: "enabled"
+    initContainers:
+      # Seed extensions into the PVC before the server starts. Idempotent and
+      # offline-safe (exits early if already populated).
+      seed:
+        image:
+          repository: ghcr.io/coder/code-marketplace
+          tag: v2.4.2
+        command: ["/bin/sh", "/scripts/seed.sh"]
+    containers:
+      app:
+        image:
+          repository: ghcr.io/coder/code-marketplace
+          tag: v2.4.2
+          pullPolicy: IfNotPresent
+        command: ["/opt/code-marketplace"]
+        args:
+          - server
+          - --address
+          - 0.0.0.0:3001
+          - --extensions-dir
+          - /extensions
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /healthz
+                port: 3001
+              initialDelaySeconds: 5
+              periodSeconds: 20
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /healthz
+                port: 3001
+              initialDelaySeconds: 3
+              periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+
+service:
+  app:
+    controller: code-marketplace
+    ports:
+      http:
+        port: 80
+        targetPort: 3001
+
+ingress:
+  app:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: lab-issuer
+      nginx.ingress.kubernetes.io/proxy-body-size: "0"
+      gethomepage.dev/enabled: "true"
+      gethomepage.dev/name: "Extension Marketplace"
+      gethomepage.dev/description: "Self-hosted VS Code extensions (airgapped)"
+      gethomepage.dev/group: "Platform"
+    hosts:
+      - host: marketplace.lab.com
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: app
+              port: http
+    tls:
+      - hosts:
+          - marketplace.lab.com
+        secretName: code-marketplace-tls
+
+persistence:
+  extensions:
+    type: persistentVolumeClaim
+    accessMode: ReadWriteOnce
+    size: 5Gi
+    advancedMounts:
+      code-marketplace:
+        seed:
+          - path: /extensions
+        app:
+          - path: /extensions
+  seed-script:
+    type: configMap
+    name: code-marketplace-seed-script
+    advancedMounts:
+      code-marketplace:
+        seed:
+          - path: /scripts

@@ -5,5 +5,7 @@ namespace: coder
 
 resources:
   - chart
+  - provider-mirror
+  - marketplace
   - templates
   - templates-push

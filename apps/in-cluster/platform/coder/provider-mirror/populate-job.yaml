@@ -1,0 +1,57 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: coder-provider-mirror
+  annotations:
+    # Same wave as the PVC (both before the coder deployment at wave 0) so the
+    # WaitForFirstConsumer volume binds here and the mirror is fully populated
+    # before the server rolls out — provisioning never needs the internet.
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      annotations:
+        inject-certs: "enabled"
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: mirror
+          # Coder image ships terraform (v1.15.5) — reuse it, no extra image.
+          image: ghcr.io/coder/coder:v2.34.6
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              export HOME=/tmp
+              mkdir -p /tmp/tfmirror && cd /tmp/tfmirror
+              cat > providers.tf <<'EOF'
+              terraform {
+                required_providers {
+                  coder      = { source = "coder/coder" }
+                  kubernetes = { source = "hashicorp/kubernetes" }
+                }
+              }
+              EOF
+              echo "Mirroring providers into /providers ..."
+              terraform providers mirror -platform=linux_amd64 /providers
+              echo "Done. Mirror contents:"
+              find /providers -maxdepth 4 -type d | sort
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 1Gi
+          volumeMounts:
+            - name: providers
+              mountPath: /providers
+      volumes:
+        - name: providers
+          persistentVolumeClaim:
+            claimName: coder-tf-providers

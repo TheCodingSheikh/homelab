@@ -33,6 +33,10 @@ for f in /templates-src/*; do
   cp "$f" "$WORK/$tpl/$out"
 done
 
+# Each template is pushed independently. A single failing template (e.g. one
+# whose modules can't yet be resolved) logs a warning and does NOT abort the
+# others, so the hook still succeeds and the healthy templates go live.
+failed=""
 for dir in "$WORK"/*/; do
   [ -d "$dir" ] || continue
   name="$(basename "$dir")"
@@ -42,13 +46,27 @@ for dir in "$WORK"/*/; do
 
   if echo "$versions" | grep "^$version " | grep -q "Active"; then
     echo "$name: $version already active"
-  elif echo "$versions" | grep -q "^$version "; then
+    continue
+  fi
+
+  if echo "$versions" | grep -q "^$version "; then
     echo "$name: promoting existing version $version"
-    coder templates versions promote --template "$name" --template-version "$version"
+    coder templates versions promote --template "$name" --template-version "$version" \
+      || { echo "WARNING: $name promote failed"; failed="$failed $name"; }
+    continue
+  fi
+
+  echo "$name: pushing $version"
+  vars_flag=""
+  [ -f "$dir/vars.yaml" ] && vars_flag="--variables-file $dir/vars.yaml"
+  if coder templates push "$name" --directory "$dir" --name "$version" $vars_flag --yes; then
+    echo "$name: pushed $version"
   else
-    echo "$name: pushing $version"
-    vars_flag=""
-    [ -f "$dir/vars.yaml" ] && vars_flag="--variables-file $dir/vars.yaml"
-    coder templates push "$name" --directory "$dir" --name "$version" $vars_flag --yes
+    echo "WARNING: $name push failed (continuing with other templates)"
+    failed="$failed $name"
   fi
 done
+
+if [ -n "$failed" ]; then
+  echo "Completed with template failures:$failed"
+fi
