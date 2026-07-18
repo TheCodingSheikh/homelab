@@ -10,6 +10,9 @@ terraform {
 }
 
 provider "coder" {
+  # Agent traffic (binary download, agent connection) goes over the in-cluster
+  # service instead of the external HTTPS access URL, avoiding the internal CA
+  url = "http://coder.coder.svc.cluster.local"
 }
 
 variable "use_kubeconfig" {
