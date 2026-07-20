@@ -11,4 +11,3 @@ spec:
   forProvider:
     source: Remote
     module: git::https://github.com/TheCodingSheikh/homelab.git//apps/in-cluster/platform/coder/iac?ref=main
-    remotePullPolicy: Always
