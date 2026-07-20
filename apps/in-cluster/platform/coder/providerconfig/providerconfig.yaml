@@ -12,7 +12,7 @@ spec:
         namespace: coder
         name: coder-terraformrc
         key: terraformrc
-    - filename: coder.tfvars.json
+    - filename: coder.auto.tfvars.json
       source: Secret
       secretRef:
         namespace: coder
