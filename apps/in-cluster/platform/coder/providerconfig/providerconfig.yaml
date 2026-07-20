@@ -1,0 +1,45 @@
+apiVersion: tf.upbound.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: coder
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  credentials:
+    - filename: .terraformrc
+      source: Secret
+      secretRef:
+        namespace: coder
+        name: coder-terraformrc
+        key: terraformrc
+    - filename: coder.tfvars.json
+      source: Secret
+      secretRef:
+        namespace: coder
+        name: coder-tf
+        key: credentials
+  configuration: |
+    terraform {
+      required_providers {
+        coderd = {
+          source  = "coder/coderd"
+          version = "0.0.20"
+        }
+      }
+
+      backend "kubernetes" {
+        secret_suffix     = "coder"
+        namespace         = "crossplane"
+        in_cluster_config = true
+      }
+    }
+
+    variable "coder_token" {
+      type      = string
+      sensitive = true
+    }
+
+    provider "coderd" {
+      url   = "http://coder.coder.svc.cluster.local"
+      token = var.coder_token
+    }

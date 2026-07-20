@@ -1,0 +1,14 @@
+apiVersion: tf.upbound.io/v1beta1
+kind: Workspace
+metadata:
+  name: coder
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    crossplane.io/external-name: coder
+spec:
+  providerConfigRef:
+    name: coder
+  forProvider:
+    source: Remote
+    module: git::https://github.com/TheCodingSheikh/homelab.git//apps/in-cluster/platform/coder/iac?ref=main
+    remotePullPolicy: Always

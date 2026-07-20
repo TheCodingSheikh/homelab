@@ -46,8 +46,8 @@ coder:
 
   volumes:
     - name: terraformrc
-      configMap:
-        name: coder-terraformrc
+      secret:
+        secretName: coder-terraformrc
         items:
           - key: terraformrc
             path: .terraformrc
