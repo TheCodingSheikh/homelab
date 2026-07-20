@@ -3,6 +3,6 @@ kind: Provider
 metadata:
   name: provider-terraform
 spec:
-  package: xpkg.upbound.io/upbound/provider-terraform:v1.1.1
+  package: xpkg.upbound.io/upbound/provider-terraform:v1.0.1
   runtimeConfigRef:
     name: provider-terraform
