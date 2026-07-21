@@ -34,15 +34,7 @@ variable "use_kubeconfig" {
   EOF
 }
 
-provider "coder" {
-  # The inner workspace runs as a nested Docker container (not a k8s pod), so it
-  # never gets kyverno's coder.lab.com hostAlias and the ingress hostname is
-  # unroutable from there (resolves to 127.0.0.1 via the host's *.lab.com map).
-  # This url is what the provider bakes into coder_agent.init_script as
-  # ${ACCESS_URL} (the agent's download + connect URL), so point it at the
-  # in-cluster Coder service, which the nested container can reach via cluster DNS.
-  url = "http://coder.coder.svc.cluster.local"
-}
+provider "coder" {}
 
 variable "namespace" {
   type        = string
@@ -95,13 +87,10 @@ data "coder_workspace" "me" {}
 data "coder_workspace_owner" "me" {}
 
 locals {
-  # Same nested-container DNS constraint as the agent url above: code-server runs
-  # in the inner container, which can't resolve marketplace.lab.com. Point the
-  # gallery at the in-cluster code-marketplace service instead of the ingress.
   extensions_gallery = jsonencode({
-    serviceUrl          = "http://code-marketplace.coder.svc.cluster.local/api"
-    itemUrl             = "http://code-marketplace.coder.svc.cluster.local/item"
-    resourceUrlTemplate = "http://code-marketplace.coder.svc.cluster.local/files/{publisher}/{name}/{version}/{path}"
+    serviceUrl          = "https://marketplace.lab.com/api"
+    itemUrl             = "https://marketplace.lab.com/item"
+    resourceUrlTemplate = "https://marketplace.lab.com/files/{publisher}/{name}/{version}/{path}"
   })
 }
 
@@ -218,14 +207,8 @@ resource "kubernetes_pod_v1" "main" {
       }
 
       env {
-        # The inner workspace runs as a nested Docker container (not a k8s pod),
-        # so kyverno's inject-certs hostAlias for coder.lab.com never reaches it
-        # and the external ingress URL is unroutable from here. Point the agent at
-        # the in-cluster Coder service (HTTP, ClusterIP) so it can download the
-        # agent binary and connect back without depending on the ingress.
-        # value = data.coder_workspace.me.access_url
         name  = "CODER_AGENT_URL"
-        value = "http://coder.coder.svc.cluster.local"
+        value = data.coder_workspace.me.access_url
       }
 
       env {
