@@ -242,7 +242,7 @@ resource "kubernetes_pod_v1" "main" {
 
       env {
         name  = "CODER_INNER_USERNAME"
-        value = data.coder_workspace_owner.me.name
+        value = "coder"
       }
 
       env {
