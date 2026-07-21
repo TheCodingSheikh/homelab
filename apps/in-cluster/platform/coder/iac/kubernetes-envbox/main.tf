@@ -253,7 +253,7 @@ resource "kubernetes_pod_v1" "main" {
 
       env {
         name  = "CODER_MOUNTS"
-        value = "/home/coder:/home/coder,/coder-tools:/coder-tools"
+        value = "/home/coder:/home/coder,/coder-tools:/coder-tools,/etc/ssl/certs:/etc/ssl/certs:ro"
       }
 
       env {
