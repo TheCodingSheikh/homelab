@@ -176,6 +176,24 @@ resource "kubernetes_pod_v1" "main" {
       }
     }
 
+    init_container {
+      name  = "init-ca-certificates"
+      image = "codercom/enterprise-base:ubuntu"
+      command = ["sh", "-c", join(" && ", [
+        "cp /etc/ssl/certs/ca.crt /usr/local/share/ca-certificates/lab.crt",
+        "update-ca-certificates",
+        "cp -a /etc/ssl/certs/. /certs/",
+      ])]
+      security_context {
+        run_as_user     = "0"
+        run_as_non_root = false
+      }
+      volume_mount {
+        mount_path = "/certs"
+        name       = "ssl-certs"
+      }
+    }
+
     container {
       name = "dev"
       # We highly recommend pinning this to a specific release of envbox, as the latest tag may change.
@@ -215,7 +233,7 @@ resource "kubernetes_pod_v1" "main" {
         # kyverno-injected lab CA; envbox installs it into the inner container
         # trust store and uses it for control-plane/registry connections
         name  = "CODER_EXTRA_CERTS_PATH"
-        value = "/etc/ssl/certs/ca.crt"
+        value = "/etc/ssl/certs/"
       }
 
       env {
@@ -321,6 +339,13 @@ resource "kubernetes_pod_v1" "main" {
         mount_path = "/coder-tools"
         name       = "coder-tools"
       }
+
+      volume_mount {
+        mount_path = "/etc/ssl/certs"
+        name       = "ssl-certs"
+        read_only  = true
+      }
+
     }
 
     volume {
@@ -338,6 +363,11 @@ resource "kubernetes_pod_v1" "main" {
 
     volume {
       name = "coder-tools"
+      empty_dir {}
+    }
+
+    volume {
+      name = "ssl-certs"
       empty_dir {}
     }
 
