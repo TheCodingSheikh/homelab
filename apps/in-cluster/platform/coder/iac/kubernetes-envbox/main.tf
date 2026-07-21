@@ -233,7 +233,7 @@ resource "kubernetes_pod_v1" "main" {
         # kyverno-injected lab CA; envbox installs it into the inner container
         # trust store and uses it for control-plane/registry connections
         name  = "CODER_EXTRA_CERTS_PATH"
-        value = "/etc/ssl/certs/"
+        value = "/etc/ssl/certs/ca.crt"
       }
 
       env {
