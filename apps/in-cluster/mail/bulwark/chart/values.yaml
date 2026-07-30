@@ -26,6 +26,10 @@ config:
   allowCustomJmapEndpoint: false
   logLevel: "info"
 
+extraEnv:
+  - name: NODE_EXTRA_CA_CERTS
+    value: /etc/ssl/certs/ca.crt
+
 # -----------------------------------------------------------------------------
 # OIDC / SSO
 # -----------------------------------------------------------------------------
