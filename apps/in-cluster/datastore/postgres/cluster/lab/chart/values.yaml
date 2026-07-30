@@ -47,6 +47,11 @@ users:
       - coder
     password:
       type: AlphaNumeric
+  - name: stalwart
+    databases:
+      - stalwart
+    password:
+      type: AlphaNumeric
   # - name: authentik
   #   databases:
   #     - authentik

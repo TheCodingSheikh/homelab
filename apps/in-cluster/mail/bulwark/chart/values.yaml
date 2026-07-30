@@ -1,0 +1,90 @@
+# Bulwark is the JMAP webmail front-end for the Stalwart server deployed in
+# apps/in-cluster/mail/stalwart/.
+
+# settingsSync below is backed by a ReadWriteOnce PVC, which pins this to a
+# single replica. Drop persistence to go back to the chart default of 2.
+replicaCount: 1
+
+podAnnotations:
+  # Mount the lab CA — Stalwart is served from the self-signed lab-issuer.
+  inject-certs: "enabled"
+
+config:
+  # Exposed verbatim to the browser via /api/config: the client fetches
+  # `${jmapServerUrl}/.well-known/jmap` itself, so this has to be the public
+  # hostname rather than a cluster-internal Service name. The matching CORS
+  # annotations live on the Stalwart ingress.
+  jmapServerUrl: "https://mail.lab.com"
+  hostname: "0.0.0.0"
+  port: 3000
+
+  appName: "Lab Mail"
+  loginCompanyName: "Lab"
+
+  # Password change and Sieve filter management via Stalwart's own APIs.
+  stalwartFeatures: true
+  allowCustomJmapEndpoint: false
+  logLevel: "info"
+
+# -----------------------------------------------------------------------------
+# OIDC / SSO
+# -----------------------------------------------------------------------------
+# Both halves of the flow are declared in git:
+#   - the Keycloak client (plus the `stalwart` audience mapper that makes the
+#     token acceptable to Stalwart) in
+#     apps/in-cluster/platform/keycloak/iac/chart/values.yaml
+#   - Stalwart's OIDC directory, in
+#     apps/in-cluster/mail/stalwart/iac/plan.ndjson
+#
+# Bulwark obtains a token from Keycloak and presents it to Stalwart over JMAP;
+# Stalwart validates it against that same realm. Both sides must agree, so if
+# the Stalwart plan has not been applied yet, logins fail here.
+oidc:
+  enabled: true
+  clientId: bulwark
+  issuerUrl: "https://sso.lab.com/realms/lab"
+  existingClientSecret: bulwark-oidc
+  existingClientSecretKey: client-secret
+
+# Cookie-encryption key. Without an existingSecret the chart generates one at
+# install time, which Argo would then see drift against on every sync.
+session:
+  existingSecret: bulwark-secret
+  existingSecretKey: session-secret
+
+# Per-user preferences stored server-side. On emptyDir (the chart default) they
+# reset whenever the pod restarts.
+settingsSync:
+  enabled: true
+  persistence:
+    enabled: true
+    accessModes:
+      - ReadWriteOnce
+    size: 5Gi
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: lab-issuer
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Bulwark"
+    gethomepage.dev/description: "Webmail"
+    gethomepage.dev/group: "Mail"
+  hosts:
+    - host: webmail.lab.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: bulwark-tls
+      hosts:
+        - webmail.lab.com
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - externalsecret.yaml
+  - pushsecret.yaml
+
+helmCharts:
+  - name: bulwark-mail
+    repo: https://l4gdev.github.io/helm-charts
+    version: 0.2.2
+    releaseName: bulwark
+    namespace: bulwark
+    valuesFile: values.yaml

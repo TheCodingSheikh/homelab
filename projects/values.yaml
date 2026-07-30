@@ -10,3 +10,4 @@ projects:
   - name: storage
   - name: managed-services
   - name: ai
+  - name: mail

@@ -1,0 +1,138 @@
+# Stalwart v0.16 keeps almost all of its configuration inside the data store and
+# is managed from the admin UI at https://mail.lab.com/admin/. What lives here is
+# only the Kubernetes surface plus the data store wiring.
+
+# Multi-replica Stalwart needs a coordinator (redis/nats) to stay cache-coherent.
+# Single replica until one exists.
+replicaCount: 1
+
+publicUrl: "https://mail.lab.com"
+
+podAnnotations:
+  # Mount the lab CA so Stalwart trusts *.lab.com over TLS.
+  inject-certs: "enabled"
+
+# -----------------------------------------------------------------------------
+# Data store — the shared `lab` Crunchy cluster
+# -----------------------------------------------------------------------------
+# The `stalwart` user/database is declared in
+# apps/in-cluster/datastore/postgres/cluster/lab/chart/values.yaml; the operator
+# pushes the generated credentials to Vault, and externalsecret.yaml pulls the
+# password back out into `stalwart-pg`.
+dataStore:
+  type: postgres
+  postgres:
+    host: lab-primary.postgres-cluster.svc
+    port: 5432
+    database: stalwart
+    username: stalwart
+    existingSecret: stalwart-pg
+    existingSecretKey: password
+
+# -----------------------------------------------------------------------------
+# Bootstrap admin
+# -----------------------------------------------------------------------------
+# Stalwart's bootstrap does not create an admin Account, so without the fallback
+# admin there is no way to log into a freshly deployed web UI. Referencing a
+# secret here injects STALWART_RECOVERY_ADMIN, which is honoured in normal mode.
+#
+# `enabled: true` is a SEPARATE emergency mode that skips bootstrap and unloads
+# the web UI — leave it false.
+recovery:
+  enabled: false
+  adminUser: admin
+  existingSecret: stalwart-admin
+  existingSecretKey: password
+
+# -----------------------------------------------------------------------------
+# Services
+# -----------------------------------------------------------------------------
+# The k3d cluster runs with --disable-cloud-controller and only maps host ports
+# 80/443, so a LoadBalancer (the chart default for the mail service) would sit
+# Pending forever. Mail listeners are reachable in-cluster only; exposing real
+# SMTP/IMAP means adding k3d port mappings plus a NodePort or MetalLB.
+service:
+  mail:
+    type: ClusterIP
+  http:
+    type: ClusterIP
+    port: 8080
+
+listeners:
+  smtp:
+    enabled: true
+    port: 25
+  submission:
+    enabled: true
+    port: 587
+  submissions:
+    enabled: true
+    port: 465
+  imap:
+    enabled: true
+    port: 143
+  imaps:
+    enabled: true
+    port: 993
+  pop3:
+    enabled: false
+    port: 110
+  pop3s:
+    enabled: false
+    port: 995
+  managesieve:
+    enabled: true
+    port: 4190
+  http:
+    enabled: true
+    port: 8080
+
+# -----------------------------------------------------------------------------
+# Ingress — admin web UI, JMAP, autoconfig
+# -----------------------------------------------------------------------------
+# Bulwark runs on a different origin (webmail.lab.com), so its JMAP calls are
+# cross-origin and carry credentials. Stalwart 0.16 answers with
+# `Access-Control-Allow-Origin: *` and no `Allow-Credentials`, which browsers
+# reject outright. ingress-nginx handles preflight itself and replaces that
+# wildcard with a per-origin reply, so the CORS annotations below are what make
+# the webmail work at all.
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: lab-issuer
+    nginx.ingress.kubernetes.io/proxy-body-size: 256m
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://webmail.lab.com"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, OPTIONS, PATCH, PUT, DELETE, HEAD"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Authorization, Content-Type, Accept, X-Requested-With, Origin"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Stalwart"
+    gethomepage.dev/description: "Mail & Collaboration Server"
+    gethomepage.dev/group: "Mail"
+  hosts:
+    - host: mail.lab.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: stalwart-tls
+      hosts:
+        - mail.lab.com
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+
+# Stalwart's /metrics endpoint needs a bearer token that only exists once the
+# server has been configured, so wiring the ServiceMonitor is a post-bootstrap
+# step rather than something that can ship declaratively.
+metrics:
+  enabled: false
+  serviceMonitor:
+    enabled: false

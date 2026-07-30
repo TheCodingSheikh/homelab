@@ -1,0 +1,76 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: stalwart-apply
+  annotations:
+    # Runs after the Stalwart Deployment is healthy on every sync. `apply` is
+    # idempotent — it reconciles live state to the plan — so re-running it each
+    # time is how drift gets corrected.
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 20
+  template:
+    metadata:
+      annotations:
+        # Talks to Stalwart over the in-cluster Service, but the lab CA is
+        # needed if STALWART_URL is ever pointed at the public hostname.
+        inject-certs: "enabled"
+    spec:
+      restartPolicy: OnFailure
+      # The yq image runs as a non-root user. Without fsGroup the emptyDir below
+      # is root-owned and not group-writable, so the conversion fails on write.
+      # fsGroup is added as a supplementary group to every container in the pod,
+      # so this holds regardless of each image's UID.
+      securityContext:
+        fsGroup: 1000
+      initContainers:
+        # plan.yaml is the human-readable source; the CLI parses one JSON object
+        # per line and tolerates neither comments nor line breaks. `-I=0` emits
+        # compact JSON and multi-document YAML yields one document per line,
+        # which is exactly NDJSON.
+        - name: render-plan
+          image: docker.io/mikefarah/yq:4.53.3
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - yq -o=json -I=0 '.' /src/plan.yaml > /plan/plan.ndjson
+          volumeMounts:
+            - name: src
+              mountPath: /src
+              readOnly: true
+            - name: plan
+              mountPath: /plan
+      containers:
+        - name: stalwart-cli
+          # Shipped separately from the server image.
+          image: ghcr.io/stalwartlabs/cli:v1.0.12
+          args:
+            - apply
+            - --file
+            - /plan/plan.ndjson
+          env:
+            - name: STALWART_URL
+              value: http://stalwart-stalwart-mail-ha-http.stalwart.svc:8080
+            - name: STALWART_USER
+              value: admin
+            # The fallback admin injected via STALWART_RECOVERY_ADMIN. This stays
+            # valid even after Authentication.directoryId is switched to
+            # Keycloak, which is what keeps the plan appliable (and keeps you out
+            # of a lockout) once SSO owns normal logins.
+            - name: STALWART_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: stalwart-admin
+                  key: password
+          volumeMounts:
+            - name: plan
+              mountPath: /plan
+              readOnly: true
+      volumes:
+        - name: src
+          configMap:
+            name: stalwart-plan
+        - name: plan
+          emptyDir: {}

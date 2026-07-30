@@ -1,0 +1,95 @@
+# Declarative Stalwart configuration.
+#
+# This is the source of truth. An initContainer converts it to the NDJSON that
+# `stalwart-cli apply` expects — the CLI parses one JSON object per line
+# (src/commands/apply.rs: `parse_ndjson_plan`), so the wire format cannot hold
+# comments or line breaks. Authoring it as multi-document YAML keeps it legible.
+#
+# `apply` is idempotent: it reconciles live server state to this plan.
+
+# -----------------------------------------------------------------------------
+# 1. The mail domain
+# -----------------------------------------------------------------------------
+# dkimManagement Automatic → Stalwart generates and rotates the signing keys.
+# dnsManagement Manual → MX/SPF/DMARC/DKIM records must be published by hand;
+# read the generated zone file from the admin UI once this exists.
+# certificateManagement Manual → ingress-nginx terminates TLS, not Stalwart.
+"@type": upsert
+object: Domain
+matchOn:
+  - name
+value:
+  dom-lab:
+    name: lab.com
+    description: Primary lab mail domain
+    aliases: []
+    certificateManagement:
+      "@type": Manual
+    dkimManagement:
+      "@type": Automatic
+    dnsManagement:
+      "@type": Manual
+    subAddressing:
+      "@type": Enabled
+    allowRelaying: false
+
+---
+# -----------------------------------------------------------------------------
+# 2. Keycloak as an OIDC authentication backend
+# -----------------------------------------------------------------------------
+# requireAudience must match the audience injected by the `stalwart-audience`
+# protocol mapper on the Keycloak `bulwark` client — Keycloak puts the client in
+# `azp`, not `aud`, so without that mapper every login is rejected here.
+#
+# usernameDomain is appended when the claim has no `@`, so a Keycloak username
+# of `abdo` becomes `abdo@lab.com`.
+"@type": upsert
+object: Directory
+# Directory has no `name` field, so this matches on description. If that is
+# wrong, each apply creates a duplicate rather than updating in place — worth
+# confirming with --dry-run before the first real run.
+matchOn:
+  - description
+value:
+  dir-keycloak:
+    "@type": Oidc
+    description: Keycloak (lab realm)
+    issuerUrl: https://sso.lab.com/realms/lab
+    requireAudience: stalwart
+    requireScopes:
+      - openid
+      - email
+      - profile
+    claimUsername: preferred_username
+    usernameDomain: lab.com
+    claimName: name
+    claimGroups: groups
+
+---
+# -----------------------------------------------------------------------------
+# 3. Activate SSO
+# -----------------------------------------------------------------------------
+# The single line that actually turns SSO on. `#dir-keycloak` refers to the
+# object created above; `#<id>` references resolve within one plan.
+#
+# The STALWART_RECOVERY_ADMIN fallback keeps working after this, which is what
+# prevents a lockout if Keycloak is ever unreachable.
+"@type": update
+object: Authentication
+value:
+  directoryId: "#dir-keycloak"
+
+---
+# -----------------------------------------------------------------------------
+# 4. HTTP behaviour
+# -----------------------------------------------------------------------------
+# CORS is owned by the Stalwart ingress annotations. Setting it in both places
+# emits duplicate Access-Control-Allow-Origin headers, which browsers reject, so
+# this stays false deliberately.
+#
+# useXForwarded → trust the client IP that ingress-nginx forwards.
+"@type": update
+object: Http
+value:
+  usePermissiveCors: false
+  useXForwarded: true
