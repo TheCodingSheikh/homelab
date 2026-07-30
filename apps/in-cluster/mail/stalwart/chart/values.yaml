@@ -6,6 +6,11 @@
 # Single replica until one exists.
 replicaCount: 1
 
+
+image:
+  repository: stalwartlabs/stalwart
+  tag: "v0.16.15"
+  
 publicUrl: "https://mail.lab.com"
 
 podAnnotations:
