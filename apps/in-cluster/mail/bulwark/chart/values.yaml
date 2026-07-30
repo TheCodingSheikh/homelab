@@ -18,8 +18,29 @@ config:
   hostname: "0.0.0.0"
   port: 3000
 
+  # ---------------------------------------------------------------------------
+  # Branding
+  # ---------------------------------------------------------------------------
+  # Assets are served from the same origin by the `brand` overlay
+  # (apps/in-cluster/mail/bulwark/brand/), so they are covered by the existing
+  # TLS cert and need no CORS. Same-origin also matters for the PWA manifest,
+  # which browsers will not load icons cross-origin for.
   appName: "Lab Mail"
+  appShortName: "LabMail"
+  appDescription: "Mail, calendar and contacts for lab.com"
+
+  faviconUrl: "https://webmail.lab.com/brand/icon.svg"
+  pwaIconUrl: "https://webmail.lab.com/brand/icon.svg"
+  pwaThemeColor: "#1f2d3d"
+  pwaBackgroundColor: "#0d1117"
+
+  appLogoLightUrl: "https://webmail.lab.com/brand/logo-light.svg"
+  appLogoDarkUrl: "https://webmail.lab.com/brand/logo-dark.svg"
+  loginLogoLightUrl: "https://webmail.lab.com/brand/logo-light.svg"
+  loginLogoDarkUrl: "https://webmail.lab.com/brand/logo-dark.svg"
+
   loginCompanyName: "Lab"
+  loginWebsiteUrl: "https://home.lab.com"
 
   # Password change and Sieve filter management via Stalwart's own APIs.
   stalwartFeatures: true
@@ -29,6 +50,23 @@ config:
 extraEnv:
   - name: NODE_EXTRA_CA_CERTS
     value: /etc/ssl/certs/ca.crt
+
+  # Chart 0.2.2 templates OAUTH_ENABLED/CLIENT_ID/ISSUER_URL/CLIENT_SECRET_FILE
+  # from the `oidc:` block below, but not these three.
+
+  # Removes the username/password form so Keycloak is the only way in.
+  - name: OAUTH_ONLY
+    value: "true"
+  # Starts the OAuth flow on page load, so there is no "Sign in with SSO" button
+  # to click. Upstream requires OAUTH_ENABLED and OAUTH_ONLY for this to apply.
+  - name: AUTO_SSO_ENABLED
+    value: "true"
+  # Stalwart's OIDC directory sets requireScopes {openid, email, profile} and
+  # rejects any token missing one. `profile` is what backs claimName, and it is
+  # not obviously part of Bulwark's built-in scope set — appended rather than
+  # overriding OAUTH_SCOPES so the JMAP scopes it needs stay intact.
+  - name: OAUTH_EXTRA_SCOPES
+    value: "profile"
 
 # -----------------------------------------------------------------------------
 # OIDC / SSO

@@ -17,6 +17,16 @@ podAnnotations:
   # Mount the lab CA so Stalwart trusts *.lab.com over TLS.
   inject-certs: "enabled"
 
+# The blob store's secretKey is declared in iac/plan.yaml as an
+# EnvironmentVariable reference, which the *server* resolves at runtime — so the
+# S3 secret never lands in the config store or in git.
+extraEnv:
+  - name: STALWART_S3_SECRET_KEY
+    valueFrom:
+      secretKeyRef:
+        name: stalwart-s3
+        key: secret-key
+
 # -----------------------------------------------------------------------------
 # Data store — the shared `lab` Crunchy cluster
 # -----------------------------------------------------------------------------

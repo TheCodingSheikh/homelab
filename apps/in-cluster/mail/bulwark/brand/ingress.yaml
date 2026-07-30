@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bulwark-brand
+  # Deliberately NO cert-manager.io/cluster-issuer annotation: the bulwark-tls
+  # Certificate is already owned by the chart's own Ingress. Annotating this one
+  # too would create a second Certificate writing to the same Secret, and the
+  # two would fight over renewals.
+  #
+  # Also no nginx configuration-snippet for cache headers — ingress-nginx has
+  # allow-snippet-annotations off by default since 1.9 (this cluster runs
+  # v1.12.0), so the annotation would be rejected rather than ignored.
+spec:
+  ingressClassName: nginx
+  rules:
+    # Same host as the webmail. ingress-nginx merges rules per host and the more
+    # specific /brand prefix wins over the chart's "/" rule, so the two Ingress
+    # objects coexist without modifying the chart's.
+    - host: webmail.lab.com
+      http:
+        paths:
+          - path: /brand
+            pathType: Prefix
+            backend:
+              service:
+                name: bulwark-brand
+                port:
+                  name: http
+  tls:
+    - secretName: bulwark-tls
+      hosts:
+        - webmail.lab.com

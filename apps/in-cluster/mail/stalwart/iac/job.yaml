@@ -35,7 +35,21 @@ spec:
             - /bin/sh
             - -c
           args:
-            - yq -o=json -I=0 '.' /src/plan.yaml > /plan/plan.ndjson
+            # envsubst expands ${VAR} inside string values, which is how the S3
+            # access key reaches the plan without being committed. `set -u` is
+            # deliberate: an unset variable would otherwise expand to empty and
+            # silently write a broken blob-store config.
+            - |
+              set -eu
+              : "${STALWART_S3_ACCESS_KEY:?missing S3 access key}"
+              yq -o=json -I=0 '(.. | select(tag == "!!str")) |= envsubst' \
+                /src/plan.yaml > /plan/plan.ndjson
+          env:
+            - name: STALWART_S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: stalwart-s3
+                  key: access-key
           volumeMounts:
             - name: src
               mountPath: /src

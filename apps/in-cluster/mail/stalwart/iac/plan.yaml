@@ -97,3 +97,83 @@ object: Http
 value:
   usePermissiveCors: false
   useXForwarded: true
+
+---
+# -----------------------------------------------------------------------------
+# 5. Blob store — message bodies and attachments on S3 (SeaweedFS)
+# -----------------------------------------------------------------------------
+# Without this every message body lives in Postgres, which makes the mail store
+# grow without bound and turns backups into a problem. The bucket and the
+# `stalwart` S3 user are declared in
+# apps/in-cluster/storage/seaweedfs/chart/values.yaml.
+#
+# accessKey is a plain string in the schema, so it cannot reference a secret —
+# `${STALWART_S3_ACCESS_KEY}` is substituted by yq at render time from the
+# Job's env, which keeps it out of git. secretKey does support indirection, so
+# it is resolved by the *server* from its own environment and never appears in
+# the config store at all.
+"@type": update
+object: BlobStore
+value:
+  "@type": S3
+  bucket: stalwart
+  region:
+    "@type": Custom
+    customEndpoint: http://seaweedfs-all-in-one.seaweedfs:8333
+    customRegion: us-east-1
+  accessKey: ${STALWART_S3_ACCESS_KEY}
+  secretKey:
+    "@type": EnvironmentVariable
+    variableName: STALWART_S3_SECRET_KEY
+  # Read back each object after writing it. Costs an extra GET per message but
+  # catches a silently failing object store before the data is acknowledged.
+  verifyAfterWrite: true
+  timeout: 30000
+  maxRetries: 3
+
+---
+# -----------------------------------------------------------------------------
+# 6. Full-text search
+# -----------------------------------------------------------------------------
+# `Default` indexes into the data store. Elasticsearch and Meilisearch are the
+# alternatives, and neither is deployed in this cluster — stated explicitly so
+# the choice is visible rather than implied.
+"@type": update
+object: SearchStore
+value:
+  "@type": Default
+
+---
+# -----------------------------------------------------------------------------
+# 7. Retention and housekeeping
+# -----------------------------------------------------------------------------
+# Traces and metrics accumulate in Postgres, so these are trimmed well below the
+# defaults (90d metrics / 30d traces). Message retention is left at the defaults
+# because shortening it silently deletes user mail.
+"@type": update
+object: DataRetention
+value:
+  holdTracesFor: 604800000 # 7d  (default 30d)
+  holdMetricsFor: 2592000000 # 30d (default 90d)
+  holdMtaReportsFor: 1209600000 # 14d (default 30d)
+  expungeTrashAfter: 2592000000 # 30d (default)
+  expungeSubmissionsAfter: 259200000 # 3d  (default)
+
+---
+# -----------------------------------------------------------------------------
+# 8. Spam filtering
+# -----------------------------------------------------------------------------
+# Tag-only on purpose: scoreReject and scoreDiscard stay at 0 so nothing is ever
+# refused or silently dropped on score alone. Mail lands in the mailbox with a
+# spam tag and Sieve/user rules decide from there. Raise these only once you
+# have real corpus data — a reject threshold that is too low loses mail with no
+# bounce and no copy.
+"@type": update
+object: SpamSettings
+value:
+  enable: true
+  scoreSpam: 5
+  scoreReject: 0
+  scoreDiscard: 0
+  trustReplies: true
+  trustContacts: true

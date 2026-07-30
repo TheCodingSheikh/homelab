@@ -38,6 +38,7 @@ allInOne:
       - name: loki-ruler
       - name: loki-admin
       - name: tempo
+      - name: stalwart
       - name: public
         anonymousRead: true
   sftp:
@@ -61,3 +62,7 @@ users:
       loki-ruler: write
       loki-admin: write
       tempo: write
+  - name: stalwart
+    buckets:
+      stalwart: write
+
