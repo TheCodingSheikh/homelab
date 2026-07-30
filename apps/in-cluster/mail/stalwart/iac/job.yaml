@@ -45,7 +45,7 @@ spec:
       containers:
         - name: stalwart-cli
           # Shipped separately from the server image.
-          image: ghcr.io/stalwartlabs/cli:v1.0.12
+          image: ghcr.io/stalwartlabs/cli:1.0.12
           args:
             - apply
             - --file
