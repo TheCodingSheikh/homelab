@@ -22,7 +22,9 @@ value:
   dom-lab:
     name: lab.com
     description: Primary lab mail domain
-    aliases: []
+    # `aliases` is omitted, not empty. It is a schema `set`, which serialises as
+    # a map ({"other.com": true}) rather than an array — passing [] is what the
+    # server rejected with `invalidPatch ... Properties: aliases`.
     certificateManagement:
       "@type": Manual
     dkimManagement:
@@ -45,9 +47,9 @@ value:
 # of `abdo` becomes `abdo@lab.com`.
 "@type": upsert
 object: Directory
-# Directory has no `name` field, so this matches on description. If that is
-# wrong, each apply creates a duplicate rather than updating in place — worth
-# confirming with --dry-run before the first real run.
+# Matches the server's own label property for x:Directory, so repeat applies
+# update in place instead of creating duplicates. Stated explicitly rather than
+# relying on the fallback.
 matchOn:
   - description
 value:
@@ -56,10 +58,12 @@ value:
     description: Keycloak (lab realm)
     issuerUrl: https://sso.lab.com/realms/lab
     requireAudience: stalwart
+    # Also a `set`, so this is a map of scope -> true, not a list. The server's
+    # own default for this field is {"openid": true, "email": true}.
     requireScopes:
-      - openid
-      - email
-      - profile
+      openid: true
+      email: true
+      profile: true
     claimUsername: preferred_username
     usernameDomain: lab.com
     claimName: name
