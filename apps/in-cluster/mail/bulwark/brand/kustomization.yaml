@@ -1,15 +1,17 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-resources:
-  - deployment.yaml
-  - service.yaml
-  - ingress.yaml
+# Matches the chart's namespace, without which the generated ConfigMap's hashed
+# name is not substituted into the Deployment.
+namespace: bulwark
 
-# Hash-suffixed, so editing an SVG rolls the Deployment automatically.
+resources:
+  - chart
+
+# Hash-suffixed, so editing an SVG rolls the Deployment.
 configMapGenerator:
   - name: bulwark-brand
     files:
-      - icon.svg
-      - logo-light.svg
-      - logo-dark.svg
+      - icon.svg=logos/icon.svg
+      - logo-light.svg=logos/logo-light.svg
+      - logo-dark.svg=logos/logo-dark.svg

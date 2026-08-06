@@ -3,9 +3,6 @@ kind: Job
 metadata:
   name: stalwart-apply
   annotations:
-    # Runs after the Stalwart Deployment is healthy on every sync. `apply` is
-    # idempotent — it reconciles live state to the plan — so re-running it each
-    # time is how drift gets corrected.
     argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
@@ -13,32 +10,22 @@ spec:
   template:
     metadata:
       annotations:
-        # Talks to Stalwart over the in-cluster Service, but the lab CA is
-        # needed if STALWART_URL is ever pointed at the public hostname.
         inject-certs: "enabled"
     spec:
       restartPolicy: OnFailure
-      # The yq image runs as a non-root user. Without fsGroup the emptyDir below
-      # is root-owned and not group-writable, so the conversion fails on write.
-      # fsGroup is added as a supplementary group to every container in the pod,
-      # so this holds regardless of each image's UID.
+      # The yq image runs non-root; without fsGroup the emptyDir is root-owned
+      # and the conversion fails on write.
       securityContext:
         fsGroup: 1000
       initContainers:
-        # plan.yaml is the human-readable source; the CLI parses one JSON object
-        # per line and tolerates neither comments nor line breaks. `-I=0` emits
-        # compact JSON and multi-document YAML yields one document per line,
-        # which is exactly NDJSON.
         - name: render-plan
           image: docker.io/mikefarah/yq:4.53.3
           command:
             - /bin/sh
             - -c
           args:
-            # envsubst expands ${VAR} inside string values, which is how the S3
-            # access key reaches the plan without being committed. `set -u` is
-            # deliberate: an unset variable would otherwise expand to empty and
-            # silently write a broken blob-store config.
+            # The guard is deliberate: an unset variable expands to empty and
+            # would silently write a broken blob-store config.
             - |
               set -eu
               : "${STALWART_S3_ACCESS_KEY:?missing S3 access key}"
@@ -58,7 +45,6 @@ spec:
               mountPath: /plan
       containers:
         - name: stalwart-cli
-          # Shipped separately from the server image.
           image: ghcr.io/stalwartlabs/cli:1.0.12
           args:
             - apply
@@ -69,10 +55,8 @@ spec:
               value: http://stalwart-stalwart-mail-ha-http.stalwart.svc:8080
             - name: STALWART_USER
               value: admin
-            # The fallback admin injected via STALWART_RECOVERY_ADMIN. This stays
-            # valid even after Authentication.directoryId is switched to
-            # Keycloak, which is what keeps the plan appliable (and keeps you out
-            # of a lockout) once SSO owns normal logins.
+            # The recovery admin, which stays valid once SSO owns normal logins
+            # — that is what keeps this plan appliable.
             - name: STALWART_PASSWORD
               valueFrom:
                 secretKeyRef:

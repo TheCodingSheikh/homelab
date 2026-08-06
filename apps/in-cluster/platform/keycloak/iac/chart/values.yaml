@@ -251,20 +251,14 @@ components:
                   standardFlowEnabled: true
                   directAccessGrantsEnabled: true
                   rootUrl: https://webmail.lab.com
-                  # Bulwark derives its callback from its own origin and does not
-                  # document a fixed path, so this is scoped to the host rather
-                  # than guessed. Narrow it once the real path is confirmed.
                   validRedirectUris:
                     - https://webmail.lab.com/*
                 dependants:
                   ProtocolMapper:
                     apiVersion: client.keycloak.crossplane.io/v1alpha1
                     list:
-                      # Stalwart validates the `aud` claim of the token Bulwark
-                      # presents over JMAP and rejects anything that does not
-                      # carry its own audience (Directory.requireAudience =
-                      # "stalwart"). Keycloak puts the client in `azp`, not
-                      # `aud`, so without this mapper every login fails.
+                      # Keycloak puts the client in `azp`, not `aud`, so without
+                      # this mapper Stalwart rejects every login.
                       stalwart-audience:
                         forProvider:
                           name: stalwart-audience
@@ -279,9 +273,8 @@ components:
                       bulwark:
                         forProvider:
                           defaultScopes:
-                            # Feeds Directory.claimGroups = "groups"
+                            # Feeds Directory.claimGroups
                             - groups
-                            # Mandatory
                             - acr
                             - basic
                             - email

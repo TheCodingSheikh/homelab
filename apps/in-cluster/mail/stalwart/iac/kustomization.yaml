@@ -4,8 +4,6 @@ kind: Kustomization
 resources:
   - job.yaml
 
-# Hash-suffixed so editing the plan produces a new ConfigMap name, which
-# kustomize rewrites into the Job's volume reference.
 configMapGenerator:
   - name: stalwart-plan
     files:

@@ -1,0 +1,88 @@
+defaultPodOptions:
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+
+controllers:
+  brand:
+    containers:
+      app:
+        image:
+          repository: docker.io/nginxinc/nginx-unprivileged
+          tag: 1.29-alpine
+          pullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: [ALL]
+        probes:
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /brand/icon.svg
+                port: 8080
+              initialDelaySeconds: 3
+              periodSeconds: 10
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+
+service:
+  app:
+    controller: brand
+    ports:
+      http:
+        port: 80
+        targetPort: 8080
+
+ingress:
+  app:
+    enabled: true
+    className: nginx
+    # No cert-manager annotation: bulwark-tls is owned by the bulwark chart's
+    # Ingress, and a second Certificate on the same Secret fights over renewals.
+    hosts:
+      - host: webmail.lab.com
+        paths:
+          - path: /brand
+            pathType: Prefix
+            service:
+              identifier: app
+              port: http
+    tls:
+      - hosts:
+          - webmail.lab.com
+        secretName: bulwark-tls
+
+persistence:
+  # Served from /brand so the ingress needs no rewrite.
+  assets:
+    type: configMap
+    name: bulwark-brand
+    advancedMounts:
+      brand:
+        app:
+          - path: /usr/share/nginx/html/brand
+            readOnly: true
+
+  # Writable paths required by readOnlyRootFilesystem.
+  cache:
+    type: emptyDir
+    advancedMounts:
+      brand:
+        app:
+          - path: /var/cache/nginx
+  tmp:
+    type: emptyDir
+    advancedMounts:
+      brand:
+        app:
+          - path: /tmp

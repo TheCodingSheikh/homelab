@@ -1,19 +1,6 @@
-# Declarative Stalwart configuration.
-#
-# This is the source of truth. An initContainer converts it to the NDJSON that
-# `stalwart-cli apply` expects — the CLI parses one JSON object per line
-# (src/commands/apply.rs: `parse_ndjson_plan`), so the wire format cannot hold
-# comments or line breaks. Authoring it as multi-document YAML keeps it legible.
-#
-# `apply` is idempotent: it reconciles live server state to this plan.
+# Source of truth for Stalwart's configuration, rendered to NDJSON and applied
+# by job.yaml. See README.md.
 
-# -----------------------------------------------------------------------------
-# 1. The mail domain
-# -----------------------------------------------------------------------------
-# dkimManagement Automatic → Stalwart generates and rotates the signing keys.
-# dnsManagement Manual → MX/SPF/DMARC/DKIM records must be published by hand;
-# read the generated zone file from the admin UI once this exists.
-# certificateManagement Manual → ingress-nginx terminates TLS, not Stalwart.
 "@type": upsert
 object: Domain
 matchOn:
@@ -22,9 +9,7 @@ value:
   dom-lab:
     name: lab.com
     description: Primary lab mail domain
-    # `aliases` is omitted, not empty. It is a schema `set`, which serialises as
-    # a map ({"other.com": true}) rather than an array — passing [] is what the
-    # server rejected with `invalidPatch ... Properties: aliases`.
+    # `aliases` is omitted, not empty: it is a schema `set`, so [] is rejected.
     certificateManagement:
       "@type": Manual
     dkimManagement:
@@ -36,20 +21,8 @@ value:
     allowRelaying: false
 
 ---
-# -----------------------------------------------------------------------------
-# 2. Keycloak as an OIDC authentication backend
-# -----------------------------------------------------------------------------
-# requireAudience must match the audience injected by the `stalwart-audience`
-# protocol mapper on the Keycloak `bulwark` client — Keycloak puts the client in
-# `azp`, not `aud`, so without that mapper every login is rejected here.
-#
-# usernameDomain is appended when the claim has no `@`, so a Keycloak username
-# of `abdo` becomes `abdo@lab.com`.
 "@type": upsert
 object: Directory
-# Matches the server's own label property for x:Directory, so repeat applies
-# update in place instead of creating duplicates. Stated explicitly rather than
-# relying on the fallback.
 matchOn:
   - description
 value:
@@ -57,9 +30,9 @@ value:
     "@type": Oidc
     description: Keycloak (lab realm)
     issuerUrl: https://sso.lab.com/realms/lab
+    # Must match the `stalwart-audience` mapper on the Keycloak `bulwark`
+    # client — Keycloak puts the client in `azp`, not `aud`.
     requireAudience: stalwart
-    # Also a `set`, so this is a map of scope -> true, not a list. The server's
-    # own default for this field is {"openid": true, "email": true}.
     requireScopes:
       openid: true
       email: true
@@ -70,28 +43,14 @@ value:
     claimGroups: groups
 
 ---
-# -----------------------------------------------------------------------------
-# 3. Activate SSO
-# -----------------------------------------------------------------------------
-# The single line that actually turns SSO on. `#dir-keycloak` refers to the
-# object created above; `#<id>` references resolve within one plan.
-#
-# The STALWART_RECOVERY_ADMIN fallback keeps working after this, which is what
-# prevents a lockout if Keycloak is ever unreachable.
 "@type": update
 object: Authentication
 value:
   directoryId: "#dir-keycloak"
 
 ---
-# -----------------------------------------------------------------------------
-# 4. HTTP behaviour
-# -----------------------------------------------------------------------------
-# CORS is owned by the Stalwart ingress annotations. Setting it in both places
-# emits duplicate Access-Control-Allow-Origin headers, which browsers reject, so
-# this stays false deliberately.
-#
-# useXForwarded → trust the client IP that ingress-nginx forwards.
+# CORS is owned by the ingress annotations; enabling it here too emits
+# duplicate Allow-Origin headers, which browsers reject.
 "@type": update
 object: Http
 value:
@@ -99,19 +58,7 @@ value:
   useXForwarded: true
 
 ---
-# -----------------------------------------------------------------------------
-# 5. Blob store — message bodies and attachments on S3 (SeaweedFS)
-# -----------------------------------------------------------------------------
-# Without this every message body lives in Postgres, which makes the mail store
-# grow without bound and turns backups into a problem. The bucket and the
-# `stalwart` S3 user are declared in
-# apps/in-cluster/storage/seaweedfs/chart/values.yaml.
-#
-# accessKey is a plain string in the schema, so it cannot reference a secret —
-# `${STALWART_S3_ACCESS_KEY}` is substituted by yq at render time from the
-# Job's env, which keeps it out of git. secretKey does support indirection, so
-# it is resolved by the *server* from its own environment and never appears in
-# the config store at all.
+# accessKey cannot hold a secret reference, so yq substitutes it at render time.
 "@type": update
 object: BlobStore
 value:
@@ -125,31 +72,17 @@ value:
   secretKey:
     "@type": EnvironmentVariable
     variableName: STALWART_S3_SECRET_KEY
-  # Read back each object after writing it. Costs an extra GET per message but
-  # catches a silently failing object store before the data is acknowledged.
   verifyAfterWrite: true
   timeout: 30000
   maxRetries: 3
 
 ---
-# -----------------------------------------------------------------------------
-# 6. Full-text search
-# -----------------------------------------------------------------------------
-# `Default` indexes into the data store. Elasticsearch and Meilisearch are the
-# alternatives, and neither is deployed in this cluster — stated explicitly so
-# the choice is visible rather than implied.
 "@type": update
 object: SearchStore
 value:
   "@type": Default
 
 ---
-# -----------------------------------------------------------------------------
-# 7. Retention and housekeeping
-# -----------------------------------------------------------------------------
-# Traces and metrics accumulate in Postgres, so these are trimmed well below the
-# defaults (90d metrics / 30d traces). Message retention is left at the defaults
-# because shortening it silently deletes user mail.
 "@type": update
 object: DataRetention
 value:
@@ -160,14 +93,8 @@ value:
   expungeSubmissionsAfter: 259200000 # 3d  (default)
 
 ---
-# -----------------------------------------------------------------------------
-# 8. Spam filtering
-# -----------------------------------------------------------------------------
-# Tag-only on purpose: scoreReject and scoreDiscard stay at 0 so nothing is ever
-# refused or silently dropped on score alone. Mail lands in the mailbox with a
-# spam tag and Sieve/user rules decide from there. Raise these only once you
-# have real corpus data — a reject threshold that is too low loses mail with no
-# bounce and no copy.
+# Tag-only: scoreReject/scoreDiscard stay 0 so nothing is refused or dropped on
+# score alone.
 "@type": update
 object: SpamSettings
 value:

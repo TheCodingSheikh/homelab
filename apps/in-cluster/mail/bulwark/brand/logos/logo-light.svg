@@ -1,6 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 40" width="168" height="40" role="img" aria-label="Lab Mail">
   <title>Lab Mail</title>
-  <!-- Same mark as icon.svg, scaled to 32px, plus the wordmark. -->
   <g transform="translate(0 4) scale(0.5)">
     <rect width="64" height="64" rx="14" fill="#1f2d3d"/>
     <g fill="none" stroke="#e6edf3" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
