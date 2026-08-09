@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - core-cluster-api-v1.13.4.yaml
+  - bootstrap-kubeadm-v1.13.4.yaml
+  - control-plane-kubeadm-v1.13.4.yaml
+  - bootstrap-k3s-v0.4.0.yaml
+  - control-plane-k3s-v0.4.0.yaml
+  - bootstrap-talos-v0.6.12.yaml
+  - control-plane-talos-v0.5.13.yaml
+  - control-plane-kamaji-v0.20.0.yaml
+  - infrastructure-hetzner-v1.1.8.yaml
+  - addon-helm-v0.6.4.yaml

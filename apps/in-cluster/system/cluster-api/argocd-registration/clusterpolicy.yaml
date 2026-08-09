@@ -1,0 +1,62 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: capi-argocd-cluster-registration
+  annotations:
+    policies.kyverno.io/title: Register Cluster API clusters in Argo CD
+    policies.kyverno.io/category: Cluster API
+    policies.kyverno.io/subject: Secret
+spec:
+  background: true
+  rules:
+    - name: generate-argocd-cluster-secret
+      match:
+        any:
+          - resources:
+              kinds:
+                - Secret
+              names:
+                - "*-kubeconfig"
+              selector:
+                matchExpressions:
+                  - key: cluster.x-k8s.io/cluster-name
+                    operator: Exists
+      preconditions:
+        all:
+          - key: "{{ request.operation || 'BACKGROUND' }}"
+            operator: AnyIn
+            value:
+              - CREATE
+              - UPDATE
+              - BACKGROUND
+          - key: "{{ request.object.data.value || '' }}"
+            operator: NotEquals
+            value: ""
+      context:
+        - name: cluster
+          variable:
+            jmesPath: 'request.object.metadata.labels."cluster.x-k8s.io/cluster-name"'
+        - name: kubeconfig
+          variable:
+            jmesPath: 'parse_yaml(base64_decode(request.object.data.value))'
+      generate:
+        apiVersion: v1
+        kind: Secret
+        name: "capi-{{ cluster }}"
+        namespace: argo-cd
+        generateExisting: true
+        synchronize: true
+        data:
+          metadata:
+            labels:
+              argocd.argoproj.io/secret-type: cluster
+              cluster.x-k8s.io/cluster-name: "{{ cluster }}"
+            annotations:
+              managed-by: kyverno
+          type: Opaque
+          stringData:
+            name: "{{ cluster }}"
+            server: "{{ kubeconfig.clusters[0].cluster.server }}"
+            # Single-quoted: JMESPath needs the double quotes around the
+            # hyphenated keys to survive unescaped.
+            config: '{"tlsClientConfig":{"caData":"{{ kubeconfig.clusters[0].cluster."certificate-authority-data" }}","certData":"{{ kubeconfig.users[0].user."client-certificate-data" }}","keyData":"{{ kubeconfig.users[0].user."client-key-data" }}"}}'

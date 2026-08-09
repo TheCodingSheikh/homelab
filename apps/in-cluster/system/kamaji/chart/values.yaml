@@ -1,0 +1,43 @@
+image:
+  tag: 26.8.2-edge
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+# resources:
+#   limits:
+#     cpu: 500m
+#     memory: 256Mi
+#   requests:
+#     cpu: 100m
+#     memory: 64Mi
+
+serviceMonitor:
+  enabled: true
+
+telemetry:
+  disabled: true
+
+kamaji-etcd:
+  deploy: true
+  replicas: 1
+  # replicas: 3
+  # persistentVolumeClaim:
+  #   size: 8Gi
+  #   retentionPolicyWhenDeleted: Retain
+  # affinity:
+  #   podAntiAffinity:
+  #     preferredDuringSchedulingIgnoredDuringExecution:
+  #       - weight: 100
+  #         podAffinityTerm:
+  #           labelSelector:
+  #             matchLabels:
+  #               application: kamaji-etcd
+  #           topologyKey: kubernetes.io/hostname
+  # resources:
+  #   limits:
+  #     cpu: "1"
+  #     memory: 1Gi
+  #   requests:
+  #     cpu: 100m
+  #     memory: 256Mi

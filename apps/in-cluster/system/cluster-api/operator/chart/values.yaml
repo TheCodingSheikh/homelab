@@ -1,0 +1,25 @@
+core: {}
+bootstrap: {}
+controlPlane: {}
+infrastructure: {}
+addon: {}
+ipam: {}
+
+enableHelmHook: false
+watchConfigMap: true
+
+replicaCount: 1
+leaderElection:
+  enabled: true
+
+podAnnotations:
+  inject-certs: enabled
+
+resources:
+  manager:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
