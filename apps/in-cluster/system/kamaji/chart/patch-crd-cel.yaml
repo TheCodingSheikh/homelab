@@ -1,0 +1,24 @@
+# Workaround for Kubernetes 1.30. REMOVE THIS once the management cluster is
+# on 1.31 or newer.
+#
+# These six rules call isIP()/isCIDR(). Those CEL functions are introduced at
+# environment version 1.30, but a 1.30 API server compiles new CRD expressions
+# against compatibility version 1.29 — DefaultCompatibilityVersion() is
+# hardcoded to MajorMinor(1, 29) in release-1.30 — so they do not resolve and
+# the whole CRD is rejected with "undeclared reference to 'isCIDR'". From 1.31
+# it returns MinCompatibilityVersion() (binary-1 = 1.30) and they compile.
+#
+# Dropping them only removes API-server-side format checks on networkProfile;
+# Kamaji still validates these fields itself.
+- op: remove
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/networkProfile/properties/advertiseAddress/x-kubernetes-validations
+- op: remove
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/networkProfile/properties/loadBalancerSourceRanges/x-kubernetes-validations
+- op: remove
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/networkProfile/properties/podCidr/x-kubernetes-validations
+- op: remove
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/networkProfile/properties/podCidrs/x-kubernetes-validations
+- op: remove
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/networkProfile/properties/serviceCidr/x-kubernetes-validations
+- op: remove
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/networkProfile/properties/serviceCidrs/x-kubernetes-validations
