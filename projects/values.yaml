@@ -11,3 +11,4 @@ projects:
   - name: managed-services
   - name: ai
   - name: mail
+  - name: clusters

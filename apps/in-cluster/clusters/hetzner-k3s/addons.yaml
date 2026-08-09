@@ -1,0 +1,69 @@
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: hetzner-k3s-cilium
+spec:
+  clusterSelector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: hetzner-k3s
+  repoURL: https://helm.cilium.io/
+  chartName: cilium
+  version: 1.20.0
+  namespace: kube-system
+  releaseName: cilium
+  valuesTemplate: |
+    ipam:
+      mode: kubernetes
+    routingMode: tunnel
+    tunnelProtocol: vxlan
+    operator:
+      replicas: 1
+    encryption:
+      enabled: true
+      type: wireguard
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: hetzner-k3s-hccm
+spec:
+  clusterSelector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: hetzner-k3s
+  repoURL: https://charts.hetzner.cloud
+  chartName: hcloud-cloud-controller-manager
+  version: 1.34.0
+  namespace: kube-system
+  releaseName: hccm
+  valuesTemplate: |
+    networking:
+      enabled: true
+      clusterCIDR: 10.244.0.0/16
+    robot:
+      enabled: false
+    monitoring:
+      enabled: true
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: hetzner-k3s-hcloud-csi
+spec:
+  clusterSelector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: hetzner-k3s
+  repoURL: https://charts.hetzner.cloud
+  chartName: hcloud-csi
+  version: 2.22.1
+  namespace: kube-system
+  releaseName: hcloud-csi
+  valuesTemplate: |
+    controller:
+      hcloudToken:
+        existingSecret:
+          name: hcloud
+          key: token
+    storageClasses:
+      - name: hcloud-volumes
+        defaultStorageClass: true
+        reclaimPolicy: Delete

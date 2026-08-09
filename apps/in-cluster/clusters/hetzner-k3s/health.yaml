@@ -1,0 +1,75 @@
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: MachineHealthCheck
+metadata:
+  name: hetzner-k3s-control-plane-unhealthy-5m
+spec:
+  checks:
+    nodeStartupTimeoutSeconds: 900
+    unhealthyNodeConditions:
+      - status: Unknown
+        timeoutSeconds: 180
+        type: Ready
+      - status: "False"
+        timeoutSeconds: 180
+        type: Ready
+  clusterName: hetzner-k3s
+  remediation:
+    templateRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: HCloudRemediationTemplate
+      name: control-plane-remediation-request
+    triggerIf:
+      unhealthyLessThanOrEqualTo: 100%
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/control-plane: ""
+---
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: MachineHealthCheck
+metadata:
+  name: hetzner-k3s-md-0-unhealthy-5m
+spec:
+  checks:
+    nodeStartupTimeoutSeconds: 600
+    unhealthyNodeConditions:
+      - status: Unknown
+        timeoutSeconds: 180
+        type: Ready
+      - status: "False"
+        timeoutSeconds: 180
+        type: Ready
+  clusterName: hetzner-k3s
+  remediation:
+    templateRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: HCloudRemediationTemplate
+      name: worker-remediation-request
+    triggerIf:
+      unhealthyLessThanOrEqualTo: 100%
+  selector:
+    matchLabels:
+      nodepool: hetzner-k3s-md-0
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: HCloudRemediationTemplate
+metadata:
+  name: control-plane-remediation-request
+spec:
+  template:
+    spec:
+      strategy:
+        retryLimit: 1
+        timeout: 180s
+        type: Reboot
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: HCloudRemediationTemplate
+metadata:
+  name: worker-remediation-request
+spec:
+  template:
+    spec:
+      strategy:
+        retryLimit: 1
+        timeout: 180s
+        type: Reboot

@@ -1,0 +1,56 @@
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: Cluster
+metadata:
+  name: hetzner-k3s
+  labels:
+    cluster.x-k8s.io/cluster-name: hetzner-k3s
+    capi.lab.com/infra: hetzner
+    capi.lab.com/bootstrap: k3s
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - 10.244.0.0/16
+    services:
+      cidrBlocks:
+        - 10.43.0.0/16
+  controlPlaneRef:
+    apiGroup: controlplane.cluster.x-k8s.io
+    kind: KThreesControlPlane
+    name: hetzner-k3s-control-plane
+  infrastructureRef:
+    apiGroup: infrastructure.cluster.x-k8s.io
+    kind: HetznerCluster
+    name: hetzner-k3s
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: HetznerCluster
+metadata:
+  name: hetzner-k3s
+spec:
+  controlPlaneEndpoint:
+    host: ""
+    port: 443
+  controlPlaneLoadBalancer:
+    region: fsn1
+  controlPlaneRegions:
+    - fsn1
+  hcloudNetwork:
+    enabled: true
+  hcloudPlacementGroups:
+    - name: control-plane
+      type: spread
+    - name: md-0
+      type: spread
+  hetznerSecretRef:
+    name: hetzner
+    key:
+      hcloudToken: hcloud
+      # Explicitly empty, not omitted: the CRD defaults these to
+      # hetzner-robot-user / hetzner-robot-password, and caph then looks for
+      # secret keys that do not exist. Empty disables the robot path entirely.
+      hetznerRobotUser: ""
+      hetznerRobotPassword: ""
+  sshKeys:
+    hcloud:
+      - name: lab
