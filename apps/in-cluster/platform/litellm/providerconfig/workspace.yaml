@@ -1,0 +1,18 @@
+apiVersion: tf.upbound.io/v1beta1
+kind: Workspace
+metadata:
+  name: litellm
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    crossplane.io/external-name: litellm
+spec:
+  providerConfigRef:
+    name: litellm
+  # provider-terraform publishes every Terraform output here, sensitive ones
+  # included — how the generated service-account keys reach their workloads.
+  writeConnectionSecretToRef:
+    namespace: litellm
+    name: litellm-tf-outputs
+  forProvider:
+    source: Remote
+    module: git::https://github.com/TheCodingSheikh/homelab.git//apps/in-cluster/platform/litellm/iac?ref=main

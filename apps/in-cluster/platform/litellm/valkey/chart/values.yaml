@@ -1,0 +1,95 @@
+fullnameOverride: litellm-valkey
+
+defaultPodOptions:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+
+controllers:
+  valkey:
+    type: deployment
+    replicas: 1
+    strategy: Recreate
+    containers:
+      app:
+        image:
+          repository: docker.io/valkey/valkey
+          tag: 8.1.9-alpine
+          pullPolicy: IfNotPresent
+        command: ["valkey-server"]
+        args:
+          - --requirepass
+          - $(VALKEY_PASSWORD)
+          - --save
+          - ""
+          - --appendonly
+          - "no"
+          # volatile-lru, not allkeys-lru: rate-limit and cache keys carry TTLs,
+          # so eviction stays inside that set instead of dropping the spend
+          # buffer under memory pressure.
+          - --maxmemory
+          - 1gb
+          - --maxmemory-policy
+          - volatile-lru
+        env:
+          - name: VALKEY_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: litellm-env
+                key: REDIS_PASSWORD
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - valkey-cli --no-auth-warning -a "$VALKEY_PASSWORD" ping | grep -q PONG
+              initialDelaySeconds: 15
+              periodSeconds: 20
+              timeoutSeconds: 5
+              failureThreshold: 5
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - valkey-cli --no-auth-warning -a "$VALKEY_PASSWORD" ping | grep -q PONG
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              timeoutSeconds: 5
+              failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: "1"
+            # Above --maxmemory so eviction reacts before the OOM killer.
+            memory: 1500Mi
+
+persistence:
+  # valkey-server needs one writable path for its pidfile, and root is read-only.
+  data:
+    type: emptyDir
+    globalMounts:
+      - path: /data
+
+service:
+  app:
+    controller: valkey
+    ports:
+      redis:
+        port: 6379

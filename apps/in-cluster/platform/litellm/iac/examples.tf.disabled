@@ -1,0 +1,116 @@
+# Features with no backend in this cluster yet. Rename to .tf and fill in — the
+# extension is what keeps Terraform out, matching config.yaml.disabled elsewhere
+# in this repo. Validated against the 2.0.1 schema, not aspirational.
+
+# server_name and alias reject hyphens. skip_url_validation is needed for
+# cluster-internal DNS, which the Terraform runner cannot resolve.
+resource "litellm_mcp_server" "kubernetes" {
+  server_name = "kubernetes"
+  alias       = "k8s"
+  description = "Read-only cluster introspection"
+
+  url       = "http://mcp-kubernetes.ai.svc.cluster.local:8000/mcp"
+  transport = "http"
+  auth_type = "none"
+
+  skip_url_validation = true
+  allow_all_keys      = false
+  allowed_tools       = ["list_pods", "get_logs", "describe"]
+
+  mcp_info {
+    server_name = "kubernetes"
+
+    mcp_server_cost_info {
+      default_cost_per_query = 0.001
+    }
+  }
+}
+
+# The /v1/access_group API, distinct from the model-level `access_groups` in
+# models.tf. Use it for what a team's `models` list cannot express — MCP servers
+# and agents — and leave access_model_names empty so one place decides models.
+resource "litellm_unified_access_group" "platform" {
+  access_group_name = "platform"
+  description       = "Tooling the platform team may reach"
+
+  access_model_names    = []
+  access_mcp_server_ids = [litellm_mcp_server.kubernetes.server_id]
+  access_agent_ids      = []
+
+  assigned_team_ids = [litellm_team.platform.id]
+  assigned_key_ids  = []
+}
+
+resource "litellm_agent" "code_reviewer" {
+  agent_name = "code_reviewer"
+
+  litellm_params = {
+    model = litellm_model.claude_sonnet_4_6.model_name
+  }
+
+  tpm_limit         = 100000
+  rpm_limit         = 60
+  session_tpm_limit = 20000
+  session_rpm_limit = 20
+
+  agent_card {
+    name             = "Code Reviewer"
+    description      = "Reviews diffs for correctness and style"
+    url              = "http://code-reviewer.ai.svc.cluster.local:8080/a2a"
+    version          = "1.0.0"
+    protocol_version = "0.2.6"
+
+    capabilities {
+      streaming = true
+    }
+
+    skills {
+      id          = "review"
+      name        = "Review a diff"
+      description = "Reads a unified diff and reports defects"
+      tags        = ["code", "review"]
+    }
+  }
+
+  # What the agent may call, independent of who may call the agent.
+  object_permission {
+    models = [litellm_model.claude_sonnet_4_6.model_name]
+  }
+}
+
+# pre_call screens input, during_call filters streams, post_call checks output.
+# litellm_params carries provider settings only — guardrail, mode and default_on
+# are top-level. Presidio is the only option that is a deployment, not a key.
+resource "litellm_guardrail" "presidio_pii" {
+  guardrail_name = "presidio-pii"
+  guardrail      = "presidio"
+  mode           = "pre_call"
+  default_on     = true
+
+  litellm_params = jsonencode({
+    presidio_analyzer_api_base   = "http://presidio-analyzer.ai.svc.cluster.local:3000"
+    presidio_anonymizer_api_base = "http://presidio-anonymizer.ai.svc.cluster.local:3000"
+  })
+}
+
+# Needs an embedding model in models.tf (mode = "embedding").
+resource "litellm_vector_store" "docs" {
+  vector_store_name        = "docs"
+  custom_llm_provider      = "pgvector"
+  vector_store_description = "Internal documentation embeddings"
+  litellm_credential_name  = litellm_credential.pgvector.credential_name
+
+  litellm_params = {
+    embedding_model = "text-embedding-3-small"
+  }
+}
+
+# tavily, serper, bing or google. Put the key in litellm-env and declare it in
+# variables.tf rather than inlining it.
+resource "litellm_search_tool" "tavily" {
+  search_tool_name = "tavily"
+  search_provider  = "tavily"
+  api_key          = var.tavily_api_key
+  timeout          = 30.0
+  max_retries      = 3
+}

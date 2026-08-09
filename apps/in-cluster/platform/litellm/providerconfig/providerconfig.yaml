@@ -1,0 +1,48 @@
+apiVersion: tf.upbound.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: litellm
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  credentials:
+    # Providers resolve from the S3 network mirror, not registry.terraform.io.
+    # ncecere/litellm must be pushed there before this can init — see
+    # scripts/terraform/providers.txt.
+    - filename: .terraformrc
+      source: Secret
+      secretRef:
+        namespace: litellm
+        name: litellm-terraformrc
+        key: terraformrc
+    - filename: litellm.auto.tfvars.json
+      source: Secret
+      secretRef:
+        namespace: litellm
+        name: litellm-tf
+        key: credentials
+  configuration: |
+    terraform {
+      required_providers {
+        litellm = {
+          source  = "ncecere/litellm"
+          version = "2.0.1"
+        }
+      }
+
+      backend "kubernetes" {
+        secret_suffix     = "litellm"
+        namespace         = "crossplane"
+        in_cluster_config = true
+      }
+    }
+
+    variable "litellm_api_key" {
+      type      = string
+      sensitive = true
+    }
+
+    provider "litellm" {
+      api_base = "http://litellm.litellm.svc.cluster.local:4000"
+      api_key  = var.litellm_api_key
+    }

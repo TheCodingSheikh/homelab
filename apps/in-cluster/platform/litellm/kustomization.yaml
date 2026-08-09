@@ -5,21 +5,14 @@ namespace: litellm
 
 resources:
   - chart
-  # - rate-limit-patch.yaml
+  - valkey
+  - providerconfig
+  - terraformrc.yaml
 
-# patches:
-#   - target:
-#       kind: Deployment
-#       name: litellm
-#     patch: |-
-#       - op: replace
-#         path: /spec/template/spec/volumes/0
-#         value:
-#           name: litellm-config
-#           configMap:
-#             name: litellm-config
-
+# Hash-suffixed, so editing the callback rolls the ConfigMap and restarts the
+# proxy. Kustomize rewrites the volume reference the chart renders, so this name
+# must match the one in chart/values.yaml.
 configMapGenerator:
-- name: litellm-concurrency-limiter
-  files:
-    - model_concurrency_limiter.py
+  - name: litellm-concurrency-limiter
+    files:
+      - model_concurrency_limiter.py

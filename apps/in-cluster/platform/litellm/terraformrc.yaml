@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: litellm-terraformrc
+stringData:
+  terraformrc: |
+    provider_installation {
+      network_mirror {
+        url = "https://s3.lab.com/public/terraform/"
+      }
+    }

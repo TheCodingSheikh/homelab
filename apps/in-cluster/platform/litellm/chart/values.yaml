@@ -1,20 +1,33 @@
 replicaCount: 1
 
+image:
+  pullPolicy: IfNotPresent
+
 command:
   - /bin/bash
   - -c
   - |
+    set -euo pipefail
     PKG=$(cd /tmp && python -c 'import os, litellm; print(os.path.dirname(litellm.__file__))')
     sed -i '/def is_premium(self) -> bool:/a\        return True' "$PKG/proxy/auth/litellm_license.py"
     sed -i 's/premium_user: bool = _license_check.is_premium()/premium_user: bool = True/g; s/premium_user = _license_check.is_premium()/premium_user = True/g' "$PKG/proxy/proxy_server.py"
-    find "$PKG" -name "*.pyc" -delete 2>/dev/null; find "$PKG" -name __pycache__ -exec rm -rf {} + 2>/dev/null
-    docker/prod_entrypoint.sh --config /etc/litellm/config.yaml
+    find "$PKG" -name '*.pyc' -delete 2>/dev/null || true
+    find "$PKG" -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+    exec docker/prod_entrypoint.sh --config /etc/litellm/config.yaml
 
 envVars:
   LITELLM_LICENSE: "bypass"
-  DOCS_TITLE: "MYLLM"
+  LITELLM_MODE: PRODUCTION
+  LITELLM_LOG: ERROR
+  PROXY_BASE_URL: "https://llm.lab.com"
+  DOCS_TITLE: "LABLLM"
+  DOCS_DESCRIPTION: "OpenAI-compatible gateway for every model in the lab."
+  SSL_CERT_FILE: /etc/ssl/certs/ca.crt
+  GRACEFUL_SHUTDOWN_TIMEOUT: "120"
+  REDIS_HOST: litellm-valkey.litellm.svc.cluster.local
+  REDIS_PORT: "6379"
+  AUTO_REDIRECT_UI_LOGIN_TO_SSO: "true"
   GENERIC_CLIENT_ID: litellm
-  GENERIC_CLIENT_SECRET: "tVphFDdl26D8yG8VrlhsPO7M9V5y9vls"
   GENERIC_AUTHORIZATION_ENDPOINT: "https://sso.lab.com/realms/lab/protocol/openid-connect/auth"
   GENERIC_TOKEN_ENDPOINT: "https://sso.lab.com/realms/lab/protocol/openid-connect/token"
   GENERIC_USERINFO_ENDPOINT: "https://sso.lab.com/realms/lab/protocol/openid-connect/userinfo"
@@ -23,109 +36,136 @@ envVars:
   GENERIC_USER_DISPLAY_NAME_ATTRIBUTE: "preferred_username"
   GENERIC_USER_FIRST_NAME_ATTRIBUTE: "given_name"
   GENERIC_USER_LAST_NAME_ATTRIBUTE: "family_name"
-  GENERIC_INCLUDE_CLIENT_ID: "true"
-  GENERIC_SCOPE: "openid profile email litellm"
   GENERIC_USER_ROLE_ATTRIBUTE: "litellm"
-  LITELLM_LOG: ERROR
-  LITELLM_MODE: PRODUCTION
-  DISABLE_SCHEMA_UPDATE: "true"
-  LITELLM_SALT_KEY: "sk-1234"
-  USE_PRISMA_MIGRATE: "True"
-  SSL_CERT_FILE: /etc/ssl/certs/ca.crt
-  AUTO_REDIRECT_UI_LOGIN_TO_SSO: "true"
+  GENERIC_INCLUDE_CLIENT_ID: "true"
+  GENERIC_SCOPE: "openid profile email litellm groups"
 
-image:
-  pullPolicy: IfNotPresent
+  # JWT_AUDIENCE unset on purpose: Keycloak issues `aud: account`, and setting it
+  # would reject every token without a matching audience mapper.
+  JWT_PUBLIC_KEY_URL: "https://sso.lab.com/realms/lab/protocol/openid-connect/certs"
+
+environmentSecrets:
+  - litellm-secret
+
+# resources:
+#   limits:
+#     cpu: "4"
+#     memory: "8Gi"
+#   requests:
+#     cpu: "2"
+#     memory: "4Gi"
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 60
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 600
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 180
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+
+# pdb:
+#   enabled: true
+#   maxUnavailable: 1
+
+# strategy:
+#   type: RollingUpdate
+#   rollingUpdate:
+#     maxUnavailable: 0
+#     maxSurge: 1
+
+# topologySpreadConstraints:
+#   - maxSkew: 1
+#     topologyKey: kubernetes.io/hostname
+#     whenUnsatisfiable: ScheduleAnyway
+#     labelSelector:
+#       matchLabels:
+#         app.kubernetes.io/name: litellm
+
+terminationGracePeriodSeconds: 180
+
+lifecycle:
+  preStop:
+    exec:
+      command:
+        - /bin/sh
+        - -c
+        - |
+          python - <<'PY'
+          import os, urllib.request
+          req = urllib.request.Request(
+              "http://127.0.0.1:4000/health/drain",
+              headers={"X-Drain-Token": os.environ.get("PROXY_MASTER_KEY", "")},
+          )
+          urllib.request.urlopen(req, timeout=150).read()
+          PY
+
+
+startupProbe:
+  path: /health/readiness
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 60
 
 podAnnotations:
   inject-certs: "enabled"
 
+# Must sit next to config.yaml for LiteLLM to import it by module name.
 volumeMounts:
-  # - name: patch-scripts
-  #   mountPath: /patches
-    - mountPath: /etc/litellm/model_concurrency_limiter.py
-      name: litellm-concurrency-limiter
-      subPath: model_concurrency_limiter.py
+  - name: litellm-concurrency-limiter
+    mountPath: /etc/litellm/model_concurrency_limiter.py
+    subPath: model_concurrency_limiter.py
 
 volumes:
-  # - name: patch-scripts
-  #   configMap:
-  #     name: litellm-org-rate-limit-patch
-  #     defaultMode: 0755
-  - configMap:
+  - name: litellm-concurrency-limiter
+    configMap:
       name: litellm-concurrency-limiter
-    name: litellm-concurrency-limiter
+
+# The bundled subchart pins bitnami/redis:7.2.4, removed from Docker Hub.
+# ../valkey replaces it, at the REDIS_HOST above.
 redis:
   enabled: false
 
-resources:
-  limits:
-    cpu: "4"
-    memory: "8Gi"
-  requests:
-    cpu: "4"
-    memory: "8Gi"
+db:
+  useExisting: true
+  deployStandalone: false
+  database: litellm
+  secret:
+    name: litellm-db
+    usernameKey: user
+    passwordKey: password
+    endpointKey: host
 
-separateHealthApp: true
+# Runs once in an ArgoCD PreSync hook so replicas never race the database. The
+# chart then sets DISABLE_SCHEMA_UPDATE=true on the proxy.
+migrationJob:
+  enabled: true
+  backoffLimit: 4
+  ttlSecondsAfterFinished: 600
+  hooks:
+    argocd:
+      enabled: true
+    helm:
+      enabled: false
 
-# serviceMonitor:
-#   enabled: true
 
-proxy_config:
-  model_list:
-    - model_name: "qwen3:0.6b"             
-      litellm_params:
-        model: "ollama/qwen3:0.6b"
-        api_base: "http://qwen3-0-6b-ollama.ai:11434"
-    - model_name: "claude-opus-4-8"             
-      litellm_params:
-        model: "anthropic/claude-opus-4-8"
-        api_base: "http://cliproxy.ai:8317"
-        api_key: "secret"
-        # max_parallel_requests: 1
-    - model_name: "claude-sonnet-4-6"             
-      litellm_params:
-        model: "anthropic/claude-sonnet-4-6"
-        api_base: "http://cliproxy.ai:8317"
-        api_key: "secret"
-  sso_settings:
-    role_mappings:
-      provider: "generic"
-      group_claim: "groups"
-      default_role: "internal_user"
-      roles:
-        proxy_admin: ["litellm-admins"]
+masterkeySecretName: "litellm-masterkey"
+masterkeySecretKey: "masterkey"
 
-  router_settings:
-    routing_strategy: simple-shuffle
-    # redis_host: os.environ/REDIS_HOST
-    # redis_port: os.environ/REDIS_PORT
-    # redis_password: os.environ/REDIS_PASSWORD
-
-  general_settings:
-    proxy_batch_write_at: 60
-    database_connection_pool_limit: 10
-    disable_error_logs: True
-    allow_requests_on_db_unavailable: True
-    litellm_jwtauth:
-      team_ids_jwt_field: "groups"
-    # custom_sso: "custom_sso.custom_sso_handler"
-  
-  litellm_settings:
-    request_timeout: 600
-    callbacks: model_concurrency_limiter.limiter_instance
-    drop_params: true
-    # cache: True
-    # cache_params:
-    #   type: redis
-    #   host: os.environ/REDIS_HOST
-    #   port: os.environ/REDIS_PORT
-    #   password: os.environ/REDIS_PASSWORD
-    set_verbose: False
-    json_logs: true   
-    default_internal_user_params:
-      user_role: "internal_user"
-      models: ["all-proxy-models"]
+serviceMonitor:
+  enabled: false
 
 ingress:
   enabled: true
@@ -134,7 +174,10 @@ ingress:
     cert-manager.io/cluster-issuer: lab-issuer
     gethomepage.dev/enabled: "true"
     gethomepage.dev/name: "LiteLLM"
+    gethomepage.dev/group: "Platform"
     gethomepage.dev/icon: "litellm.png"
+    gethomepage.dev/description: "LLM gateway"
+    # Streaming breaks if responses are buffered.
     nginx.ingress.kubernetes.io/proxy-buffering: "off"
     nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
     nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
@@ -149,19 +192,155 @@ ingress:
         - path: /
           pathType: Prefix
   tls:
-   - secretName: litellm-tls
-     hosts:
-       - llm.lab.com
+    - secretName: litellm-tls
+      hosts:
+        - llm.lab.com
 
-db:
-  useExisting: true
-  deployStandalone: false
-  database: litellm
-  secret:
-    name: litellm-secret
-    usernameKey: user
-    passwordKey: password
-    endpointKey: host
+proxy_config:
+  # Must be explicit: Helm merges maps, so omitting this leaves the chart's
+  # example entries (gpt-3.5-turbo, fake-openai-endpoint) in the config.
+  model_list: []
 
-masterkeySecretName: "litellm-masterkey"
-masterkeySecretKey: "masterkey"
+
+  general_settings:
+    master_key: os.environ/PROXY_MASTER_KEY
+
+    store_model_in_db: true
+    proxy_config_reload_interval_seconds: 30
+
+    # database_connection_pool_limit: 10
+    # database_connection_timeout: 60
+    proxy_batch_write_at: 60
+    allow_requests_on_db_unavailable: true
+    disable_error_logs: true
+    # maximum_spend_logs_retention_period: "90d"
+    # maximum_spend_logs_retention_interval: "1d"
+
+    enable_drain_endpoint: true
+    drain_endpoint_token: os.environ/PROXY_MASTER_KEY
+
+    background_health_checks: true
+    # health_check_interval: 300
+    health_check_concurrency: 4
+    use_shared_health_check: true
+    enable_health_check_routing: true
+    health_check_ignore_transient_errors: true
+    health_check_staleness_threshold: 900
+    health_check_details: false
+
+    enable_jwt_auth: true
+    litellm_jwtauth:
+      user_id_jwt_field: "preferred_username"
+      user_email_jwt_field: "email"
+      roles_jwt_field: "litellm"
+      role_mappings:
+        - role: "proxy_admin"
+          internal_role: "proxy_admin"
+        - role: "proxy_admin_viewer"
+          internal_role: "proxy_admin_viewer"
+        - role: "internal_user"
+          internal_role: "internal_user"
+        - role: "internal_user_viewer"
+          internal_role: "internal_user_viewer"
+      user_id_upsert: true
+
+      team_ids_jwt_field: "groups"
+      team_id_upsert: false
+      team_claim_fallback: true
+
+      public_key_ttl: 600
+
+    auto_redirect_ui_login_to_sso: true
+    disable_master_key_return: true
+    reject_clientside_metadata_tags: true
+    allow_client_side_credentials: false
+
+    max_request_size_mb: 100
+    max_response_size_mb: 100
+    cancel_on_disconnect: true
+
+    # proxy_budget_rescheduler_min_time: 597
+    # proxy_budget_rescheduler_max_time: 605
+
+    # Alerting off; rules belong in kube-prometheus-stack. To enable, add
+    # SLACK_WEBHOOK_URL to litellm-env and uncomment.
+    # alerting: ["slack"]
+    # alerting_threshold: 300
+    # alert_types: [llm_exceptions, llm_requests_hanging, budget_alerts, db_exceptions, outage_alerts]
+
+  litellm_settings:
+    callbacks:
+      - prometheus
+      - model_concurrency_limiter.limiter_instance
+    service_callback: ["prometheus_system"]
+    prometheus_initialize_budget_metrics: true
+    # prometheus_end_user_metrics_max_series_per_metric, default 10000 / 1h TTL.
+    enable_end_user_cost_tracking_prometheus_only: true
+
+    # request_timeout: 600
+    drop_params: true
+    set_verbose: false
+    json_logs: true
+
+    # default_off: callers opt in per request.
+    cache: true
+    cache_params:
+      type: redis
+      host: os.environ/REDIS_HOST
+      port: os.environ/REDIS_PORT
+      password: os.environ/REDIS_PASSWORD
+      namespace: "litellm.cache"
+      mode: default_on
+      ttl: 600
+      supported_call_types:
+        - acompletion
+        - atext_completion
+        - aembedding
+        - atranscription
+
+    # So a key revoked on one replica is not still honoured by another.
+    enable_redis_auth_cache: true
+
+    default_internal_user_params:
+      user_role: "internal_user"
+      models: ["all-proxy-models"]
+      max_budget: 200.0
+      budget_duration: "1d"
+    default_team_params:
+      max_budget: 1000.0
+      budget_duration: "1d"
+
+    key_generation_settings:
+      team_key_generation:
+        allowed_team_member_roles: ["admin"]
+      personal_key_generation:
+        allowed_user_roles: ["proxy_admin", "internal_user"]
+
+  router_settings:
+    # Every other strategy needs cross-replica state on the hot path.
+    routing_strategy: simple-shuffle
+    redis_host: os.environ/REDIS_HOST
+    redis_port: os.environ/REDIS_PORT
+    redis_password: os.environ/REDIS_PASSWORD
+
+    num_retries: 2
+    timeout: 600
+    stream_timeout: 600
+
+    enable_pre_call_checks: true
+
+    allowed_fails: 3
+    cooldown_time: 60
+    retry_policy:
+      AuthenticationErrorRetries: 0
+      BadRequestErrorRetries: 0
+      TimeoutErrorRetries: 2
+      RateLimitErrorRetries: 3
+      ContentPolicyViolationErrorRetries: 0
+      InternalServerErrorRetries: 2
+
+    enable_health_check_routing: true
+    health_check_staleness_threshold: 900
+    health_check_ignore_transient_errors: true
+
+    ignore_invalid_deployments: true
