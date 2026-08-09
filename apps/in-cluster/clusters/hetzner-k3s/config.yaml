@@ -1,5 +1,3 @@
 # Disabled. Renaming to config.yaml starts creating billable Hetzner resources —
 # see ../README.md for the prerequisites first.
 autoSync: false
-additionalSyncOptions:
-  - ServerSideApply=true
