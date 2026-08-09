@@ -1,1 +1,2 @@
 destNamespace: capi-operator-system
+autoSync: false
