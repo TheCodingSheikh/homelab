@@ -1,0 +1,62 @@
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+kind: KThreesConfigTemplate
+metadata:
+  name: hetzner-k3s-md-0
+spec:
+  template:
+    spec:
+      agentConfig:
+        airGapped: false
+        kubeletArgs:
+          - --cloud-provider=external
+---
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: MachineDeployment
+metadata:
+  name: hetzner-k3s-md-0
+  labels:
+    nodepool: hetzner-k3s-md-0
+spec:
+  clusterName: hetzner-k3s
+  replicas: 1
+  selector:
+    matchLabels: null
+  template:
+    metadata:
+      labels:
+        nodepool: hetzner-k3s-md-0
+    spec:
+      clusterName: hetzner-k3s
+      failureDomain: fsn1
+      version: v1.34.10+k3s1
+      bootstrap:
+        configRef:
+          apiGroup: bootstrap.cluster.x-k8s.io
+          kind: KThreesConfigTemplate
+          name: hetzner-k3s-md-0
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: HCloudMachineTemplate
+        name: hetzner-k3s-md-0
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: HCloudMachineTemplate
+metadata:
+  name: hetzner-k3s-md-0
+spec:
+  template:
+    spec:
+      imageName: ubuntu-24.04
+      placementGroupName: md-0
+      type: cpx22
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: HCloudMachineTemplate
+metadata:
+  name: hetzner-k3s-control-plane
+spec:
+  template:
+    spec:
+      imageName: ubuntu-24.04
+      placementGroupName: control-plane
+      type: cpx22
