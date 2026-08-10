@@ -37,8 +37,7 @@ spec:
   releaseName: hccm
   valuesTemplate: |
     networking:
-      enabled: true
-      clusterCIDR: 10.244.0.0/16
+      enabled: false
     robot:
       enabled: false
     monitoring:
