@@ -4,5 +4,6 @@ kind: Kustomization
 resources:
   - kubeadm.yaml
   - k3s.yaml
+  - rke2.yaml
   - talos.yaml
   - kamaji.yaml

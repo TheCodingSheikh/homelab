@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rke2-bootstrap-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+---
+# CAPRKE2 is a clusterctl built-in ("rke2"), so no fetchConfig.url is needed —
+# unlike the k3s providers next to it.
+#
+# It is also the only non-core provider here already on the v1beta2 contract
+# (v0.22.0 switched); k3s, Talos, Kamaji and caph are all still v1beta1. That
+# shows up in the manifests: RKE2ControlPlane.spec.machineTemplate.spec
+# .infrastructureRef takes apiGroup, where KThreesControlPlane still takes
+# apiVersion.
+apiVersion: operator.cluster.x-k8s.io/v1alpha2
+kind: BootstrapProvider
+metadata:
+  name: rke2
+  namespace: rke2-bootstrap-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  version: v0.25.0

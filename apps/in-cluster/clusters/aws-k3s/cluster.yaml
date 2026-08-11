@@ -1,0 +1,66 @@
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: Cluster
+metadata:
+  name: aws-k3s
+  labels:
+    cluster.x-k8s.io/cluster-name: aws-k3s
+    capi.lab.com/infra: aws
+    capi.lab.com/bootstrap: k3s
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - 10.244.0.0/16
+    services:
+      cidrBlocks:
+        - 10.43.0.0/16
+  controlPlaneRef:
+    apiGroup: controlplane.cluster.x-k8s.io
+    kind: KThreesControlPlane
+    name: aws-k3s-control-plane
+  infrastructureRef:
+    apiGroup: infrastructure.cluster.x-k8s.io
+    kind: AWSCluster
+    name: aws-k3s
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSCluster
+metadata:
+  name: aws-k3s
+spec:
+  region: eu-central-1
+  # An EC2 key pair name in that region, not a file. CAPA fails instance
+  # creation if it does not exist.
+  sshKeyName: lab
+  controlPlaneLoadBalancer:
+    # k3s serves its supervisor (the join API, /v1-k3s/...) on the same 6443 as
+    # the apiserver, so the default listener is the only one needed — unlike
+    # RKE2, which wants a second one on 9345.
+    loadBalancerType: nlb
+  network:
+    vpc:
+      # Default is 3, which means three private subnets and three NAT gateways
+      # at ~$32/month each before a byte moves. One AZ is a lab, not an SLA.
+      availabilityZoneUsageLimit: 1
+    # CAPA's default node/control-plane groups open 6443, 2379-2380, 10250 and
+    # the NodePort range and nothing else, so every overlay port Cilium needs
+    # has to be named here. These rules land on both the control-plane and node
+    # groups with the other group as source, which is exactly node-to-node.
+    cni:
+      cniIngressRules:
+        - description: Cilium VXLAN
+          protocol: udp
+          fromPort: 8472
+          toPort: 8472
+        - description: Cilium health checks
+          protocol: tcp
+          fromPort: 4240
+          toPort: 4240
+        - description: Cilium WireGuard
+          protocol: udp
+          fromPort: 51871
+          toPort: 51871
+        - description: Cilium health probes (ICMP)
+          protocol: icmp
+          fromPort: -1
+          toPort: -1

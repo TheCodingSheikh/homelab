@@ -1,0 +1,73 @@
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+kind: KThreesConfigTemplate
+metadata:
+  name: aws-k3s-md-0
+spec:
+  template:
+    spec:
+      preK3sCommands:
+        # See control-plane.yaml: the AWS CCM matches nodes to instances by
+        # private DNS name, so the agent has to be named after one.
+        - |
+          mkdir -p /etc/rancher/k3s/config.yaml.d
+          tok=$(curl -sf -X PUT http://169.254.169.254/latest/api/token \
+            -H 'X-aws-ec2-metadata-token-ttl-seconds: 300' || true)
+          name=""
+          for i in $(seq 1 30); do
+            name=$(curl -sf ${tok:+-H "X-aws-ec2-metadata-token: $tok"} \
+              http://169.254.169.254/latest/meta-data/local-hostname || true)
+            [ -n "$name" ] && break
+            sleep 3
+          done
+          [ -n "$name" ] && printf 'node-name: %s\n' "$name" > /etc/rancher/k3s/config.yaml.d/20-node-name.yaml
+      agentConfig:
+        airGapped: false
+        kubeletArgs:
+          - --cloud-provider=external
+---
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: MachineDeployment
+metadata:
+  name: aws-k3s-md-0
+  labels:
+    nodepool: aws-k3s-md-0
+spec:
+  clusterName: aws-k3s
+  replicas: 1
+  selector:
+    matchLabels: null
+  template:
+    metadata:
+      labels:
+        nodepool: aws-k3s-md-0
+    spec:
+      clusterName: aws-k3s
+      # No failureDomain: with availabilityZoneUsageLimit 1 there is only one,
+      # and pinning it here would break the moment the region changes.
+      version: v1.35.7+k3s1
+      bootstrap:
+        configRef:
+          apiGroup: bootstrap.cluster.x-k8s.io
+          kind: KThreesConfigTemplate
+          name: aws-k3s-md-0
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: AWSMachineTemplate
+        name: aws-k3s-md-0
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSMachineTemplate
+metadata:
+  name: aws-k3s-md-0
+spec:
+  template:
+    spec:
+      instanceType: t2.medium
+      imageLookupOrg: "099720109477"
+      imageLookupBaseOS: ubuntu-24.04
+      imageLookupFormat: ubuntu/images/hvm-ssd*/ubuntu-noble-24.04-amd64-server-*
+      iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io
+      sshKeyName: lab
+      rootVolume:
+        size: 50
+        type: gp3

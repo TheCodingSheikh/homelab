@@ -1,0 +1,94 @@
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: aws-k3s-cilium
+spec:
+  clusterSelector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: aws-k3s
+  repoURL: https://helm.cilium.io/
+  chartName: cilium
+  version: 1.20.0
+  namespace: kube-system
+  releaseName: cilium
+  valuesTemplate: |
+    ipam:
+      mode: kubernetes
+    routingMode: tunnel
+    tunnelProtocol: vxlan
+    operator:
+      replicas: 1
+    encryption:
+      enabled: true
+      type: wireguard
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: aws-k3s-ccm
+spec:
+  clusterSelector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: aws-k3s
+  repoURL: https://kubernetes.github.io/cloud-provider-aws
+  chartName: aws-cloud-controller-manager
+  version: 0.0.11
+  namespace: kube-system
+  releaseName: aws-ccm
+  valuesTemplate: |
+    # The chart's default is `node-role.kubernetes.io/control-plane: ""`, which
+    # is the kubeadm convention. k3s writes the value "true" on its servers, so
+    # the default selector matches nothing and the DaemonSet never schedules.
+    nodeSelector:
+      node-role.kubernetes.io/control-plane: "true"
+    tolerations:
+      - key: node.cloudprovider.kubernetes.io/uninitialized
+        value: "true"
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+    # The CCM has to run before the CNI can finish, and it needs credentials
+    # from the instance profile: host network, host resolver.
+    hostNetworking: true
+    dnsPolicy: Default
+---
+apiVersion: addons.cluster.x-k8s.io/v1alpha1
+kind: HelmChartProxy
+metadata:
+  name: aws-k3s-ebs-csi
+spec:
+  clusterSelector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: aws-k3s
+  repoURL: https://kubernetes-sigs.github.io/aws-ebs-csi-driver
+  chartName: aws-ebs-csi-driver
+  version: 2.63.1
+  namespace: kube-system
+  releaseName: aws-ebs-csi
+  valuesTemplate: |
+    controller:
+      # ec2:CreateVolume and friends live in the control-plane instance policy
+      # only — the nodes policy is Describe-and-ECR. Pin the controller to the
+      # nodes that carry it, or every provision fails UnauthorizedOperation.
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      replicaCount: 1
+    storageClasses:
+      - name: ebs-gp3
+        annotations:
+          storageclass.kubernetes.io/is-default-class: "true"
+        volumeBindingMode: WaitForFirstConsumer
+        reclaimPolicy: Delete
+        parameters:
+          type: gp3
+          # No `encrypted: "true"`: the CAPA-created policies grant kms:DescribeKey
+          # and nothing else, so an encrypted CreateVolume is denied. Adding
+          # kms:CreateGrant and kms:GenerateDataKeyWithoutPlaintext to the
+          # control-plane role is the fix.

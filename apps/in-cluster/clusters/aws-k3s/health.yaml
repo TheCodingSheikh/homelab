@@ -1,0 +1,50 @@
+# No remediation.templateRef anywhere here: CAPA ships no remediation template
+# kind, so remediation falls back to the owner — the control plane provider or
+# the MachineSet — which deletes the Machine and builds a new one. On EC2 that
+# is the right shape anyway; there is no equivalent of caph's Reboot strategy.
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: MachineHealthCheck
+metadata:
+  name: aws-k3s-control-plane-unhealthy-5m
+spec:
+  checks:
+    nodeStartupTimeoutSeconds: 900
+    unhealthyNodeConditions:
+      - status: Unknown
+        timeoutSeconds: 600
+        type: Ready
+      # A node is Ready=False until Cilium lands on it. Pulling the agent image
+      # on a cold node routinely exceeds 3m; remediating on that races the CNI
+      # rollout and turns a slow boot into a permanent rebuild loop.
+      - status: "False"
+        timeoutSeconds: 600
+        type: Ready
+  clusterName: aws-k3s
+  remediation:
+    triggerIf:
+      unhealthyLessThanOrEqualTo: 100%
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/control-plane: ""
+---
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: MachineHealthCheck
+metadata:
+  name: aws-k3s-md-0-unhealthy-5m
+spec:
+  checks:
+    nodeStartupTimeoutSeconds: 600
+    unhealthyNodeConditions:
+      - status: Unknown
+        timeoutSeconds: 600
+        type: Ready
+      - status: "False"
+        timeoutSeconds: 600
+        type: Ready
+  clusterName: aws-k3s
+  remediation:
+    triggerIf:
+      unhealthyLessThanOrEqualTo: 100%
+  selector:
+    matchLabels:
+      nodepool: aws-k3s-md-0

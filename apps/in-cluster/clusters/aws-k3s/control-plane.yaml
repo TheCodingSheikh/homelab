@@ -1,0 +1,81 @@
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+kind: KThreesControlPlane
+metadata:
+  name: aws-k3s-control-plane
+spec:
+  replicas: 1
+  version: v1.35.7+k3s1
+  machineTemplate:
+    # v1beta1 contract: ObjectReference with apiVersion, not apiGroup.
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      kind: AWSMachineTemplate
+      name: aws-k3s-control-plane
+  kthreesConfigSpec:
+    files:
+      # KThreesServerConfig has no flannel field; k3s merges config.yaml.d over
+      # its main config, which is the only way to reach these settings.
+      - path: /etc/rancher/k3s/config.yaml.d/10-cni.yaml
+        owner: root:root
+        permissions: "0600"
+        content: |
+          flannel-backend: none
+          disable-network-policy: true
+    preK3sCommands:
+      # The AWS cloud controller manager finds a node's EC2 instance by treating
+      # the node name as a private DNS name. k3s names nodes after the hostname,
+      # which on Ubuntu is the short form (ip-10-0-1-23), so the lookup misses,
+      # providerID is never set, the uninitialized taint never clears and CAPI
+      # never attaches a nodeRef to the Machine. Hence: node-name from IMDS.
+      #
+      # This is the same job kubeadm does with `name: {{ ds.meta_data.local_hostname }}`.
+      # It has to happen before k3s first starts — a node name is not something
+      # that can be changed under a running etcd member.
+      - |
+        mkdir -p /etc/rancher/k3s/config.yaml.d
+        tok=$(curl -sf -X PUT http://169.254.169.254/latest/api/token \
+          -H 'X-aws-ec2-metadata-token-ttl-seconds: 300' || true)
+        name=""
+        for i in $(seq 1 30); do
+          name=$(curl -sf ${tok:+-H "X-aws-ec2-metadata-token: $tok"} \
+            http://169.254.169.254/latest/meta-data/local-hostname || true)
+          [ -n "$name" ] && break
+          sleep 3
+        done
+        [ -n "$name" ] && printf 'node-name: %s\n' "$name" > /etc/rancher/k3s/config.yaml.d/20-node-name.yaml
+    serverConfig:
+      disableCloudController: true
+      cloudProviderName: external
+      clusterCidr: 10.244.0.0/16
+      serviceCidr: 10.43.0.0/16
+      disableComponents:
+        - servicelb
+        - traefik
+        - local-storage
+      # No tlsSan needed: the k3s control plane provider adds
+      # Cluster.spec.controlPlaneEndpoint.Host — the NLB's DNS name — by itself.
+    agentConfig:
+      airGapped: false
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSMachineTemplate
+metadata:
+  name: aws-k3s-control-plane
+spec:
+  template:
+    spec:
+      instanceType: t2.medium
+      # CAPA's default AMI lookup finds capa-ami-* images, which are kubeadm
+      # nodes with kubelet and containerd already on them — wrong for k3s, which
+      # installs its own. Plain Canonical Ubuntu instead; the org is Canonical's
+      # AWS account and the format is a literal EC2 name filter, not a template.
+      imageLookupOrg: "099720109477"
+      imageLookupBaseOS: ubuntu-24.04
+      imageLookupFormat: ubuntu/images/hvm-ssd*/ubuntu-noble-24.04-amd64-server-*
+      # The AWS CCM needs the ELB and EBS calls that only the control-plane
+      # policy grants, and it runs on these nodes. See addons.yaml.
+      iamInstanceProfile: control-plane.cluster-api-provider-aws.sigs.k8s.io
+      sshKeyName: lab
+      rootVolume:
+        size: 50
+        type: gp3
