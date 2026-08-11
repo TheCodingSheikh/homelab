@@ -18,7 +18,7 @@ metadata:
     nodepool: hetzner-k3s-md-0
 spec:
   clusterName: hetzner-k3s
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels: null
   template:
@@ -28,7 +28,7 @@ spec:
     spec:
       clusterName: hetzner-k3s
       failureDomain: fsn1
-      version: v1.34.10+k3s1
+      version: v1.35.7+k3s1
       bootstrap:
         configRef:
           apiGroup: bootstrap.cluster.x-k8s.io
