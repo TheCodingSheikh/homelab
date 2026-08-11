@@ -72,6 +72,21 @@ spec:
       imageLookupOrg: "099720109477"
       imageLookupBaseOS: ubuntu-24.04
       imageLookupFormat: ubuntu/images/hvm-ssd*/ubuntu-noble-24.04-amd64-server-*
+      # Forced by the AMI choice above. CAPA's default is to upload the
+      # bootstrap data to AWS Secrets Manager and put a cloud-init boothook in
+      # the user-data that fetches it back — and that boothook shells out to the
+      # AWS CLI, which image-builder installs into capa-ami-* but Canonical's
+      # Ubuntu does not ship. Leave this unset on a plain Ubuntu AMI and
+      # /etc/secret-userdata.txt is never written, cloud-init dies in the init
+      # stage on a missing #include, and none of the bootstrap runs: no k3s, no
+      # listener on 6443, control plane stuck at WaitingForKthreesServer.
+      #
+      # The trade is that the bootstrap data now sits in EC2 user-data, readable
+      # by anything on the instance through IMDS. It still gets gzipped
+      # (uncompressedUserData stays false), which matters because user-data caps
+      # at 16 KB and this payload is ~13 KB raw, ~7 KB compressed.
+      cloudInit:
+        insecureSkipSecretsManager: true
       # The AWS CCM needs the ELB and EBS calls that only the control-plane
       # policy grants, and it runs on these nodes. See addons.yaml.
       iamInstanceProfile: control-plane.cluster-api-provider-aws.sigs.k8s.io

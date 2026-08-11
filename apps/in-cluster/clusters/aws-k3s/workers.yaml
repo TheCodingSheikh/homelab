@@ -66,6 +66,9 @@ spec:
       imageLookupOrg: "099720109477"
       imageLookupBaseOS: ubuntu-24.04
       imageLookupFormat: ubuntu/images/hvm-ssd*/ubuntu-noble-24.04-amd64-server-*
+      # Required on a plain Ubuntu AMI — see control-plane.yaml for why.
+      cloudInit:
+        insecureSkipSecretsManager: true
       iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io
       sshKeyName: lab
       rootVolume:
