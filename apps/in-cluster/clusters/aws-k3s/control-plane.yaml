@@ -3,8 +3,8 @@ kind: KThreesControlPlane
 metadata:
   name: aws-k3s-control-plane
 spec:
-  replicas: 1
-  version: v1.35.7+k3s1
+  replicas: 3
+  version: v1.36.3+k3s1
   machineTemplate:
     # v1beta1 contract: ObjectReference with apiVersion, not apiGroup.
     infrastructureRef:

@@ -33,7 +33,7 @@ metadata:
     nodepool: aws-k3s-md-0
 spec:
   clusterName: aws-k3s
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels: null
   template:
@@ -44,7 +44,7 @@ spec:
       clusterName: aws-k3s
       # No failureDomain: with availabilityZoneUsageLimit 1 there is only one,
       # and pinning it here would break the moment the region changes.
-      version: v1.35.7+k3s1
+      version: v1.36.3+k3s1
       bootstrap:
         configRef:
           apiGroup: bootstrap.cluster.x-k8s.io
