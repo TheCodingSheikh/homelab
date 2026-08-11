@@ -18,7 +18,7 @@ metadata:
     nodepool: hetzner-k3s-md-0
 spec:
   clusterName: hetzner-k3s
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels: null
   template:

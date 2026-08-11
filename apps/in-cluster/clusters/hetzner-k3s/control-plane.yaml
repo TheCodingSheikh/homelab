@@ -3,7 +3,7 @@ kind: KThreesControlPlane
 metadata:
   name: hetzner-k3s-control-plane
 spec:
-  replicas: 3
+  replicas: 1
   version: v1.35.7+k3s1
   machineTemplate:
     # v1beta1 contract: ObjectReference with apiVersion, not apiGroup.
